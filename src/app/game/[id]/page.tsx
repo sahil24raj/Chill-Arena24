@@ -4,12 +4,24 @@ import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { GAMES_CATALOG, useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
+
+// Existing Game Canvases
 import { ModiRunCanvas } from '@/components/games/ModiRunCanvas';
 import { CIDEscapeCanvas } from '@/components/games/CIDEscapeCanvas';
 import { ChaiTapriCanvas } from '@/components/games/ChaiTapriCanvas';
 import { EmojiDodgeCanvas } from '@/components/games/EmojiDodgeCanvas';
 import { MemeClickerCanvas } from '@/components/games/MemeClickerCanvas';
 import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
+
+// 6 New Interactive Mini-Games
+import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
+import { EraserThrowCanvas } from '@/components/games/EraserThrowCanvas';
+import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
+import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
+import { TicTacToeCanvas } from '@/components/games/TicTacToeCanvas';
+import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
+
+import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
 import {
   Gamepad2,
   ThumbsUp,
@@ -18,23 +30,26 @@ import {
   MessageSquare,
   Trophy,
   Star,
-  Maximize2,
-  Volume2,
-  VolumeX,
-  Play
+  Users,
+  Clock,
+  Zap,
+  BookOpen,
+  ArrowLeft,
+  Swords
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { addCoins, addXP, addRecentlyPlayed, isMuted, toggleMute } = useAppStore();
+  const { addRecentlyPlayed, openMultiplayerModal } = useAppStore();
 
   const [likes, setLikes] = useState(1420);
   const [hasLiked, setHasLiked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [commentsList, setCommentsList] = useState([
-    { id: '1', user: 'SigmaGamer_99', text: 'ACP Pradyuman caught me in CID Escape! Pure nostalgia 😂', time: '2 mins ago', likes: 14 },
-    { id: '2', user: 'ChaiLover_IN', text: 'Chai Tapri Tycoon is addicting! 50 cutting chais served 🔥', time: '10 mins ago', likes: 8 }
+    { id: '1', user: 'SigmaGamer_99', text: 'That pen flip sweet spot on the desk is so addicting! 😂', time: '2 mins ago', likes: 14 },
+    { id: '2', user: 'ChaiLover_IN', text: 'Best-of-3 Tic Tac Toe and Spin Cricket are absolute cinema 🔥', time: '10 mins ago', likes: 8 },
+    { id: '3', user: 'Backbencher_Raju', text: 'Hit the blackboard target right before teacher entered! 💀', time: '25 mins ago', likes: 19 }
   ]);
 
   const game = GAMES_CATALOG.find((g) => g.id === id) || GAMES_CATALOG[0];
@@ -56,7 +71,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     soundFx.playClick();
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
-      alert('Game Link Copied to Clipboard!');
+      alert('🎮 Game Duel Link Copied to Clipboard!');
     }
   };
 
@@ -65,7 +80,7 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     if (!commentText.trim()) return;
     soundFx.playLevelUp();
     setCommentsList([
-      { id: Date.now().toString(), user: 'You (Meme Gamer)', text: commentText, time: 'Just now', likes: 0 },
+      { id: Date.now().toString(), user: 'You (Meme Champion)', text: commentText, time: 'Just now', likes: 0 },
       ...commentsList
     ]);
     setCommentText('');
@@ -73,6 +88,21 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const renderGameCanvas = () => {
     switch (game.id) {
+      // 6 New Interactive Mini-Games
+      case 'pen-flip':
+        return <PenFlipCanvas />;
+      case 'eraser-throw':
+        return <EraserThrowCanvas />;
+      case 'spin-cricket':
+        return <SpinCricketCanvas />;
+      case 'word-builder':
+        return <WordBuilderCanvas />;
+      case 'tic-tac-toe':
+        return <TicTacToeCanvas />;
+      case 'brain-pot':
+        return <BrainPotCanvas />;
+
+      // Existing 6 Games
       case 'modi-run':
         return <ModiRunCanvas />;
       case 'cid-escape':
@@ -86,29 +116,70 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       case 'gully-cricket':
         return <GullyCricketCanvas />;
       default:
-        return <ModiRunCanvas />;
+        return <PenFlipCanvas />;
     }
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Game Title & Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
+    <div className="space-y-8 pb-16">
+      <MultiplayerLobbyModal />
+
+      {/* Back to Games Breadcrumb */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/games"
+          onClick={() => soundFx.playClick()}
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-400 hover:text-[#00F0FF] transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>BACK TO GAMES CATALOG</span>
+        </Link>
+
+        {game.multiplayer && (
+          <button
+            onClick={() => {
+              soundFx.playClick();
+              openMultiplayerModal(game);
+            }}
+            className="px-4 py-1.5 rounded-lg bg-purple-600/20 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold font-display flex items-center gap-1.5 transition-colors"
+          >
+            <Swords className="w-3.5 h-3.5 text-pink-400" />
+            <span>CREATE MULTIPLAYER ROOM (#CODE)</span>
+          </button>
+        )}
+      </div>
+
+      {/* Game Title & Actions Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl glass-panel border border-[#00F0FF]/20 bg-[#0c1017]/90">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
             <span className="text-3xl">{game.thumbnail}</span>
-            <h1 className="text-3xl font-black text-white">{game.title}</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white font-display flex items-center gap-2">
+                {game.title}
+              </h1>
+              <div className="flex items-center gap-3 text-xs font-mono text-gray-400 pt-0.5">
+                <span className="text-[#00F0FF]">{game.category}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {game.rating}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> {game.duration}
+                </span>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-400">{game.tagline}</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={handleLike}
-            className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
               hasLiked
                 ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/40'
-                : 'bg-slate-900/80 border border-purple-900/40 text-gray-300 hover:text-white'
+                : 'bg-slate-900 border border-gray-800 text-gray-300 hover:text-white'
             }`}
           >
             <ThumbsUp className="w-4 h-4" />
@@ -117,70 +188,93 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
           <button
             onClick={handleShare}
-            className="px-4 py-2 rounded-full bg-slate-900/80 border border-purple-900/40 text-xs font-bold text-gray-300 hover:text-cyan-300 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-slate-900 border border-gray-800 text-xs font-bold text-gray-300 hover:text-[#00F0FF] flex items-center gap-1.5 transition-colors"
           >
-            <Share2 className="w-4 h-4" /> Share
+            <Share2 className="w-4 h-4" />
+            <span>SHARE DUEL LINK</span>
           </button>
         </div>
       </div>
 
-      {/* GAME CANVAS VIEWPORT */}
+      {/* LIVE GAME VIEWPORT */}
       <div className="w-full flex justify-center">
         {renderGameCanvas()}
       </div>
 
-      {/* Game Details & Controls Info */}
+      {/* Game Details, Rules & Comments Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {/* Description */}
-          <div className="glass-panel p-6 rounded-2xl border-purple-900/40 space-y-3">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-purple-400" /> About {game.title}
+          
+          {/* About & Rules */}
+          <div className="glass-panel p-6 rounded-3xl border-gray-800 bg-[#0c1017]/90 space-y-4">
+            <h3 className="text-base font-black text-white flex items-center gap-2 font-display">
+              <Gamepad2 className="w-5 h-5 text-[#00F0FF]" /> About {game.title}
             </h3>
-            <p className="text-xs text-gray-300 leading-relaxed">{game.description}</p>
+            <p className="text-xs text-gray-300 leading-relaxed font-sans">{game.description}</p>
 
-            <div className="pt-4 border-t border-purple-900/30">
-              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider mb-2">Game Controls</h4>
-              <ul className="space-y-1 text-xs text-gray-400">
+            {/* Rules */}
+            {game.rules && game.rules.length > 0 && (
+              <div className="pt-4 border-t border-gray-800">
+                <h4 className="text-xs font-bold text-[#ADFF2F] uppercase tracking-wider mb-2 font-display flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5" /> Official Match Rules
+                </h4>
+                <ul className="space-y-1.5 text-xs text-gray-300 font-mono">
+                  {game.rules.map((rule, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ADFF2F]" />
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Controls */}
+            <div className="pt-4 border-t border-gray-800">
+              <h4 className="text-xs font-bold text-[#00F0FF] uppercase tracking-wider mb-2 font-display">
+                Controls & Keys
+              </h4>
+              <ul className="space-y-1.5 text-xs text-gray-400 font-mono">
                 {game.controls.map((ctrl, idx) => (
                   <li key={idx} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500" /> {ctrl}
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                    <span>{ctrl}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
 
-          {/* Comments section */}
-          <div className="glass-panel p-6 rounded-2xl border-purple-900/40 space-y-4">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-pink-400" /> Gamer Comments ({commentsList.length})
+          {/* Gamer Comments section */}
+          <div className="glass-panel p-6 rounded-3xl border-gray-800 bg-[#0c1017]/90 space-y-4">
+            <h3 className="text-base font-black text-white flex items-center gap-2 font-display">
+              <MessageSquare className="w-5 h-5 text-pink-400" /> Community Trash Talk & Reviews ({commentsList.length})
             </h3>
 
             <form onSubmit={handleAddComment} className="flex gap-2">
               <input
                 type="text"
-                placeholder="Write a funny comment..."
+                placeholder="Post a funny comment or roast..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 bg-slate-950 border border-purple-800/50 rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+                className="flex-1 bg-slate-950 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00F0FF]"
               />
               <button
                 type="submit"
-                className="cyber-button px-5 py-2 rounded-xl text-xs font-black text-white shadow-lg"
+                className="cyber-button px-6 py-2.5 rounded-xl text-xs font-black text-slate-950 font-display shadow-lg"
               >
                 Post
               </button>
             </form>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-2 font-mono">
               {commentsList.map((c) => (
-                <div key={c.id} className="p-3 rounded-xl bg-slate-950/60 border border-purple-900/30 text-xs">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-cyan-300">{c.user}</span>
+                <div key={c.id} className="p-3.5 rounded-xl bg-slate-950/80 border border-gray-850 text-xs space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#00F0FF]">{c.user}</span>
                     <span className="text-[10px] text-gray-500">{c.time}</span>
                   </div>
-                  <p className="text-gray-300">{c.text}</p>
+                  <p className="text-gray-300 font-sans">{c.text}</p>
                 </div>
               ))}
             </div>
@@ -188,27 +282,27 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         {/* Sidebar Recommended Games */}
-        <div className="glass-panel p-6 rounded-2xl border-purple-900/40 space-y-4">
-          <h3 className="text-base font-black text-white flex items-center gap-2">
-            <Flame className="w-5 h-5 text-orange-500" /> More Meme Games
+        <div className="glass-panel p-6 rounded-3xl border-gray-800 bg-[#0c1017]/90 space-y-4">
+          <h3 className="text-base font-black text-white flex items-center gap-2 font-display">
+            <Flame className="w-5 h-5 text-pink-500" /> More Mini-Games
           </h3>
 
           <div className="space-y-3">
-            {GAMES_CATALOG.filter((g) => g.id !== game.id).map((rec) => (
+            {GAMES_CATALOG.filter((g) => g.id !== game.id).slice(0, 6).map((rec) => (
               <Link
                 key={rec.id}
                 href={`/game/${rec.id}`}
                 onClick={() => soundFx.playClick()}
-                className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/60 border border-purple-900/30 hover:border-cyan-400/60 transition-all group"
+                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/80 border border-gray-850 hover:border-[#00F0FF] transition-all group"
               >
-                <div className="w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center text-2xl shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-gray-800 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition-transform">
                   {rec.thumbnail}
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display truncate">
                     {rec.title}
                   </h4>
-                  <span className="text-[10px] text-gray-400 font-semibold">{rec.category}</span>
+                  <span className="text-[10px] text-gray-400 font-mono block truncate">{rec.category}</span>
                 </div>
               </Link>
             ))}

@@ -7,8 +7,9 @@ import { AuthModal } from '@/components/AuthModal';
 import { DailySpinModal } from '@/components/DailySpinModal';
 
 export const metadata: Metadata = {
-  title: 'MemeVerse - Gen-Z Viral Meme Gaming Platform',
-  description: 'Play funny, addictive browser games inspired by viral memes, Indian internet culture, and trending social media moments!'
+  title: 'MemeVerse Arena — Multiplayer Mini-Game Platform | Pen Flip, School Vibes & Meme Duels',
+  description: 'Instant multiplayer browser mini-games with friends. Play Pen Flip, Eraser Throw, Spin Cricket, Caught Modi, Word Builder, and rapid mind duels. No downloads, 60 FPS esports action!',
+  keywords: ['Meme games', 'multiplayer browser games', 'pen flip', 'school vibes', 'indian meme games', 'spin cricket', 'browser esports', 'mini games online']
 };
 
 export default function RootLayout({
@@ -18,10 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#070312] text-gray-100 antialiased flex flex-col relative selection:bg-pink-500 selection:text-white">
+      <body className="min-h-screen bg-[#07080c] text-gray-100 antialiased flex flex-col relative selection:bg-[#00F0FF] selection:text-slate-950 font-sans">
         <BackgroundParticles />
         <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-8 relative z-10">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-6 relative z-10">
           {children}
         </main>
         <Footer />

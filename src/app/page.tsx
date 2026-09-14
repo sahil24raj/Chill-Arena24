@@ -1,284 +1,264 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { GAMES_CATALOG, useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
+import { HeroSection } from '@/components/HeroSection';
+import { SchoolVibesSection } from '@/components/SchoolVibesSection';
+import { MindGamesSection } from '@/components/MindGamesSection';
+import { GameCard } from '@/components/GameCard';
+import { DailyChallengesSection } from '@/components/DailyChallengesSection';
+import { RecentMatchesCommunity } from '@/components/RecentMatchesCommunity';
+import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
 import {
   Gamepad2,
   Flame,
   Trophy,
+  Swords,
   Sparkles,
   Play,
   Star,
   Zap,
-  Cpu,
-  Activity,
-  Terminal
+  Users,
+  ArrowRight,
+  Shield,
+  Crown
 } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, openSpinModal } = useAppStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const { openMultiplayerModal, openSpinModal } = useAppStore();
 
-  const categories = [
-    'ALL',
-    '🇮🇳 Indian Meme Games',
-    '😂 Meme Games',
-    '🏃 Endless Runner',
-    '⚡ Reaction',
-    '🧠 Puzzle',
-    '🎯 Skill Games'
+  const featuredGame = GAMES_CATALOG.find((g) => g.id === 'pen-flip') || GAMES_CATALOG[0];
+
+  const trendingMemeGames = GAMES_CATALOG.filter((g) => g.categoryKey === 'meme');
+  const schoolVibesGames = GAMES_CATALOG.filter((g) => g.categoryKey === 'school');
+  const mindGames = GAMES_CATALOG.filter((g) => g.categoryKey === 'mind');
+
+  const quickPlayGames = [
+    GAMES_CATALOG.find((g) => g.id === 'pen-flip')!,
+    GAMES_CATALOG.find((g) => g.id === 'modi-run')!,
+    GAMES_CATALOG.find((g) => g.id === 'spin-cricket')!,
+    GAMES_CATALOG.find((g) => g.id === 'word-builder')!,
+    GAMES_CATALOG.find((g) => g.id === 'eraser-throw')!,
+    GAMES_CATALOG.find((g) => g.id === 'tic-tac-toe')!
+  ].filter(Boolean);
+
+  const topPlayers = [
+    { rank: 1, name: 'Gigachad_69', score: '14,250 pts', avatar: '🗿', badge: 'Meme Lord' },
+    { rank: 2, name: 'Daya_Smash', score: '11,890 pts', avatar: '🚪', badge: 'CID Specialist' },
+    { rank: 3, name: 'ChaiTapriBoss', score: '9,450 pts', avatar: '☕', badge: 'Tapri Master' }
   ];
 
-  const filteredGames = selectedCategory === 'ALL'
-    ? GAMES_CATALOG
-    : GAMES_CATALOG.filter((g) => g.category === selectedCategory);
-
-  const featuredGame = GAMES_CATALOG[0];
-
   return (
-    <div className="space-y-12 pb-12">
-      {/* SaaS Terminal Hero Banner */}
-      <section className="relative overflow-hidden rounded-2xl glass-panel p-8 lg:p-12 border-[#00F0FF]/25 bg-[#0e1015]/95 shadow-2xl">
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 bg-gradient-to-tr from-[#00F0FF]/15 to-[#ADFF2F]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-16 pb-16">
+      <MultiplayerLobbyModal />
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-center relative z-10">
-          <div className="lg:col-span-3 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[10px] font-mono text-[#00F0FF]">
-              <Sparkles className="w-3.5 h-3.5 text-[#ADFF2F]" />
-              <span>MEME-GAMING SYSTEM STATUS: OPTIMAL</span>
-            </div>
+      {/* 1. HERO SECTION */}
+      <HeroSection
+        featuredGame={featuredGame}
+        onOpenMultiplayer={() => openMultiplayerModal()}
+        onOpenSpin={() => openSpinModal()}
+      />
 
-            <h1 className="text-4xl lg:text-6xl font-black tracking-tight leading-none text-white font-display uppercase">
-              DECENTRALISED <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] via-[#00f0ff]/80 to-[#ADFF2F] neon-text-cyan">
-                MEME ENGINE
-              </span>
-            </h1>
-
-            <p className="text-xs text-gray-400 font-sans leading-relaxed max-w-lg">
-              Compile, deploy, and execute Gen-Z micro-games natively in your sandbox. 0% installs. 100% processing throughput. Escape ACP Pradyuman, smash cricket sixes, and brew cutting chai in 60 FPS.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Link
-                href={`/game/${featuredGame.id}`}
-                onClick={() => soundFx.playClick()}
-                className="cyber-button px-8 py-3.5 rounded font-display text-xs font-black flex items-center gap-2.5 shadow-xl transition-all shadow-[#00F0FF]/10"
-              >
-                <Play className="w-4 h-4 fill-slate-950" /> EXECUTE CAUGHT MODI
-              </Link>
-
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  openSpinModal();
-                }}
-                className="px-6 py-3.5 rounded bg-[#111318] border border-gray-800 hover:border-[#ADFF2F]/50 text-xs font-black text-[#ADFF2F] flex items-center gap-2 transition-all font-display hover:bg-[#ADFF2F]/5"
-              >
-                <span>CLAIM DAILY SPIN</span>
-              </button>
-            </div>
-
-            {/* Tech SaaS Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-850 font-mono text-[10px] text-gray-500">
-              <div>
-                <span className="text-lg font-bold text-[#00F0FF] block">500,000+</span>
-                <span>ACTIVE_NODES</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-[#ADFF2F] block">1.4 Million</span>
-                <span>MEME_LOADS</span>
-              </div>
-              <div>
-                <span className="text-lg font-bold text-pink-500 block">&lt; 1.5ms</span>
-                <span>LATENCY_PING</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero Featured Game Preview HUD */}
-          <div className="lg:col-span-2 relative group">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#00F0FF]/20 to-[#ADFF2F]/10 rounded-xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity" />
-            <div className="relative rounded-xl overflow-hidden glass-panel border-[#00F0FF]/25 p-4 bg-[#0e1015]">
-              <div className="flex justify-between items-center mb-3 font-mono text-[9px]">
-                <span className="text-[#00F0FF] flex items-center gap-1">
-                  <Activity className="w-3.5 h-3.5 text-[#ADFF2F]" /> NODE_HIGHLIGHT: HOT
-                </span>
-                <span className="text-[#ADFF2F] bg-[#ADFF2F]/10 px-2 py-0.5 rounded border border-[#ADFF2F]/20">
-                  ★ 4.97_RATING
-                </span>
-              </div>
-
-              <div className="relative aspect-video rounded overflow-hidden bg-slate-950 flex items-center justify-center border border-gray-850 group-hover:scale-[1.01] transition-transform">
-                <img
-                  src={featuredGame.bannerImage}
-                  alt={featuredGame.title}
-                  className="w-full h-full object-cover opacity-60"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent flex flex-col justify-end p-4">
-                  <span className="text-2xl mb-1">{featuredGame.thumbnail}</span>
-                  <h3 className="text-base font-black text-white font-display">{featuredGame.title}</h3>
-                  <p className="text-[10px] text-gray-300 font-sans line-clamp-1">{featuredGame.tagline}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Grid Dashboard controls */}
-      <section className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="font-display">
-            <h2 className="text-xl font-black text-white flex items-center gap-2">
-              <Terminal className="w-5 h-5 text-[#00F0FF]" /> MEME PROTOCOL REPOSITORIES
+      {/* 2. LIVE NOW / QUICK PLAY STRIP */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ADFF2F] animate-ping" />
+            <h2 className="text-base font-black text-white font-display uppercase tracking-wider">
+              ⚡ LIVE NOW / INSTANT QUICK PLAY
             </h2>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Select category to filter execution threads</p>
           </div>
-
-          <div className="flex flex-wrap gap-1.5 bg-[#111318] p-1 rounded-lg border border-gray-850">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => {
-                  soundFx.playClick();
-                  setSelectedCategory(cat);
-                }}
-                className={`px-3 py-1.5 rounded text-[10px] font-bold font-mono tracking-tight transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-[#00F0FF]/15 text-[#00F0FF] border border-[#00F0FF]/35'
-                    : 'text-gray-400 hover:text-white border border-transparent'
-                }`}
-              >
-                {cat.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <span className="text-[11px] font-mono text-gray-500">Pick any game & jump right in</span>
         </div>
 
-        {/* Game Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGames.map((game) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {quickPlayGames.map((game) => (
             <Link
               key={game.id}
               href={`/game/${game.id}`}
               onClick={() => soundFx.playClick()}
-              className="glass-card rounded-xl overflow-hidden group cursor-pointer border-[#00F0FF]/10 bg-[#111318]"
+              className="p-3 rounded-2xl bg-[#0f131c] border border-gray-800 hover:border-[#00F0FF] transition-all group flex flex-col items-center text-center space-y-2 hover:-translate-y-1 shadow-lg"
             >
-              <div className="relative aspect-video bg-slate-950 overflow-hidden border-b border-gray-850">
-                <img
-                  src={game.bannerImage}
-                  alt={game.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
-                />
-                <div className="absolute top-3 left-3 bg-[#0a0c10]/95 backdrop-blur-md px-2.5 py-1 rounded text-[9px] font-mono text-[#00F0FF] border border-[#00F0FF]/30">
-                  {game.category.toUpperCase()}
-                </div>
-                <div className="absolute top-3 right-3 bg-[#0a0c10]/95 backdrop-blur-md px-2.5 py-1 rounded text-[9px] font-mono text-[#ADFF2F] flex items-center gap-1 border border-[#ADFF2F]/30">
-                  <Star className="w-3 h-3 fill-[#ADFF2F] text-[#ADFF2F]" /> {game.rating}
-                </div>
-                <div className="absolute inset-0 bg-[#0A0C10]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="w-11 h-11 rounded bg-[#00F0FF] flex items-center justify-center text-slate-950 shadow-lg shadow-[#00F0FF]/20">
-                    <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
-                  </div>
-                </div>
+              <div className="w-12 h-12 rounded-xl bg-slate-900 border border-gray-800 group-hover:border-[#00F0FF]/50 flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
+                {game.thumbnail}
               </div>
-
-              <div className="p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{game.thumbnail}</span>
-                  <h3 className="text-sm font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display">
-                    {game.title}
-                  </h3>
-                </div>
-                <p className="text-[11px] text-gray-400 font-sans leading-relaxed line-clamp-2 h-8">
-                  {game.description}
-                </p>
-
-                <div className="flex items-center justify-between text-[9px] font-mono pt-3 border-t border-gray-850 text-gray-500">
-                  <span>LOADS: {(game.playCount / 1000).toFixed(1)}K</span>
-                  <span className="text-[#00F0FF] font-bold group-hover:translate-x-0.5 transition-transform">RUN_NODE &rarr;</span>
-                </div>
+              <div className="w-full">
+                <h4 className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display truncate">
+                  {game.title.split(':')[0]}
+                </h4>
+                <span className="text-[9px] text-gray-500 font-mono block">
+                  ★ {game.rating} • {game.duration}
+                </span>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* SaaS Diagnostics Console */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Weekly Quests Widget */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-xl border-[#00F0FF]/15 bg-[#111318]/90 space-y-4">
-          <div className="flex items-center justify-between font-display">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-[#ADFF2F]" /> SYSTEM_DIAG_QUESTS
-            </h3>
-            <span className="text-[10px] text-gray-500 font-mono">NEXT_REFRESH: 48h</span>
-          </div>
+      {/* 3. 🔥 TRENDING MEME GAMES */}
+      <section className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 p-6 rounded-3xl border border-pink-500/25 bg-gradient-to-r from-[#200c19] via-[#140810] to-[#080407] relative overflow-hidden shadow-xl">
+          <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-pink-600/15 to-transparent pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-pink-500 via-rose-500 to-amber-500" />
 
-          <div className="space-y-3 font-mono">
-            <div className="p-4 rounded bg-[#0e1015] border border-gray-850 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🏃‍♂️</span>
-                <div>
-                  <h4 className="text-[11px] font-bold text-white">MODI_RUN_CHASE_MAX</h4>
-                  <p className="text-[9px] text-gray-500">Escape ACP Pradyuman for 1,000+ points</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-bold text-[#ADFF2F] bg-[#ADFF2F]/10 px-2.5 py-1 rounded border border-[#ADFF2F]/20">
-                +300 COINS
-              </span>
+          <div className="space-y-2 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-xs font-mono text-pink-300">
+              <Flame className="w-3.5 h-3.5 text-pink-500" />
+              <span className="font-bold tracking-wider">VIRAL INDIAN & GEN-Z MEMES</span>
             </div>
 
-            <div className="p-4 rounded bg-[#0e1015] border border-gray-850 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">☕</span>
-                <div>
-                  <h4 className="text-[11px] font-bold text-white">CHAI_SERVER_CYCLE</h4>
-                  <p className="text-[9px] text-gray-500">Deploy 50 cutting chais to client nodes</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-bold text-[#ADFF2F] bg-[#ADFF2F]/10 px-2.5 py-1 rounded border border-[#ADFF2F]/20">
-                +500 COINS
+            <h2 className="text-2xl sm:text-3xl font-black text-white font-display flex items-center gap-2.5">
+              <span>🔥 TRENDING MEME GAMES</span>
+              <span className="text-xs font-mono font-normal text-pink-400/80 px-2 py-0.5 rounded bg-pink-950/60 border border-pink-900/50">
+                MODI CHASE • DAYA SMASH • TAPRI TYCOON
               </span>
-            </div>
+            </h2>
+
+            <p className="text-xs sm:text-sm text-gray-300 font-sans max-w-2xl leading-relaxed">
+              Escape ACP Pradyuman, brew 50 cutting chais before office techies rage-quit, smash gully cricket sixes into aunty's balcony, and dodge toxic cringe emojis in 60 FPS!
+            </p>
           </div>
+
+          <Link
+            href="/games?cat=meme"
+            onClick={() => soundFx.playClick()}
+            className="relative z-10 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 text-xs font-bold text-pink-300 font-display transition-all hover:translate-x-1 shrink-0"
+          >
+            <span>VIEW ALL MEME GAMES ({trendingMemeGames.length})</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Leaderboard HUD */}
-        <div className="glass-panel p-6 rounded-xl border-[#00F0FF]/15 bg-[#111318]/90 space-y-4">
-          <div className="flex items-center justify-between font-display">
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-[#00F0FF]" /> HIGHEST_CORE_METRICS
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {trendingMemeGames.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              onQuickPlay={() => openMultiplayerModal(game)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* 4. 🏫 SCHOOL VIBES (NOSTALGIA ARENA) */}
+      <SchoolVibesSection
+        games={schoolVibesGames}
+        onOpenMultiplayer={(game) => openMultiplayerModal(game)}
+      />
+
+      {/* 5. 🧠 MIND GAMES (COGNITIVE ESPORTS) */}
+      <MindGamesSection
+        games={mindGames}
+        onOpenMultiplayer={(game) => openMultiplayerModal(game)}
+      />
+
+      {/* 6. ⚡ QUICK DUELS & CHALLENGE BANNER */}
+      <section className="p-8 rounded-3xl border-2 border-[#00F0FF]/30 bg-gradient-to-r from-[#0a121e] via-[#0e1626] to-[#070b12] relative overflow-hidden shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-8 space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-xs font-mono text-[#00F0FF]">
+              <Swords className="w-3.5 h-3.5" />
+              <span>1V1 MULTIPLAYER QUICK DUELS</span>
+            </div>
+
+            <h3 className="text-2xl sm:text-3xl font-black text-white font-display">
+              GOT 60 SECONDS? CHALLENGE YOUR FRIEND TO A DUEL.
             </h3>
-            <Link href="/leaderboard" className="text-[10px] text-[#00F0FF] font-mono hover:underline">
-              ALL_USERS
-            </Link>
+
+            <p className="text-xs text-gray-300 font-sans max-w-xl">
+              Create an instant room code (like #A82KD), share the link in Discord or WhatsApp, and start playing Pen Flip, Spin Cricket or Word Scramble instantly without any app installs.
+            </p>
           </div>
 
-          <div className="space-y-2.5 font-mono">
-            {[
-              { rank: 1, name: 'Gigachad_69', score: '14,250 pts', avatar: '🗿' },
-              { rank: 2, name: 'Daya_Smash', score: '11,890 pts', avatar: '🚪' },
-              { rank: 3, name: 'ChaiTapriBoss', score: '9,450 pts', avatar: '☕' }
-            ].map((usr) => (
-              <div key={usr.rank} className="flex items-center justify-between p-2.5 rounded bg-[#0e1015] border border-gray-850 text-[10px]">
-                <div className="flex items-center gap-2">
-                  <span className={`font-bold w-4 text-center ${usr.rank === 1 ? 'text-[#ADFF2F]' : 'text-gray-500'}`}>
-                    #0{usr.rank}
-                  </span>
-                  <span className="text-sm">{usr.avatar}</span>
-                  <span className="text-gray-300 font-semibold">{usr.name}</span>
-                </div>
-                <span className="font-bold text-[#00F0FF]">{usr.score}</span>
-              </div>
-            ))}
+          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                openMultiplayerModal();
+              }}
+              className="py-4 px-6 rounded-xl cyber-button font-display text-xs font-black text-slate-950 flex items-center justify-center gap-2 shadow-xl"
+            >
+              <Swords className="w-4 h-4" />
+              <span>CREATE CUSTOM DUEL ROOM</span>
+            </button>
+            <Link
+              href="/multiplayer"
+              onClick={() => soundFx.playClick()}
+              className="py-3 px-6 rounded-xl bg-slate-900 border border-gray-800 hover:border-[#00F0FF] text-xs font-bold font-display text-gray-300 hover:text-white flex items-center justify-center gap-2"
+            >
+              <span>MULTIPLAYER LOBBY HUB &rarr;</span>
+            </Link>
           </div>
         </div>
       </section>
+
+      {/* 7. 🏆 LEADERBOARDS PODIUM SUMMARY */}
+      <section className="p-6 lg:p-8 rounded-3xl glass-panel border border-[#00F0FF]/20 bg-[#0e1218]/90 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" />
+              <h2 className="text-xl font-black text-white font-display">🏆 TOP PLAYERS & PODIUM STANDINGS</h2>
+            </div>
+            <p className="text-xs text-gray-400 font-sans mt-0.5">
+              Weekly tournament ranking based on total wins, classroom roasts & high scores.
+            </p>
+          </div>
+
+          <Link
+            href="/leaderboard"
+            onClick={() => soundFx.playClick()}
+            className="text-xs font-mono text-[#00F0FF] hover:underline flex items-center gap-1 font-bold"
+          >
+            VIEW FULL GLOBAL LEADERBOARD &rarr;
+          </Link>
+        </div>
+
+        {/* Podium Top 3 Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {topPlayers.map((usr) => (
+            <div
+              key={usr.rank}
+              className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${
+                usr.rank === 1
+                  ? 'bg-gradient-to-tr from-amber-500/15 via-slate-950 to-slate-950 border-amber-500/50 shadow-lg shadow-amber-500/10'
+                  : 'bg-slate-950/80 border-gray-800'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-7 text-center font-display font-black text-base ${
+                  usr.rank === 1 ? 'text-amber-400' : usr.rank === 2 ? 'text-gray-300' : 'text-amber-600'
+                }`}>
+                  #{usr.rank}
+                </span>
+                <div className="w-10 h-10 rounded-xl bg-slate-900 border border-gray-800 flex items-center justify-center text-xl">
+                  {usr.avatar}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white font-display">{usr.name}</h4>
+                  <span className="text-[10px] text-gray-500 font-mono">{usr.badge}</span>
+                </div>
+              </div>
+
+              <div className="text-right font-mono">
+                <span className={`text-xs font-black block ${usr.rank === 1 ? 'text-amber-400' : 'text-[#00F0FF]'}`}>
+                  {usr.score}
+                </span>
+                <span className="text-[9px] text-gray-500">POINTS</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 8. 🎯 DAILY CHALLENGES */}
+      <DailyChallengesSection />
+
+      {/* 9. COMMUNITY & RECENT MATCHES */}
+      <RecentMatchesCommunity />
+
     </div>
   );
 }

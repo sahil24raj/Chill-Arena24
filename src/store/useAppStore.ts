@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserProfile, GameItem } from '@/types';
+import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch } from '@/types';
 import { soundFx } from '@/lib/audio';
 
 const INITIAL_USER: UserProfile = {
@@ -8,124 +8,480 @@ const INITIAL_USER: UserProfile = {
   username: 'Sigma_Gamer69',
   avatar: '🚀',
   authType: 'guest',
-  xp: 1450,
-  level: 5,
-  coins: 2450,
-  streak: 3,
+  xp: 2840,
+  level: 7,
+  coins: 4850,
+  streak: 5,
   lastLoginDate: new Date().toISOString(),
   badges: [
     { id: 'b1', name: 'Meme Pioneer', description: 'Joined MemeVerse on Launch Day', icon: '🔥', category: 'legend' },
-    { id: 'b2', name: 'Tea Collector', description: 'Served 50+ cutting chais', icon: '☕', category: 'meme' },
-    { id: 'b3', name: 'Daya Destroyer', description: 'Broke 10 doors in CID Escape', icon: '🚪', category: 'gaming' }
+    { id: 'b2', name: 'School Legend', description: 'Flipped 50 pens on the desk', icon: '🏫', category: 'school' },
+    { id: 'b3', name: 'Big Brain', description: 'Solved 25 rapid mind puzzles', icon: '🧠', category: 'mind' },
+    { id: 'b4', name: 'Tea Collector', description: 'Served 50+ cutting chais', icon: '☕', category: 'meme' },
+    { id: 'b5', name: 'Speed Demon', description: 'Reaction time under 180ms', icon: '⚡', category: 'gaming' }
   ],
-  unlockedSkins: ['default', 'gold_crown', 'neon_visor'],
+  unlockedSkins: ['default', 'gold_crown', 'neon_visor', 'desk_master'],
   equippedSkin: 'neon_visor',
   stats: {
-    gamesPlayed: 42,
-    totalWins: 29,
+    gamesPlayed: 68,
+    totalWins: 49,
+    winRate: 72,
     highScores: {
-      'modi-run': 1420,
-      'cid-escape': 890,
-      'chai-tapri': 2100,
-      'emoji-dodge': 3400,
-      'meme-clicker': 15000,
-      'gully-cricket': 96
+      'modi-run': 1850,
+      'cid-escape': 1120,
+      'chai-tapri': 2650,
+      'emoji-dodge': 4100,
+      'meme-clicker': 42000,
+      'gully-cricket': 142,
+      'pen-flip': 10,
+      'eraser-throw': 18,
+      'spin-cricket': 36,
+      'word-builder': 24,
+      'tic-tac-toe': 12,
+      'brain-pot': 850
     },
-    roastsWon: 12,
-    sixesHit: 18,
-    chaiServed: 64
+    roastsWon: 24,
+    sixesHit: 38,
+    chaiServed: 120,
+    penFlipsLanded: 44,
+    eraserHits: 32
   }
 };
 
+export const INITIAL_CHALLENGES: DailyChallenge[] = [
+  {
+    id: 'ch-1',
+    title: 'Win 3 Matches Today',
+    description: 'Score victory in any 3 local or online mini-game matches',
+    icon: '🎯',
+    rewardXP: 300,
+    rewardCoins: 250,
+    progress: 2,
+    target: 3,
+    category: 'general',
+    claimed: false
+  },
+  {
+    id: 'ch-2',
+    title: 'Pen Flip Desk Master',
+    description: 'Land 5 successful TIP flips in School Vibes Pen Flip',
+    icon: '🏫',
+    rewardXP: 250,
+    rewardCoins: 200,
+    progress: 3,
+    target: 5,
+    category: 'school',
+    claimed: false
+  },
+  {
+    id: 'ch-3',
+    title: 'Mind Pot Rapid Fire',
+    description: 'Answer 6 consecutive brain challenges correctly in Brain Pot',
+    icon: '🧠',
+    rewardXP: 350,
+    rewardCoins: 300,
+    progress: 4,
+    target: 6,
+    category: 'mind',
+    claimed: false
+  },
+  {
+    id: 'ch-4',
+    title: 'Play 5 Meme Games',
+    description: 'Survive in Caught Modi, CID Escape, or Tapri Tycoon',
+    icon: '🔥',
+    rewardXP: 200,
+    rewardCoins: 150,
+    progress: 5,
+    target: 5,
+    category: 'meme',
+    claimed: false
+  }
+];
+
+export const INITIAL_RECENT_MATCHES: RecentMatch[] = [
+  {
+    id: 'm1',
+    gameId: 'pen-flip',
+    gameTitle: 'Pen Flip 1v1',
+    gameIcon: '🖊️',
+    player1: { name: 'Sigma_Gamer69', avatar: '🚀', score: 10 },
+    player2: { name: 'ChaiBoss_Delhi', avatar: '☕', score: 7 },
+    winner: 'Sigma_Gamer69',
+    roastQuote: 'Bro got lucky on that final tip flip 💀',
+    timeAgo: '1 min ago'
+  },
+  {
+    id: 'm2',
+    gameId: 'eraser-throw',
+    gameTitle: 'Eraser Throw',
+    gameIcon: '✏️',
+    player1: { name: 'Backbencher_Raju', avatar: '😎', score: 14 },
+    player2: { name: 'Monitor_Pooja', avatar: '📚', score: 9 },
+    winner: 'Backbencher_Raju',
+    roastQuote: 'ABSOLUTE CINEMA! Hit blackboard right before teacher entered!',
+    timeAgo: '4 mins ago'
+  },
+  {
+    id: 'm3',
+    gameId: 'spin-cricket',
+    gameTitle: 'Spin Cricket Duel',
+    gameIcon: '🏏',
+    player1: { name: 'GullyKing_Virat', avatar: '🏏', score: 28 },
+    player2: { name: 'BoomBoom_Afridi', avatar: '⚡', score: 24 },
+    winner: 'GullyKing_Virat',
+    roastQuote: 'Last ball six into aunty ki balcony 😂',
+    timeAgo: '8 mins ago'
+  },
+  {
+    id: 'm4',
+    gameId: 'tic-tac-toe',
+    gameTitle: 'Tic-Tac-Toe Duel',
+    gameIcon: '❌',
+    player1: { name: 'AlphaCoder', avatar: '🤖', score: 2 },
+    player2: { name: 'Dank_Lord', avatar: '🗿', score: 1 },
+    winner: 'AlphaCoder',
+    roastQuote: 'Classic corner fork move. Pure 200 IQ! 🧠',
+    timeAgo: '12 mins ago'
+  }
+];
+
 export const GAMES_CATALOG: GameItem[] = [
+  // ================= 1. 🔥 TRENDING MEME GAMES =================
   {
     id: 'modi-run',
     title: 'Caught Modi: Chase & Escape',
+    slug: 'caught-modi',
     tagline: 'Run to escape ACP Pradyuman while dodging microphones and flying tomatoes!',
-    description: 'Help Narendra Modi dodge media mics and flying tomatoes while escaping ACP Pradyuman in this epic endless runner chase game!',
-    category: '🇮🇳 Indian Meme Games',
-    thumbnail: '🏃‍♂️👮‍♂️',
+    description: 'Help Narendra Modi dodge media mics, flying tomatoes, and drone cameras while escaping ACP Pradyuman in this epic endless runner chase game!',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
+    thumbnail: '🏃‍♂️',
     bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80',
-    playCount: 184500,
+    playCount: 245000,
     rating: 4.97,
+    difficulty: 'Medium',
+    duration: '1-3 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
     isTrending: true,
-    isIndianMeme: true,
+    isPopular: true,
     isFeatured: true,
-    controls: ['Space / Up Arrow / Click: Jump', 'Mobile Tap: Jump'],
-    tags: ['Runner', 'Indian', 'Political Meme', 'Action', 'Chase']
+    controls: ['Space / Up Arrow / Tap: Jump over obstacles', 'Down Arrow: Slide under microphones'],
+    tags: ['Runner', 'Indian Meme', 'Chase', 'Endless', 'Action'],
+    rules: ['Survive as long as possible', 'Collect golden mic powerups for 2x multiplier', 'Avoid flying tomatoes']
   },
   {
     id: 'cid-escape',
-    title: 'CID Escape: Daya Tod Do Darwaza',
+    title: 'Daya Tod Do Darwaza: CID Escape',
+    slug: 'cid-escape',
     tagline: 'Escape ACP Pradyuman while Daya keeps smashing doors down!',
     description: 'Fast-paced escape arcade! Dodge ACP Pradyuman’s magnifying laser eye, jump over Daya’s door smashes, and collect magnifying glass clues to survive!',
-    category: '🇮🇳 Indian Meme Games',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
     thumbnail: '🚪',
     bannerImage: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80',
-    playCount: 98400,
-    rating: 4.8,
+    playCount: 178000,
+    rating: 4.85,
+    difficulty: 'Hard',
+    duration: '1-2 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
     isTrending: true,
-    isIndianMeme: true,
-    controls: ['Up / Down Arrows: Dodge & Change Lanes', 'Space: Dash'],
-    tags: ['Escape', 'CID', 'Memes', 'Arcade']
+    controls: ['Up / Down Arrows: Dodge & Change Lanes', 'Space: Dash past broken doors'],
+    tags: ['Escape', 'CID', 'Memes', 'Arcade'],
+    rules: ['Switch lanes to avoid Daya door slams', 'Collect red clues for speed boost']
   },
   {
     id: 'chai-tapri',
     title: 'Chai Tapri Tycoon ☕',
+    slug: 'chai-tapri-tycoon',
     tagline: 'Serve Cutting Chai, Samosas, and Bun Maska before customers lose patience!',
     description: 'Run your dream Indian street tea stall! Rapidly brew Cutting Chai, fry hot Samosas, and deal with funny office techies, police officers, and college groups.',
-    category: '🧠 Puzzle',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
     thumbnail: '☕',
     bannerImage: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=800&q=80',
-    playCount: 112000,
-    rating: 4.9,
-    isIndianMeme: true,
+    playCount: 198000,
+    rating: 4.92,
+    difficulty: 'Medium',
+    duration: '2-4 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
     isTrending: true,
-    controls: ['Mouse / Touch: Click items to prepare & serve'],
-    tags: ['Tycoon', 'Food', 'India', 'Management']
-  },
-  {
-    id: 'emoji-dodge',
-    title: 'Emoji Dodge: Gen-Z Survival',
-    tagline: 'Dodge toxic cringe emojis and catch viral dank memes!',
-    description: 'Test your lighting reaction speed! Move your meme avatar to dodge cringe facepalms and toxic comments while collecting rare Pepe and Gigachad multipliers.',
-    category: '⚡ Reaction',
-    thumbnail: '🗿',
-    bannerImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
-    playCount: 87500,
-    rating: 4.7,
-    isNew: true,
-    controls: ['Left / Right Arrows or Mouse: Move Left/Right'],
-    tags: ['Reaction', 'Gen-Z', 'Fast', 'Survival']
+    isPopular: true,
+    controls: ['Mouse / Touch: Click items to prepare & serve fast'],
+    tags: ['Tycoon', 'Food', 'India', 'Management', 'Speed'],
+    rules: ['Match customer orders quickly', 'Don’t let chai boil over', 'Combo tips give bonus coins']
   },
   {
     id: 'meme-clicker',
     title: 'Dank Meme Clicker 🚀',
+    slug: 'dank-meme-clicker',
     tagline: 'Click to generate viral views, hire auto-clicker trolls, and conquer the internet!',
     description: 'Tap away to create viral content! Upgrade your click power from basic text posts to AI-generated brainrot memes and buy global viral server farms.',
-    category: '😂 Meme Games',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
     thumbnail: '📈',
     bannerImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-    playCount: 154000,
+    playCount: 215000,
     rating: 4.9,
+    difficulty: 'Easy',
+    duration: '30s - Endless',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
     isTrending: true,
     isFeatured: true,
-    controls: ['Click / Tap: Generate Viral Views & Buying Upgrades'],
-    tags: ['Clicker', 'Idle', 'Viral', 'Casual']
+    controls: ['Click / Tap: Generate Viral Views & Buy Upgrades'],
+    tags: ['Clicker', 'Idle', 'Viral', 'Casual'],
+    rules: ['Tap quickly for combo surges', 'Unlock automated troll armies to earn while idle']
   },
   {
     id: 'gully-cricket',
     title: 'Cricket Gully Smash 🏏',
+    slug: 'cricket-gully-smash',
     tagline: 'Hit massive sixes across narrow street alleys without breaking windows!',
     description: 'Classic Indian street cricket! Time your shots perfectly to smash balls over rooftops while avoiding aunty’s balcony glass!',
-    category: '🎯 Skill Games',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
     thumbnail: '🏏',
     bannerImage: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80',
-    playCount: 131200,
-    rating: 4.8,
-    isIndianMeme: true,
-    controls: ['Click / Space: Swing Bat at precise timing'],
-    tags: ['Cricket', 'Sports', 'Street', 'Indian']
+    playCount: 164000,
+    rating: 4.88,
+    difficulty: 'Medium',
+    duration: '1-3 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isPopular: true,
+    controls: ['Click / Space: Swing Bat at precise green timing window'],
+    tags: ['Cricket', 'Sports', 'Street', 'Indian'],
+    rules: ['Green bar = Sixer (+6)', 'Yellow = Four (+4)', 'Red = Out']
+  },
+  {
+    id: 'emoji-dodge',
+    title: 'Emoji Dodge: Gen-Z Survival',
+    slug: 'emoji-dodge',
+    tagline: 'Dodge toxic cringe emojis and catch viral dank memes!',
+    description: 'Test your lighting reaction speed! Move your meme avatar to dodge cringe facepalms and toxic comments while collecting rare Pepe and Gigachad multipliers.',
+    category: '🔥 Trending Meme',
+    categoryKey: 'meme',
+    thumbnail: '🗿',
+    bannerImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
+    playCount: 142000,
+    rating: 4.79,
+    difficulty: 'Hard',
+    duration: '30-90 sec',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
+    isNew: true,
+    controls: ['Left / Right Arrows or Mouse: Move Left/Right'],
+    tags: ['Reaction', 'Gen-Z', 'Fast', 'Survival'],
+    rules: ['Dodge red skull/cringe emojis', 'Catch 🗿 and 🐸 for x3 points']
+  },
+
+  // ================= 2. 🏫 SCHOOL VIBES (NOSTALGIA) =================
+  {
+    id: 'pen-flip',
+    title: 'Pen Flip Battle 🖊️',
+    slug: 'pen-flip',
+    tagline: 'Last bench classic! Flip your Reynolds pen and land on the tip for +1 point.',
+    description: 'Relive the high-stakes classroom pen flipping duels! Charge your flip power, launch your virtual ballpen, and land on the TIP for points. First to 10 points takes the classroom crown!',
+    category: '🏫 School Vibes',
+    categoryKey: 'school',
+    thumbnail: '🖊️',
+    bannerImage: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80',
+    playCount: 189000,
+    rating: 4.96,
+    difficulty: 'Medium',
+    duration: '1-2 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    isPopular: true,
+    controls: ['Click "FLIP PEN" or Press Spacebar', 'Release at optimal power angle'],
+    tags: ['School', 'Physics', '1v1 Duel', 'Nostalgia', 'Turn-Based'],
+    rules: [
+      'TIP SIDE landing = +1 POINT 🎯',
+      'BODY SIDE landing = 0 POINT (Flat)',
+      'OFF DESK / FAIL = 0 POINT',
+      'First player to reach 10 POINTS wins!'
+    ]
+  },
+  {
+    id: 'eraser-throw',
+    title: 'Eraser & Sharpener Throw ✏️',
+    slug: 'eraser-throw',
+    tagline: 'Aim your non-dust eraser at the blackboard target before the teacher turns around!',
+    description: 'Drag, aim and fling your eraser or sharpener across the classroom desk toward moving target chalkboards! Factor in ceiling fan wind drift and score bullseyes in 30 rapid seconds.',
+    category: '🏫 School Vibes',
+    categoryKey: 'school',
+    thumbnail: '✏️',
+    bannerImage: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
+    playCount: 156000,
+    rating: 4.91,
+    difficulty: 'Medium',
+    duration: '30-45 sec',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    controls: ['Mouse Drag / Touch: Aim trajectory and set power', 'Release to Throw object'],
+    tags: ['Aim', 'Throw', 'Classroom', 'Physics', 'Timer'],
+    rules: [
+      'Hit target blackboard = +1 POINT (Bullseye = +2)',
+      'Combo streaks multiply score',
+      'Watch out for ceiling fan wind variations!'
+    ]
+  },
+  {
+    id: 'spin-cricket',
+    title: 'Spin Cricket (Book Cricket) 🏏',
+    slug: 'spin-cricket',
+    tagline: 'Spin the pencil spinner wheel or flip notebook pages for 4s, 6s and Wickets!',
+    description: 'The iconic Indian school notebook book-cricket turned into a thrilling multiplayer spinner! Spin the roulette wheel and hit stop to reveal 1, 2, 3, 4, 6 or OUT. 2 overs, 1v1 highest runs wins!',
+    category: '🏫 School Vibes',
+    categoryKey: 'school',
+    thumbnail: '📖',
+    bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80',
+    playCount: 172000,
+    rating: 4.94,
+    difficulty: 'Easy',
+    duration: '1-3 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isPopular: true,
+    controls: ['Click "SPIN" to start rotating arrow', 'Click "STOP" to lock your shot'],
+    tags: ['Cricket', 'Spinner', 'Turn-Based', 'Nostalgia', 'Multiplayer'],
+    rules: [
+      'Arrow lands on 1, 2, 3 = Single/Double/Triple Runs',
+      'Lands on 4 = Boundary Four 🏏',
+      'Lands on 6 = Maximum Sixer 🚀',
+      'Lands on W = WICKET OUT! 🔴'
+    ]
+  },
+  {
+    id: 'paper-ball',
+    title: 'Paper Ball Dustbin Throw 🗑️',
+    slug: 'paper-ball-throw',
+    tagline: 'Crumple rough notebook paper and bank shots into the corner classroom dustbin!',
+    description: 'The art of classroom trick shots. Calculate bounce angles against classroom benches and sink paper balls into the dustbin with high combo multipliers.',
+    category: '🏫 School Vibes',
+    categoryKey: 'school',
+    thumbnail: '🗑️',
+    bannerImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+    playCount: 118000,
+    rating: 4.75,
+    difficulty: 'Easy',
+    duration: '1 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
+    isNew: true,
+    controls: ['Click and drag paper ball back to aim arc'],
+    tags: ['Basketball', 'Paper', 'Trickshot', 'School'],
+    rules: ['Sink balls into dustbin before timer runs out', 'Bank shots off desks give +2 bonus']
+  },
+
+  // ================= 3. 🧠 MIND GAMES (ESPORTS BRAIN ARENA) =================
+  {
+    id: 'word-builder',
+    title: 'Word Builder Scramble 🔠',
+    slug: 'word-builder',
+    tagline: 'Form valid words from scrambled letter tiles in a 30-second live duel!',
+    description: 'Rapid-fire vocabulary esports! Receive 5-7 scrambled letters (e.g. C-A-T-R-E) and craft as many valid English words as possible before the timer expires.',
+    category: '🧠 Mind Games',
+    categoryKey: 'mind',
+    thumbnail: '🔤',
+    bannerImage: 'https://images.unsplash.com/photo-1632516643720-e7f5d7d6ecc9?auto=format&fit=crop&w=800&q=80',
+    playCount: 149000,
+    rating: 4.89,
+    difficulty: 'Medium',
+    duration: '30-45 sec',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    controls: ['Click letter tiles or Type on keyboard', 'Press Enter / Submit button'],
+    tags: ['Words', 'Brain', 'Duel', 'Puzzle', 'Fast'],
+    rules: [
+      '3-letter word: +1 point',
+      '4-letter word: +2 points',
+      '5+ letter word: +4 points',
+      'Combo streaks multiply bonus score!'
+    ]
+  },
+  {
+    id: 'tic-tac-toe',
+    title: 'Neon & Notebook Tic-Tac-Toe ❌⭕',
+    slug: 'tic-tac-toe',
+    tagline: 'Best-of-3 strategic grid duels with neon animations and classroom doodle themes!',
+    description: 'The eternal grid duel reimagined with smooth particle effects and dynamic sound fx. Play local Pass & Play with a friend, challenge room codes, or take on the Smart AI bot in Best-of-3 sets!',
+    category: '🧠 Mind Games',
+    categoryKey: 'mind',
+    thumbnail: '❌',
+    bannerImage: 'https://images.unsplash.com/photo-1611996575749-79a3a250f948?auto=format&fit=crop&w=800&q=80',
+    playCount: 204000,
+    rating: 4.93,
+    difficulty: 'Easy',
+    duration: '1-2 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isPopular: true,
+    controls: ['Click on any empty 3x3 cell to place your symbol'],
+    tags: ['Strategy', '1v1', 'Classic', 'Multiplayer', 'Quick'],
+    rules: [
+      'Align 3 in a row horizontally, vertically, or diagonally',
+      'First to win 2 sets claims the champion badge'
+    ]
+  },
+  {
+    id: 'brain-pot',
+    title: 'Brain Pot: Rapid IQ Arena 🧠',
+    slug: 'brain-pot',
+    tagline: 'Rapid 5-10 second micro challenges: sequences, odd emojis, shell games & patterns!',
+    description: 'High-speed cognitive reflex testing! Solve lightning micro-puzzles: "Which shape comes next?", "Spot the odd meme emoji", "Which cup hides the coin?", and "Missing numbers". Fast answers yield massive speed multipliers!',
+    category: '🧠 Mind Games',
+    categoryKey: 'mind',
+    thumbnail: '🧠',
+    bannerImage: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80',
+    playCount: 168000,
+    rating: 4.95,
+    difficulty: 'Medium',
+    duration: '1-2 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    controls: ['Click the correct answer option before the countdown bar empties'],
+    tags: ['IQ', 'Micro-games', 'Speed', 'Puzzles', 'Brain'],
+    rules: [
+      'Each question gives 5-8 seconds',
+      'Correct answer = Base Points + Speed Bonus',
+      'Wrong answer breaks combo streak!'
+    ]
+  },
+  {
+    id: 'memory-match',
+    title: 'Cyber Memory Matrix 🃏',
+    slug: 'memory-match',
+    tagline: 'Flip neon tiles and pair up matching Indian meme icons in record time!',
+    description: 'Test your photographic recall by flipping holographic cards to reveal matching pairs of Gigachad, Pepe, Cutting Chai, and Reynolds Pens.',
+    category: '🧠 Mind Games',
+    categoryKey: 'mind',
+    thumbnail: '🃏',
+    bannerImage: 'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?auto=format&fit=crop&w=800&q=80',
+    playCount: 129000,
+    rating: 4.82,
+    difficulty: 'Medium',
+    duration: '1-2 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'ai'],
+    isNew: true,
+    controls: ['Click cards to flip and match pairs'],
+    tags: ['Memory', 'Cards', 'Focus', 'Puzzle'],
+    rules: ['Match all 8 pairs in lowest moves and time']
   }
 ];
 
@@ -134,7 +490,12 @@ interface AppState {
   isMuted: boolean;
   activeAuthModal: boolean;
   activeSpinModal: boolean;
+  activeMultiplayerModal: boolean;
+  selectedMultiplayerGame: GameItem | null;
   recentlyPlayedIds: string[];
+  challenges: DailyChallenge[];
+  activeRoom: MultiplayerRoom | null;
+  recentMatches: RecentMatch[];
   
   // Actions
   setMuted: (muted: boolean) => void;
@@ -143,11 +504,19 @@ interface AppState {
   closeAuthModal: () => void;
   openSpinModal: () => void;
   closeSpinModal: () => void;
+  openMultiplayerModal: (game?: GameItem) => void;
+  closeMultiplayerModal: () => void;
   setUser: (user: Partial<UserProfile>) => void;
   addCoins: (amount: number) => void;
   addXP: (amount: number) => void;
   updateHighScore: (gameId: string, score: number) => void;
+  recordGameWin: (gameId: string) => void;
   addRecentlyPlayed: (gameId: string) => void;
+  claimChallenge: (challengeId: string) => void;
+  updateChallengeProgress: (category: 'meme' | 'school' | 'mind' | 'general', amount: number) => void;
+  createRoom: (gameId: string, mode?: 'local' | 'online' | 'ai') => MultiplayerRoom;
+  joinRoom: (code: string) => boolean;
+  leaveRoom: () => void;
   spinDailyReward: () => { coins: number; xp: number; rewardName: string };
 }
 
@@ -158,7 +527,12 @@ export const useAppStore = create<AppState>()(
       isMuted: false,
       activeAuthModal: false,
       activeSpinModal: false,
-      recentlyPlayedIds: ['modi-run', 'chai-tapri'],
+      activeMultiplayerModal: false,
+      selectedMultiplayerGame: null,
+      recentlyPlayedIds: ['pen-flip', 'modi-run', 'eraser-throw', 'word-builder'],
+      challenges: INITIAL_CHALLENGES,
+      activeRoom: null,
+      recentMatches: INITIAL_RECENT_MATCHES,
 
       setMuted: (muted) => {
         soundFx.isMuted = muted;
@@ -173,6 +547,8 @@ export const useAppStore = create<AppState>()(
       closeAuthModal: () => set({ activeAuthModal: false }),
       openSpinModal: () => set({ activeSpinModal: true }),
       closeSpinModal: () => set({ activeSpinModal: false }),
+      openMultiplayerModal: (game) => set({ activeMultiplayerModal: true, selectedMultiplayerGame: game || GAMES_CATALOG[6] }),
+      closeMultiplayerModal: () => set({ activeMultiplayerModal: false, selectedMultiplayerGame: null }),
 
       setUser: (userUpdate) =>
         set((state) => ({
@@ -218,19 +594,118 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      recordGameWin: (gameId) => {
+        const state = get();
+        const gamesPlayed = state.user.stats.gamesPlayed + 1;
+        const totalWins = state.user.stats.totalWins + 1;
+        const winRate = Math.round((totalWins / gamesPlayed) * 100);
+
+        set({
+          user: {
+            ...state.user,
+            stats: {
+              ...state.user.stats,
+              gamesPlayed,
+              totalWins,
+              winRate
+            }
+          }
+        });
+
+        // Trigger challenge progress
+        get().updateChallengeProgress('general', 1);
+        const game = GAMES_CATALOG.find((g) => g.id === gameId);
+        if (game?.categoryKey) {
+          get().updateChallengeProgress(game.categoryKey, 1);
+        }
+      },
+
       addRecentlyPlayed: (gameId) => {
         set((state) => ({
-          recentlyPlayedIds: [gameId, ...state.recentlyPlayedIds.filter((id) => id !== gameId)].slice(0, 5)
+          recentlyPlayedIds: [gameId, ...state.recentlyPlayedIds.filter((id) => id !== gameId)].slice(0, 6)
         }));
       },
 
+      claimChallenge: (challengeId) => {
+        const target = get().challenges.find((c) => c.id === challengeId);
+        if (target && !target.claimed && target.progress >= target.target) {
+          get().addCoins(target.rewardCoins);
+          get().addXP(target.rewardXP);
+          soundFx.playLevelUp();
+
+          set((state) => ({
+            challenges: state.challenges.map((c) =>
+              c.id === challengeId ? { ...c, claimed: true } : c
+            )
+          }));
+        }
+      },
+
+      updateChallengeProgress: (category, amount) => {
+        set((state) => ({
+          challenges: state.challenges.map((c) => {
+            if (c.claimed) return c;
+            if (c.category === category || (c.category === 'general' && category === 'general')) {
+              const nextProgress = Math.min(c.target, c.progress + amount);
+              return { ...c, progress: nextProgress };
+            }
+            return c;
+          })
+        }));
+      },
+
+      createRoom: (gameId, mode = 'local') => {
+        const game = GAMES_CATALOG.find((g) => g.id === gameId) || GAMES_CATALOG[6];
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '#';
+        for (let i = 0; i < 5; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        const room: MultiplayerRoom = {
+          code,
+          gameId: game.id,
+          gameTitle: game.title,
+          hostName: get().user.username,
+          hostAvatar: get().user.avatar,
+          guestName: mode === 'ai' ? '🤖 Bot_Chad' : mode === 'local' ? '🎮 Player 2 (Local)' : 'Waiting for Player...',
+          guestAvatar: mode === 'ai' ? '🤖' : mode === 'local' ? '🕹️' : '⚪',
+          mode,
+          status: mode === 'online' ? 'waiting' : 'ready',
+          createdAt: new Date().toISOString()
+        };
+
+        set({ activeRoom: room });
+        return room;
+      },
+
+      joinRoom: (code) => {
+        const normalized = code.toUpperCase().trim();
+        const room: MultiplayerRoom = {
+          code: normalized.startsWith('#') ? normalized : `#${normalized}`,
+          gameId: 'pen-flip',
+          gameTitle: 'Pen Flip Battle 🖊️',
+          hostName: 'Alpha_Player1',
+          hostAvatar: '👑',
+          guestName: get().user.username,
+          guestAvatar: get().user.avatar,
+          mode: 'online',
+          status: 'ready',
+          createdAt: new Date().toISOString()
+        };
+        set({ activeRoom: room });
+        return true;
+      },
+
+      leaveRoom: () => set({ activeRoom: null }),
+
       spinDailyReward: () => {
         const rewards = [
-          { coins: 100, xp: 50, rewardName: '100 Meme Coins' },
-          { coins: 250, xp: 100, rewardName: '250 Meme Coins + 100 XP' },
-          { coins: 500, xp: 200, rewardName: '500 Jackpot Coins' },
-          { coins: 50, xp: 150, rewardName: '150 XP Boost' },
-          { coins: 1000, xp: 500, rewardName: '👑 Gigachad Crown Pack' }
+          { coins: 150, xp: 75, rewardName: '150 Meme Coins + 75 XP' },
+          { coins: 350, xp: 150, rewardName: '350 Meme Coins + 150 XP' },
+          { coins: 750, xp: 300, rewardName: '750 Jackpot Coins 🪙' },
+          { coins: 100, xp: 250, rewardName: '250 XP Boost 🚀' },
+          { coins: 1500, xp: 700, rewardName: '👑 Gigachad Classroom Legend Pack' }
         ];
         const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
         get().addCoins(randomReward.coins);
@@ -239,7 +714,7 @@ export const useAppStore = create<AppState>()(
       }
     }),
     {
-      name: 'memeverse-storage-v1'
+      name: 'memeverse-v2-storage'
     }
   )
 );

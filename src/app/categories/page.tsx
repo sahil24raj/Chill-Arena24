@@ -2,68 +2,74 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { GAMES_CATALOG } from '@/store/useAppStore';
+import { GAMES_CATALOG, useAppStore } from '@/store/useAppStore';
+import { GameCard } from '@/components/GameCard';
+import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
 import { soundFx } from '@/lib/audio';
-import { Flame, Star, Play, Search, Filter } from 'lucide-react';
+import { Flame, Star, Play, Search, Filter, Backpack, Brain, Swords } from 'lucide-react';
 
 export default function CategoriesPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const { openMultiplayerModal } = useAppStore();
+  const [selectedCat, setSelectedCat] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
-  const categories = [
-    'ALL',
-    '🇮🇳 Indian Meme Games',
-    '😂 Meme Games',
-    '🏃 Endless Runner',
-    '⚡ Reaction',
-    '🧠 Puzzle',
-    '🎯 Skill Games'
+  const categoryPills = [
+    { id: 'ALL', label: 'ALL COLLECTIONS' },
+    { id: 'meme', label: '🔥 TRENDING MEME' },
+    { id: 'school', label: '🏫 SCHOOL VIBES' },
+    { id: 'mind', label: '🧠 MIND GAMES' }
   ];
 
   const filtered = GAMES_CATALOG.filter((game) => {
-    const matchesCat = selectedCategory === 'ALL' || game.category === selectedCategory;
-    const matchesSearch = game.title.toLowerCase().includes(search.toLowerCase()) || game.description.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = selectedCat === 'ALL' || game.categoryKey === selectedCat;
+    const matchesSearch =
+      game.title.toLowerCase().includes(search.toLowerCase()) ||
+      game.description.toLowerCase().includes(search.toLowerCase());
     return matchesCat && matchesSearch;
   });
 
   return (
-    <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-8 pb-16">
+      <MultiplayerLobbyModal />
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 lg:p-8 rounded-3xl glass-panel border border-[#00F0FF]/25 bg-gradient-to-r from-[#0d121c] to-[#070a0e] shadow-xl">
         <div>
-          <h1 className="text-3xl font-black text-white flex items-center gap-2">
-            <Flame className="w-8 h-8 text-pink-500" /> Meme Game Directory
+          <h1 className="text-3xl font-black text-white flex items-center gap-2 font-display">
+            <Flame className="w-8 h-8 text-pink-500" /> GAME CATEGORIES & COLLECTIONS
           </h1>
-          <p className="text-xs text-gray-400">Browse all 9+ game categories inspired by viral memes & trends</p>
+          <p className="text-xs text-gray-400 font-sans mt-1">
+            Browse our curated hubs: Trending Memes, Nostalgic School Vibes, and Cognitive Mind Games.
+          </p>
         </div>
 
         <div className="relative w-full md:w-64">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-purple-400 pointer-events-none" />
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search catalog..."
+            placeholder="Search collections..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-purple-800/50 rounded-full pl-9 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+            className="w-full bg-slate-950 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00F0FF]"
           />
         </div>
       </div>
 
       {/* Category Pills */}
       <div className="flex flex-wrap gap-2.5">
-        {categories.map((cat) => (
+        {categoryPills.map((pill) => (
           <button
-            key={cat}
+            key={pill.id}
             onClick={() => {
               soundFx.playClick();
-              setSelectedCategory(cat);
+              setSelectedCat(pill.id);
             }}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-              selectedCategory === cat
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-pink-500/30'
-                : 'bg-slate-900/80 border border-purple-900/40 text-gray-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold font-display transition-all ${
+              selectedCat === pill.id
+                ? 'bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] text-slate-950 shadow-md shadow-[#00F0FF]/20'
+                : 'bg-slate-900 border border-gray-800 text-gray-400 hover:text-white'
             }`}
           >
-            {cat}
+            {pill.label}
           </button>
         ))}
       </div>
@@ -71,45 +77,12 @@ export default function CategoriesPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((game) => (
-          <Link
+          <GameCard
             key={game.id}
-            href={`/game/${game.id}`}
-            onClick={() => soundFx.playClick()}
-            className="glass-card rounded-2xl overflow-hidden group cursor-pointer border-purple-900/30"
-          >
-            <div className="relative aspect-video bg-slate-950 overflow-hidden">
-              <img
-                src={game.bannerImage}
-                alt={game.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
-              />
-              <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-black text-cyan-300 border border-cyan-500/30">
-                {game.category}
-              </div>
-              <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center text-white shadow-xl shadow-pink-500/50">
-                  <Play className="w-6 h-6 fill-white ml-0.5" />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-2xl">{game.thumbnail}</span>
-                <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition-colors">
-                  {game.title}
-                </h3>
-              </div>
-              <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4">
-                {game.tagline}
-              </p>
-
-              <div className="flex items-center justify-between text-[11px] pt-3 border-t border-purple-900/30 text-gray-500 font-bold">
-                <span>{(game.playCount / 1000).toFixed(1)}k Plays</span>
-                <span className="text-purple-400">Play Instant →</span>
-              </div>
-            </div>
-          </Link>
+            game={game}
+            theme={game.categoryKey}
+            onQuickPlay={() => openMultiplayerModal(game)}
+          />
         ))}
       </div>
     </div>
