@@ -65,7 +65,7 @@ export const HeroTrendingCarousel: React.FC = () => {
         <img
           src={currentGame.bannerImage}
           alt={currentGame.title}
-          className="w-full h-full object-cover object-center scale-105 filter blur-[2px] opacity-35 transition-all duration-700 ease-out group-hover:scale-100 group-hover:opacity-45"
+          className="w-full h-full object-cover object-center filter blur-[3px] opacity-35 transition-all duration-700 ease-out group-hover:opacity-45"
         />
         {/* Gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E1A] via-[#0A0E1A]/85 to-transparent" />
@@ -150,7 +150,7 @@ export const HeroTrendingCarousel: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Featured 3D Game Poster Artwork */}
+          {/* Right Featured 3D Game Poster Artwork - 100% Uncropped & Clean */}
           <div className="lg:col-span-4 hidden lg:flex justify-end">
             <Link
               href={`/game/${currentGame.id}`}
@@ -178,22 +178,25 @@ export const HeroTrendingCarousel: React.FC = () => {
 
         {/* Bottom Carousel Controls & Game Selector Thumbnails */}
         <div className="pt-4 border-t border-[#1E2945]/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* 5-Game Thumbnail Navigation Tabs - Generous Padding, No Clipping */}
-          <div className="flex items-center gap-2.5 overflow-x-auto max-w-full pb-1 scrollbar-none">
+          {/* 5-Game Thumbnail Navigation Tabs - Zero Clipping with Generous Vertical Padding */}
+          <div className="flex items-center gap-2.5 overflow-x-auto max-w-full py-2 px-1 scrollbar-none">
             {featuredGames.map((game, idx) => {
               const isSelected = idx === currentIndex;
               return (
                 <button
                   key={game.id}
                   onClick={() => handleSelectGame(idx)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-bold transition-all shrink-0 whitespace-nowrap border leading-normal ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-display font-bold transition-all duration-200 shrink-0 whitespace-nowrap border leading-none ${
                     isSelected
-                      ? 'bg-gradient-to-r from-[#00F0FF]/20 to-[#7928CA]/20 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/20 scale-105'
-                      : 'bg-[#101524] border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+                      ? 'bg-gradient-to-r from-[#121A30] to-[#1A2544] border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/20 ring-1 ring-[#00F0FF]/40'
+                      : 'bg-[#0E1322] border-[#1C2640] text-gray-400 hover:text-white hover:border-gray-600 hover:bg-[#131A2E]'
                   }`}
                 >
-                  <span className="text-sm">{game.thumbnail}</span>
+                  <span className="text-sm shrink-0">{game.thumbnail}</span>
                   <span>{game.title.split(':')[0]}</span>
+                  {isSelected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] animate-pulse ml-0.5" />
+                  )}
                 </button>
               );
             })}
