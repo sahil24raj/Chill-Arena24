@@ -6,28 +6,23 @@ import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
 import {
-  Trophy,
   Search,
   Gift,
-  Bell,
   Volume2,
   VolumeX,
-  ShoppingBag,
-  Sparkles,
   Menu,
-  MessageSquare,
   Crown,
-  Swords
+  Swords,
+  Flame,
+  Zap
 } from 'lucide-react';
 
 interface TopHeaderBarProps {
   onToggleLeftSidebar?: () => void;
-  onToggleRightSidebar?: () => void;
 }
 
 export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
-  onToggleLeftSidebar,
-  onToggleRightSidebar
+  onToggleLeftSidebar
 }) => {
   const router = useRouter();
   const { user, isMuted, toggleMute, openSpinModal, openMultiplayerModal } = useAppStore();
@@ -44,80 +39,70 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
   const xpPercent = Math.min(100, Math.round((xpInLevel / 500) * 100));
 
   return (
-    <header className="w-full bg-[#0a0c14]/90 backdrop-blur-xl border-b border-[#1e2235] px-4 lg:px-8 py-3 sticky top-0 z-30 flex items-center justify-between gap-4">
-      {/* Mobile Toggle Button for Left Sidebar */}
-      {onToggleLeftSidebar && (
-        <button
-          onClick={onToggleLeftSidebar}
-          className="md:hidden p-2 rounded-xl bg-[#121522] border border-gray-800 text-gray-400 hover:text-white"
-          title="Toggle Navigation Menu"
-        >
-          <Menu className="w-4 h-4" />
-        </button>
-      )}
+    <header className="w-full bg-[#080B14]/95 backdrop-blur-xl border-b border-[#1A2238] px-3 sm:px-6 lg:px-8 py-3 sticky top-0 z-30 flex items-center justify-between gap-3 lg:gap-6">
+      {/* Left: Mobile Sidebar Toggle + Live Desk King Tag */}
+      <div className="flex items-center gap-3 shrink-0">
+        {onToggleLeftSidebar && (
+          <button
+            onClick={onToggleLeftSidebar}
+            className="md:hidden p-2 rounded-xl bg-[#121829] border border-gray-800 text-gray-400 hover:text-white"
+            title="Toggle Navigation Menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+        )}
 
-      {/* Left Prize / King Banner (Jackpotter Style) */}
-      <div className="hidden lg:flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 text-xs font-mono">
-          <Crown className="w-4 h-4 text-amber-400" />
-          <span className="text-gray-300 font-bold">King of the Desk:</span>
-          <span className="text-amber-400 font-black">50,000+ COINS PRIZE</span>
+        {/* Fixed Non-Clipping King of Desk Badge */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border border-amber-500/30 text-xs font-mono shrink-0">
+          <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="text-gray-300 font-medium">Desk King:</span>
+          <span className="text-amber-400 font-black tracking-wide">50,000 🪙</span>
         </div>
 
-
+        {/* 1v1 Duel Quick Action */}
         <button
           onClick={() => {
             soundFx.playClick();
             openMultiplayerModal();
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/30 text-[#00F0FF] text-xs font-mono font-bold transition-all"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 border border-[#00F0FF]/30 text-[#00F0FF] text-xs font-mono font-bold transition-all hover:scale-105 shrink-0"
         >
-          <Swords className="w-3.5 h-3.5" />
-          <span>INSTANT 1v1 DUEL</span>
+          <Swords className="w-3.5 h-3.5 text-[#00F0FF]" />
+          <span>1v1 DUEL</span>
         </button>
       </div>
 
-      {/* Center Search Input Bar */}
-      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative">
+      {/* Center: Search Bar */}
+      <form onSubmit={handleSearchSubmit} className="flex-1 max-w-lg relative min-w-0">
         <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-gray-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Search games, categories, roasts (e.g. Pen Flip, Cricket)..."
+          placeholder="Search games, school roasts, cricket (e.g. Pen Flip, Modi)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-[#121522] border border-[#1e2235] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00F0FF] font-sans"
+          className="w-full bg-[#101524] border border-[#1E2842] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00F0FF] focus:ring-1 focus:ring-[#00F0FF]/30 transition-all font-sans"
         />
       </form>
 
-      {/* Right User Controls & Currency Pills (Jackpotter Style) */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      {/* Right User Controls & Currency Pills */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Coins Pill */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#121522] border border-amber-500/30 text-xs font-mono font-bold text-amber-400 shadow-sm">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#101524] border border-amber-500/30 text-xs font-mono font-bold text-amber-400 shadow-sm shrink-0">
           <span>🪙</span>
           <span>{user.coins.toLocaleString()}</span>
         </div>
 
-        {/* Claim / Spin Free Rewards Button */}
+        {/* Daily Spin / Loot Box Button */}
         <button
           onClick={() => {
             soundFx.playClick();
             openSpinModal();
           }}
-          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 hover:brightness-110 text-slate-950 font-display text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:scale-105 transition-all"
+          className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 hover:brightness-110 text-slate-950 font-display text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:scale-105 transition-all shrink-0"
         >
           <Gift className="w-3.5 h-3.5" />
-          <span>FREE SPIN</span>
+          <span className="hidden sm:inline">DAILY SPIN</span>
         </button>
-
-        {/* Store Button */}
-        <Link
-          href="/shop"
-          onClick={() => soundFx.playClick()}
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161926] border border-gray-800 hover:border-[#00F0FF] text-xs font-bold text-gray-300 hover:text-white transition-colors font-display"
-        >
-          <ShoppingBag className="w-3.5 h-3.5 text-pink-400" />
-          <span>SHOP</span>
-        </Link>
 
         {/* Sound Toggle */}
         <button
@@ -125,28 +110,28 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
             toggleMute();
             if (isMuted) soundFx.playClick();
           }}
-          className="p-2 rounded-xl bg-[#121522] border border-gray-800 text-gray-400 hover:text-[#00F0FF] hover:border-[#00F0FF]/40 transition-colors"
+          className="p-2 rounded-xl bg-[#101524] border border-gray-800 text-gray-400 hover:text-[#00F0FF] hover:border-[#00F0FF]/40 transition-colors shrink-0"
           title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
         >
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
-        {/* User Profile Pill (Jackpotter Style) */}
+        {/* User Profile Pill */}
         <Link
           href="/profile"
           onClick={() => soundFx.playClick()}
-          className="flex items-center gap-2.5 p-1 pr-3 rounded-xl bg-[#121522] border border-[#1e2235] hover:border-[#00F0FF]/40 transition-all cursor-pointer group"
+          className="flex items-center gap-2.5 p-1 pr-2.5 sm:pr-3 rounded-xl bg-[#101524] border border-[#1E2842] hover:border-[#00F0FF]/50 transition-all cursor-pointer group shrink-0"
         >
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#00F0FF] via-purple-500 to-[#ADFF2F] text-slate-950 flex items-center justify-center text-sm font-bold shadow">
             {user.avatar}
           </div>
-          <div className="hidden sm:flex flex-col text-left">
-            <span className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display leading-tight">
+          <div className="hidden md:flex flex-col text-left">
+            <span className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display leading-tight truncate max-w-[100px]">
               {user.username}
             </span>
             <div className="flex items-center gap-1.5 text-[9px] font-mono text-gray-400">
               <span className="text-[#00F0FF] font-bold">LVL {user.level}</span>
-              <div className="w-10 h-1 bg-slate-900 rounded-full overflow-hidden">
+              <div className="w-8 h-1 bg-slate-900 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F]"
                   style={{ width: `${xpPercent}%` }}

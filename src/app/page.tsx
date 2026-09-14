@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { GAMES_CATALOG, useAppStore, Game } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { DualPromoBanners } from '@/components/DualPromoBanners';
+import { HeroTrendingCarousel } from '@/components/HeroTrendingCarousel';
 import { JackpotterGameRow } from '@/components/JackpotterGameRow';
 import { SquadPartyLounge } from '@/components/SquadPartyLounge';
 import { DailyChallengesSection } from '@/components/DailyChallengesSection';
@@ -16,30 +16,28 @@ import {
   GraduationCap,
   Brain,
   Users,
-  Zap,
   Coffee,
   Trophy,
   Swords,
   Crown,
-  Medal,
-  ArrowRight
+  ArrowRight,
+  Zap,
+  Gamepad2
 } from 'lucide-react';
 
 const CATEGORY_TABS = [
-  { id: 'all', label: 'Explore All', icon: Sparkles, color: 'from-[#00F0FF] to-[#00A3FF]' },
-  { id: 'popular', label: 'Popular Games', icon: Flame, color: 'from-[#FF0055] to-[#FF5500]' },
-  { id: 'school', label: 'School Vibes', icon: GraduationCap, color: 'from-[#FFB800] to-[#FF8800]' },
-  { id: 'mind', label: 'Mind Games', icon: Brain, color: 'from-[#9945FF] to-[#14F195]' },
-  { id: 'multiplayer', label: '1v1 Duels', icon: Users, color: 'from-[#00F0FF] to-[#7928CA]' },
-  { id: 'rapid', label: 'Rapid Arena', icon: Zap, color: 'from-[#ADFF2F] to-[#00F0FF]' },
-  { id: 'meme', label: 'Desi Memes', icon: Coffee, color: 'from-[#FF6B6B] to-[#FFE66D]' }
+  { id: 'all', label: 'All Games', icon: Sparkles, color: 'from-[#00F0FF] to-[#00A3FF]' },
+  { id: 'school', label: 'School Nostalgia', icon: GraduationCap, color: 'from-[#FFB800] to-[#FF8800]' },
+  { id: 'mind', label: 'Mind Battles', icon: Brain, color: 'from-[#9945FF] to-[#14F195]' },
+  { id: 'meme', label: 'Desi Meme Vibes', icon: Coffee, color: 'from-[#FF6B6B] to-[#FFE66D]' },
+  { id: 'multiplayer', label: '1v1 Duels', icon: Users, color: 'from-[#00F0FF] to-[#7928CA]' }
 ];
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('all');
   const { openMultiplayerModal } = useAppStore();
 
-  const chillOriginals: Game[] = [
+  const trendingGames: Game[] = [
     GAMES_CATALOG.find((g) => g.id === 'pen-flip')!,
     GAMES_CATALOG.find((g) => g.id === 'modi-run')!,
     GAMES_CATALOG.find((g) => g.id === 'spin-cricket')!,
@@ -51,6 +49,7 @@ export default function HomePage() {
   const schoolVibes: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'school');
   const mindGames: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'mind');
   const memeGames: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'meme');
+  const multiplayerGames: Game[] = GAMES_CATALOG.filter((g) => g.multiplayer);
 
   const topPlayers = [
     { rank: 1, name: 'Gigachad_69', score: '24,850 pts', avatar: '🗿', badge: 'Meme Emperor', winRate: '88%' },
@@ -60,17 +59,19 @@ export default function HomePage() {
 
   const filteredGames = React.useMemo(() => {
     if (activeTab === 'all') return null;
-    if (activeTab === 'popular') return GAMES_CATALOG.slice(0, 8);
-    if (activeTab === 'multiplayer') return GAMES_CATALOG.filter((g) => g.multiplayer);
+    if (activeTab === 'multiplayer') return multiplayerGames;
     return GAMES_CATALOG.filter((g) => g.categoryKey === activeTab);
-  }, [activeTab]);
+  }, [activeTab, multiplayerGames]);
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="space-y-12 pb-16">
       <MultiplayerLobbyModal />
 
-      {/* 1. Category Filter Navigation Bar */}
-      <section className="overflow-x-auto pb-2 scrollbar-none">
+      {/* 1. HERO TRENDING 5-GAME SLIDER */}
+      <HeroTrendingCarousel />
+
+      {/* 2. CATEGORY FILTER NAVIGATION PILLS */}
+      <section className="overflow-x-auto pb-1 scrollbar-none">
         <div className="flex items-center gap-2.5 min-w-max">
           {CATEGORY_TABS.map((tab) => {
             const Icon = tab.icon;
@@ -84,8 +85,8 @@ export default function HomePage() {
                 }}
                 className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-display text-xs font-bold transition-all duration-200 border ${
                   isActive
-                    ? 'bg-gradient-to-r from-slate-900 to-[#121927] border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/15 scale-[1.02]'
-                    : 'bg-[#0D121F]/80 border-gray-800/80 text-gray-400 hover:text-white hover:border-gray-700 hover:bg-[#131B2E]'
+                    ? 'bg-gradient-to-r from-[#0F1629] to-[#151D33] border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/15 scale-[1.02]'
+                    : 'bg-[#0D1220]/80 border-gray-800/80 text-gray-400 hover:text-white hover:border-gray-700 hover:bg-[#12192C]'
                 }`}
               >
                 <div
@@ -107,10 +108,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Dual Glowing Promo Banners */}
-      <DualPromoBanners />
-
-      {/* Tab Filtered View IF Tab is not 'all' */}
+      {/* Tab Filtered View IF Tab is selected */}
       {filteredGames ? (
         <section className="space-y-6">
           <div className="flex items-center justify-between">
@@ -130,77 +128,74 @@ export default function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredGames.map((game) => (
               <div key={game.id} className="w-full">
-                {/* Render game card */}
-                <div className="h-full">
-                  <JackpotterGameRow.Card game={game} />
-                </div>
+                <JackpotterGameRow.Card game={game} />
               </div>
             ))}
           </div>
         </section>
       ) : (
-        <>
-          {/* 3. Chill Originals Row */}
+        <div className="space-y-12">
+          {/* 3. 🔥 TRENDING NOW ROW */}
           <JackpotterGameRow
-            title="Chill Originals"
-            subtitle="Exclusive fast-paced community mini games with high adrenaline"
-            games={chillOriginals}
-            badge="⭐ ORIGINALS"
-            badgeColor="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/40 text-amber-300"
+            title="🔥 Trending & Top Played"
+            subtitle="Most active games right now with live player duels & high score battles"
+            games={trendingGames}
+            badge="HOT ARCADE"
+            badgeColor="bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/40 text-red-300"
             viewAllLink="/categories"
           />
 
-          {/* 4. School Vibes & Nostalgia Row */}
+          {/* 4. 🏫 SCHOOL & COLLEGE NOSTALGIA */}
           <JackpotterGameRow
-            title="School Vibes & Desk Nostalgia"
-            subtitle="Relive 90s & 2000s classroom bench duels, pen fights & eraser throws"
+            title="🏫 School Vibes & Classroom Duels"
+            subtitle="Pen flip tricks, eraser battles, desk spin cricket & hostel corridors"
             games={schoolVibes}
-            badge="🏫 NOSTALGIA"
-            badgeColor="bg-gradient-to-r from-[#00F0FF]/20 to-blue-500/20 border-[#00F0FF]/40 text-[#00F0FF]"
+            badge="NOSTALGIA"
+            badgeColor="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/40 text-amber-300"
             viewAllLink="/categories?cat=school"
           />
 
-          {/* 5. Mind Games & Cognitive Arena Row */}
+          {/* 5. 🧠 MIND BATTLES & COGNITIVE ARENA */}
           <JackpotterGameRow
-            title="Mind Games Arena"
-            subtitle="Cognitive IQ puzzles, rapid word builders & lightning math duels"
+            title="🧠 Mind Battles & IQ Duels"
+            subtitle="Rapid puzzle duels, lightning word builders & reflex cognitive speed"
             games={mindGames}
-            badge="🧠 IQ DUELS"
+            badge="IQ WARS"
             badgeColor="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/40 text-purple-300"
             viewAllLink="/categories?cat=mind"
           />
 
-          {/* 6. Trending Meme Games Row */}
+          {/* 6. ☕ INDIAN MEME & TAPRI VIBES */}
           <JackpotterGameRow
-            title="Trending Desi Meme Games"
-            subtitle="Escape ACP Pradyuman, run from Modi, and build your chai tapri empire"
+            title="☕ Desi Memes & Tapri Vibes"
+            subtitle="Escape ACP Pradyuman, run from Modi, and brew 50 cutting chais for office techies"
             games={memeGames}
-            badge="🔥 VIRAL MEMES"
-            badgeColor="bg-gradient-to-r from-rose-500/20 to-red-500/20 border-rose-500/40 text-rose-300"
+            badge="VIRAL"
+            badgeColor="bg-gradient-to-r from-pink-500/20 to-rose-500/20 border-pink-500/40 text-pink-300"
             viewAllLink="/categories?cat=meme"
           />
-        </>
+        </div>
       )}
 
-      {/* 7. Squad Party & Roast Lounge */}
+      {/* 7. SQUAD CHILL & BACKCHODI LOUNGE */}
       <SquadPartyLounge />
 
-      {/* 8. 1v1 Challenge Banner */}
+      {/* 8. 1V1 QUICK DUEL CHALLENGE BANNER */}
       <section className="p-6 sm:p-8 rounded-3xl border border-[#00F0FF]/30 bg-gradient-to-r from-[#0C1527] via-[#0E1B33] to-[#080D18] relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-[#00F0FF]/10 to-transparent pointer-events-none" />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
           <div className="lg:col-span-8 space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-xs font-mono text-[#00F0FF]">
               <Swords className="w-3.5 h-3.5" />
-              <span>1V1 MULTIPLAYER INSTANT DUELS</span>
+              <span>1V1 MULTIPLAYER QUICK DUELS</span>
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black text-white font-display">
-              CHALLENGE A FRIEND IN 3 SECONDS
+              GOT 60 SECONDS? CHALLENGE A FRIEND TO A DUEL.
             </h3>
 
             <p className="text-xs sm:text-sm text-gray-300 font-sans max-w-xl leading-relaxed">
-              Create a private duel room code (like #A82KD), share the invite on Discord, WhatsApp or Telegram, and battle in Pen Flip, Spin Cricket or Word Scramble without any downloads.
+              Create an instant room code (like #A82KD), share the link in WhatsApp or Discord, and settle hostel bets in Pen Flip, Spin Cricket or Word Scramble with 0 downloads!
             </p>
           </div>
 
@@ -220,14 +215,14 @@ export default function HomePage() {
               onClick={() => soundFx.playClick()}
               className="py-3 px-6 rounded-xl bg-slate-900/90 border border-gray-800 hover:border-[#00F0FF] text-xs font-bold font-display text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-colors"
             >
-              <span>OPEN MULTIPLAYER LOBBY &rarr;</span>
+              <span>MULTIPLAYER LOBBY HUB &rarr;</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 9. Leaderboard Podium Summary */}
-      <section className="p-6 sm:p-8 rounded-3xl bg-[#0D121F]/90 border border-gray-800/80 shadow-2xl space-y-6">
+      {/* 9. LEADERBOARD PODIUM SUMMARY */}
+      <section className="p-6 sm:p-8 rounded-3xl bg-[#0D1220]/90 border border-gray-800/80 shadow-2xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800/80 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -304,10 +299,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 10. Daily Challenges Section */}
+      {/* 10. DAILY CHALLENGES SECTION */}
       <DailyChallengesSection />
 
-      {/* 11. Recent Community Matches */}
+      {/* 11. RECENT COMMUNITY MATCHES */}
       <RecentMatchesCommunity />
     </div>
   );

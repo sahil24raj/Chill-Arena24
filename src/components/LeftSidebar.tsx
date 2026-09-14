@@ -13,18 +13,14 @@ import {
   Brain,
   Swords,
   Trophy,
-  Target,
   User,
-  ShoppingBag,
   Sparkles,
   Gift,
-  Star,
   ChevronRight,
   ChevronDown,
-  Shield,
-  HelpCircle,
-  Clock,
-  Layers
+  Layers,
+  Zap,
+  Coffee
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -41,13 +37,11 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
   onToggleCollapse
 }) => {
   const isActualCollapsed = isCollapsed !== undefined ? isCollapsed : collapsed;
-  const handleToggle = onToggleCollapse || onToggle || (() => {});
   const pathname = usePathname();
-  const { openSpinModal } = useAppStore();
+  const { openSpinModal, user } = useAppStore();
   const [originalsOpen, setOriginalsOpen] = useState(true);
 
-
-  // Loot Box Countdown Timer
+  // Daily Streak Timer
   const [timeLeft, setTimeLeft] = useState({ hours: 18, minutes: 42, seconds: 15 });
 
   useEffect(() => {
@@ -64,22 +58,21 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
 
   const mainNav = [
     { href: '/', label: 'Home Page', icon: Home },
-    { href: '/multiplayer', label: 'Multiplayer 1v1', icon: Swords },
+    { href: '/multiplayer', label: '1v1 Multiplayer', icon: Swords },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/categories', label: 'All Collections', icon: Layers },
-    { href: '/profile', label: 'Gamer Profile', icon: User },
-    { href: '/shop', label: 'Meme Store', icon: ShoppingBag }
+    { href: '/profile', label: 'Gamer Profile', icon: User }
   ];
 
   const gameCategories = [
-    { href: '/categories?cat=meme', label: 'Trending Memes', icon: Flame, color: 'text-pink-400' },
-    { href: '/categories?cat=school', label: 'School Vibes', icon: Backpack, color: 'text-amber-400' },
-    { href: '/categories?cat=mind', label: 'Mind Games', icon: Brain, color: 'text-purple-400' }
+    { href: '/categories?cat=school', label: 'School Nostalgia', icon: Backpack, color: 'text-amber-400' },
+    { href: '/categories?cat=mind', label: 'Mind Battles', icon: Brain, color: 'text-purple-400' },
+    { href: '/categories?cat=meme', label: 'Desi Meme Vibes', icon: Coffee, color: 'text-pink-400' }
   ];
 
   return (
     <aside
-      className={`hidden md:flex flex-col justify-between shrink-0 bg-[#0d0f18] border-r border-[#1e2235] h-screen fixed left-0 top-0 z-40 transition-all duration-300 p-3 overflow-y-auto ${
+      className={`hidden md:flex flex-col justify-between shrink-0 bg-[#080B14] border-r border-[#1A2238] h-screen fixed left-0 top-0 z-40 transition-all duration-300 p-3 overflow-y-auto ${
         isActualCollapsed ? 'w-20' : 'w-64'
       }`}
     >
@@ -91,39 +84,39 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
           </Link>
         </div>
 
-        {/* Next Loot Box Card Widget (Jackpotter Style) */}
+        {/* Daily Streak & Mystery Box Card Widget */}
         {!isActualCollapsed && (
           <div
             onClick={() => {
               soundFx.playClick();
               openSpinModal();
             }}
-            className="p-3.5 rounded-2xl bg-gradient-to-b from-[#241a38] via-[#171324] to-[#100d1a] border border-[#7928CA]/40 hover:border-[#00F0FF]/50 transition-all cursor-pointer group shadow-xl shadow-[#7928CA]/10"
+            className="p-3.5 rounded-2xl bg-gradient-to-b from-[#191C30] via-[#101424] to-[#0B0D17] border border-[#00F0FF]/30 hover:border-[#00F0FF] transition-all cursor-pointer group shadow-xl shadow-[#00F0FF]/5 hover:scale-[1.02]"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-300 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-400 via-orange-500 to-yellow-300 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
                 🎁
               </div>
               <div className="min-w-0">
                 <span className="text-[10px] font-mono text-amber-300 uppercase tracking-wider block font-bold">
-                  NEXT LOOT BOX IN
+                  DAILY SQUAD DROP
                 </span>
-                <span className="text-sm font-black text-white font-mono block">
+                <span className="text-xs font-black text-white font-mono block">
                   {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
                 </span>
-                <span className="text-[9px] text-[#ADFF2F] font-mono font-bold flex items-center gap-1 mt-0.5">
-                  <Sparkles className="w-2.5 h-2.5" /> FREE COINS & XP
+                <span className="text-[9px] text-[#00F0FF] font-mono font-bold flex items-center gap-1 mt-0.5">
+                  <Sparkles className="w-2.5 h-2.5" /> CLAIM FREE REWARD
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Navigation Sections */}
+        {/* Main Navigation */}
         <div className="space-y-1">
           {!isActualCollapsed && (
             <span className="text-[10px] font-mono font-bold text-gray-400 px-3 uppercase tracking-wider">
-              MAIN MENU
+              MENU
             </span>
           )}
 
@@ -138,7 +131,7 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold font-display transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-[#00F0FF]/20 to-[#7928CA]/20 text-[#00F0FF] border border-[#00F0FF]/40 shadow-md shadow-[#00F0FF]/10'
-                    : 'text-gray-400 hover:text-white hover:bg-[#161926] border border-transparent'
+                    : 'text-gray-400 hover:text-white hover:bg-[#121829] border border-transparent'
                 }`}
                 title={isActualCollapsed ? item.label : undefined}
               >
@@ -149,14 +142,14 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Expandable Arcade Originals */}
-        <div className="space-y-1 pt-2 border-t border-[#1e2235]">
+        {/* Expandable Categories */}
+        <div className="space-y-1 pt-2 border-t border-[#1A2238]">
           {!isActualCollapsed ? (
             <button
               onClick={() => setOriginalsOpen(!originalsOpen)}
               className="w-full flex items-center justify-between text-[10px] font-mono font-bold text-gray-400 px-3 uppercase tracking-wider hover:text-white"
             >
-              <span>CHILL ORIGINALS</span>
+              <span>GAME HUBS</span>
               {originalsOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
           ) : (
@@ -172,7 +165,7 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
                     key={cat.href}
                     href={cat.href}
                     onClick={() => soundFx.playClick()}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-display text-gray-400 hover:text-white hover:bg-[#161926] transition-colors"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold font-display text-gray-400 hover:text-white hover:bg-[#121829] transition-colors"
                     title={isActualCollapsed ? cat.label : undefined}
                   >
                     <Icon className={`w-4 h-4 shrink-0 ${cat.color}`} />
@@ -187,15 +180,14 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Footer Info in Sidebar */}
       {!isActualCollapsed && (
-        <div className="p-3 rounded-xl bg-[#121522] border border-[#1e2235] text-[10px] font-mono text-gray-400 space-y-1">
+        <div className="p-3 rounded-xl bg-[#101524] border border-[#1A2238] text-[10px] font-mono text-gray-400 space-y-1">
           <div className="flex items-center justify-between text-white font-bold">
-            <span>Chill Arena Club</span>
-            <span className="text-[#ADFF2F]">● VIP ACTIVE</span>
+            <span>Chill Arena</span>
+            <span className="text-[#ADFF2F]">● ONLINE</span>
           </div>
-          <p className="text-gray-400 text-[9px]">0 downloads • Instant 60 FPS multiplayer</p>
+          <p className="text-gray-400 text-[9px]">Play with friends • 0 downloads • 60 FPS</p>
         </div>
       )}
     </aside>
   );
 };
-
