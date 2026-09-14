@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GAMES_CATALOG, useAppStore, Game } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
@@ -12,9 +12,7 @@ import {
   Flame,
   Star,
   Users,
-  Sparkles,
-  Zap,
-  Volume2
+  Zap
 } from 'lucide-react';
 
 const FEATURED_GAMES_IDS = ['pen-flip', 'modi-run', 'spin-cricket', 'cid-escape', 'chai-tapri'];
@@ -58,48 +56,48 @@ export const HeroTrendingCarousel: React.FC = () => {
 
   return (
     <section
-      className="relative rounded-3xl overflow-hidden border border-[#1E2945] bg-[#0A0E1A] shadow-2xl group transition-all duration-300"
+      className="relative rounded-3xl overflow-hidden border border-[#1E2844] bg-[#0A0E1A] shadow-2xl group transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Background Cinematic Art with Blur & Vignette */}
+      {/* Background Cinematic Art with Smooth Vignette */}
       <div className="absolute inset-0 z-0">
         <img
           src={currentGame.bannerImage}
           alt={currentGame.title}
           className="w-full h-full object-cover object-center scale-105 filter blur-[2px] opacity-35 transition-all duration-700 ease-out group-hover:scale-100 group-hover:opacity-45"
         />
-        {/* Gradient Overlays for Ultra-Clear Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E1A] via-[#0A0E1A]/80 to-transparent" />
+        {/* Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E1A] via-[#0A0E1A]/85 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A0E1A] via-[#0A0E1A]/90 to-transparent" />
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#00F0FF]/10 to-transparent pointer-events-none" />
       </div>
 
       {/* Main Content Showcase */}
-      <div className="relative z-10 p-6 sm:p-8 lg:p-12 min-h-[380px] sm:min-h-[440px] flex flex-col justify-between">
+      <div className="relative z-10 p-6 sm:p-8 lg:p-10 min-h-[400px] flex flex-col justify-between space-y-6">
         {/* Top Badges Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#FF0055]/20 border border-[#FF0055]/40 text-[#FF0055] shadow-lg shadow-[#FF0055]/10 animate-pulse">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-[#FF0055]/20 border border-[#FF0055]/40 text-[#FF0055] shadow-lg shadow-[#FF0055]/10 leading-none">
               <Flame className="w-3.5 h-3.5" />
-              <span>🔥 #1 TRENDING NOW</span>
+              <span>🔥 #1 TRENDING ON ARENA</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF]">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] leading-none">
               <Zap className="w-3.5 h-3.5" />
               <span>60 FPS ARCADE</span>
             </span>
 
             {currentGame.multiplayer && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#ADFF2F]/15 border border-[#ADFF2F]/30 text-[#ADFF2F]">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-[#ADFF2F]/15 border border-[#ADFF2F]/30 text-[#ADFF2F] leading-none">
                 <Users className="w-3.5 h-3.5" />
-                <span>1v1 MULTIPLAYER DUEL</span>
+                <span>1v1 SQUAD DUEL</span>
               </span>
             )}
           </div>
 
           {/* Rating Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-amber-400/30 text-xs font-mono text-amber-400">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-amber-400/30 text-xs font-mono text-amber-400 leading-none">
             <Star className="w-3.5 h-3.5 fill-amber-400" />
             <span className="font-bold">{currentGame.rating} / 5.0</span>
             <span className="text-gray-400 text-[10px]">({(currentGame.playCount / 1000).toFixed(0)}k plays)</span>
@@ -107,12 +105,12 @@ export const HeroTrendingCarousel: React.FC = () => {
         </div>
 
         {/* Center Headline & Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center my-6">
-          {/* Left Description */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Left Game Description & CTA */}
           <div className="lg:col-span-8 space-y-4">
             <div className="space-y-2">
               <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white font-display uppercase tracking-tight flex items-center gap-3">
-                <span>{currentGame.thumbnail}</span>
+                <span className="text-3xl sm:text-4xl">{currentGame.thumbnail}</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-100 to-gray-300">
                   {currentGame.title}
                 </span>
@@ -131,7 +129,7 @@ export const HeroTrendingCarousel: React.FC = () => {
               <Link
                 href={`/game/${currentGame.id}`}
                 onClick={() => soundFx.playClick()}
-                className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#00F0FF] via-[#00C2FF] to-[#0077FF] hover:brightness-110 text-slate-950 font-display text-sm font-black flex items-center gap-2.5 shadow-xl shadow-[#00F0FF]/25 hover:scale-105 transition-all"
+                className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#00F0FF] via-[#00C2FF] to-[#0077FF] hover:brightness-110 text-slate-950 font-display text-xs sm:text-sm font-black flex items-center gap-2.5 shadow-xl shadow-[#00F0FF]/30 hover:scale-105 transition-all leading-none"
               >
                 <Play className="w-4 h-4 fill-slate-950" />
                 <span>PLAY INSTANTLY</span>
@@ -143,7 +141,7 @@ export const HeroTrendingCarousel: React.FC = () => {
                     soundFx.playClick();
                     openMultiplayerModal(currentGame);
                   }}
-                  className="px-6 py-3.5 rounded-xl bg-[#131A2E] hover:bg-[#1C2642] border border-[#00F0FF]/40 hover:border-[#00F0FF] text-white font-display text-sm font-bold flex items-center gap-2 transition-all hover:scale-105"
+                  className="px-6 py-3.5 rounded-xl bg-[#131A2E] hover:bg-[#1C2642] border border-[#00F0FF]/40 hover:border-[#00F0FF] text-white font-display text-xs sm:text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 leading-none"
                 >
                   <Swords className="w-4 h-4 text-[#00F0FF]" />
                   <span>CHALLENGE SQUAD (1v1)</span>
@@ -179,23 +177,23 @@ export const HeroTrendingCarousel: React.FC = () => {
         </div>
 
         {/* Bottom Carousel Controls & Game Selector Thumbnails */}
-        <div className="pt-4 border-t border-[#1E2945]/70 flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* 5-Game Thumbnail Navigation Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1 scrollbar-none">
+        <div className="pt-4 border-t border-[#1E2945]/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* 5-Game Thumbnail Navigation Tabs - Generous Padding, No Clipping */}
+          <div className="flex items-center gap-2.5 overflow-x-auto max-w-full pb-1 scrollbar-none">
             {featuredGames.map((game, idx) => {
               const isSelected = idx === currentIndex;
               return (
                 <button
                   key={game.id}
                   onClick={() => handleSelectGame(idx)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-display font-bold transition-all shrink-0 border ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-bold transition-all shrink-0 whitespace-nowrap border leading-normal ${
                     isSelected
-                      ? 'bg-gradient-to-r from-[#00F0FF]/20 to-[#7928CA]/20 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/15 scale-105'
-                      : 'bg-[#101524]/80 border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+                      ? 'bg-gradient-to-r from-[#00F0FF]/20 to-[#7928CA]/20 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/20 scale-105'
+                      : 'bg-[#101524] border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
                   }`}
                 >
                   <span className="text-sm">{game.thumbnail}</span>
-                  <span className="truncate max-w-[90px]">{game.title.split(':')[0]}</span>
+                  <span>{game.title.split(':')[0]}</span>
                 </button>
               );
             })}
@@ -208,14 +206,14 @@ export const HeroTrendingCarousel: React.FC = () => {
             </span>
             <button
               onClick={handlePrev}
-              className="p-2 rounded-xl bg-[#121829] border border-gray-800 hover:border-[#00F0FF] text-gray-400 hover:text-white transition-colors"
+              className="p-2.5 rounded-xl bg-[#121829] border border-gray-800 hover:border-[#00F0FF] text-gray-400 hover:text-white transition-colors"
               title="Previous Game"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNext}
-              className="p-2 rounded-xl bg-[#121829] border border-gray-800 hover:border-[#00F0FF] text-gray-400 hover:text-white transition-colors"
+              className="p-2.5 rounded-xl bg-[#121829] border border-gray-800 hover:border-[#00F0FF] text-gray-400 hover:text-white transition-colors"
               title="Next Game"
             >
               <ChevronRight className="w-4 h-4" />

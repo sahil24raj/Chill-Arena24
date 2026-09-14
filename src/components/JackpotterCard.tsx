@@ -21,47 +21,47 @@ export const JackpotterCard: React.FC<JackpotterCardProps> = ({
     <Link
       href={`/game/${game.id}`}
       onClick={() => soundFx.playClick()}
-      className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between bg-[#0F1424] border border-[#1E2844] hover:border-[#00F0FF] hover:shadow-2xl hover:shadow-[#00F0FF]/20 hover:-translate-y-1.5 shrink-0 h-full"
+      className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 flex flex-col justify-between bg-[#0E1322] border border-[#1A233A] hover:border-[#00F0FF] hover:shadow-2xl hover:shadow-[#00F0FF]/20 hover:-translate-y-1.5 shrink-0 h-full w-full"
     >
-      {/* 3D Artwork Image Viewport - Aspect 4/3 for Full Crisp Visibility */}
-      <div className="relative aspect-[4/3] bg-[#070A12] overflow-hidden">
+      {/* 3D Game Poster Container - Full Definition without awkward cropping */}
+      <div className="relative aspect-[4/3] bg-[#070914] overflow-hidden w-full">
         <img
           src={game.bannerImage}
           alt={game.title}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 opacity-95 group-hover:opacity-100"
         />
 
-        {/* Subtle Vignette & Gradient for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1424] via-transparent to-black/30 pointer-events-none" />
+        {/* Soft Vignette Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0E1322] via-transparent to-black/30 pointer-events-none" />
 
-        {/* Top Floating Badges */}
-        <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
+        {/* Top Badges */}
+        <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 z-10">
           {game.isTrending && (
-            <span className="px-2 py-0.5 rounded-full text-[8px] font-black font-display bg-[#FF0080] text-white backdrop-blur-md flex items-center gap-1 shadow-md">
+            <span className="px-2.5 py-1 rounded-full text-[9px] font-black font-display bg-[#FF0055] text-white shadow-md flex items-center gap-1 leading-none tracking-wide">
               <Flame className="w-2.5 h-2.5" /> TRENDING
             </span>
           )}
           {game.isNew && (
-            <span className="px-2 py-0.5 rounded-full text-[8px] font-black font-display bg-[#00F0FF] text-slate-950 backdrop-blur-md flex items-center gap-1 shadow-md">
+            <span className="px-2.5 py-1 rounded-full text-[9px] font-black font-display bg-[#00F0FF] text-slate-950 shadow-md flex items-center gap-1 leading-none tracking-wide">
               <Zap className="w-2.5 h-2.5 fill-slate-950" /> NEW
             </span>
           )}
           {game.isPopular && (
-            <span className="px-2 py-0.5 rounded-full text-[8px] font-black font-display bg-amber-400 text-slate-950 backdrop-blur-md flex items-center gap-1 shadow-md">
-              <Crown className="w-2.5 h-2.5 fill-slate-950" /> TOP
+            <span className="px-2.5 py-1 rounded-full text-[9px] font-black font-display bg-amber-400 text-slate-950 shadow-md flex items-center gap-1 leading-none tracking-wide">
+              <Crown className="w-2.5 h-2.5 fill-slate-950" /> POPULAR
             </span>
           )}
         </div>
 
         {/* Rating Pill */}
-        <div className="absolute top-2.5 right-2.5 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-mono text-amber-400 flex items-center gap-1 border border-amber-400/30 shadow z-10">
+        <div className="absolute top-2.5 right-2.5 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-mono text-amber-400 flex items-center gap-1 border border-amber-400/30 shadow z-10 leading-none">
           <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-          <span>{game.rating}</span>
+          <span className="font-bold">{game.rating}</span>
         </div>
 
         {/* 1v1 Multiplayer Duel Pill */}
         {game.multiplayer && (
-          <div className="absolute bottom-2.5 left-2.5 bg-[#080B14]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold text-[#00F0FF] flex items-center gap-1 border border-[#00F0FF]/40 z-10 shadow-sm">
+          <div className="absolute bottom-2.5 left-2.5 bg-[#080B14]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[9px] font-mono font-bold text-[#00F0FF] flex items-center gap-1 border border-[#00F0FF]/40 z-10 shadow-sm leading-none">
             <Users className="w-2.5 h-2.5 text-[#00F0FF]" /> 1v1 DUEL
           </div>
         )}
@@ -74,31 +74,32 @@ export const JackpotterCard: React.FC<JackpotterCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom Card Title & Metadata Info */}
-      <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between bg-[#0F1424]">
+      {/* Card Info Details */}
+      <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between bg-[#0E1322]">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-base shrink-0">{game.thumbnail}</span>
-            <h4 className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display line-clamp-1">
+            <span className="text-lg shrink-0">{game.thumbnail}</span>
+            <h4 className="text-sm font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display truncate">
               {game.title}
             </h4>
           </div>
-          <p className="text-[10px] text-gray-400 font-sans line-clamp-2 leading-relaxed">
+          <p className="text-[11px] text-gray-400 font-sans line-clamp-2 leading-relaxed">
             {game.tagline}
           </p>
         </div>
 
-        {/* Bottom Bar: Duration & Plays */}
-        <div className="pt-2 border-t border-[#1E2844] flex items-center justify-between text-[9px] font-mono text-gray-500">
+        {/* Bottom Bar: Duration, Plays & Play Button */}
+        <div className="pt-2.5 border-t border-[#1A233A] flex items-center justify-between text-[10px] font-mono text-gray-500">
           <div className="flex items-center gap-1.5 text-gray-400">
-            <Clock className="w-2.5 h-2.5" />
+            <Clock className="w-3 h-3 text-gray-400" />
             <span>{game.duration}</span>
             <span>•</span>
             <span>{(game.playCount / 1000).toFixed(0)}k plays</span>
           </div>
 
-          <span className="text-[#00F0FF] font-bold group-hover:translate-x-1 transition-transform font-display flex items-center">
-            PLAY &rarr;
+          <span className="text-[#00F0FF] font-bold group-hover:translate-x-1 transition-transform font-display flex items-center gap-1 text-xs">
+            <span>PLAY</span>
+            <span>&rarr;</span>
           </span>
         </div>
       </div>

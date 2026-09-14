@@ -20,9 +20,7 @@ import {
   Trophy,
   Swords,
   Crown,
-  ArrowRight,
-  Zap,
-  Gamepad2
+  ArrowRight
 } from 'lucide-react';
 
 const CATEGORY_TABS = [
@@ -64,7 +62,7 @@ export default function HomePage() {
   }, [activeTab, multiplayerGames]);
 
   return (
-    <div className="space-y-12 pb-16">
+    <div className="space-y-12">
       <MultiplayerLobbyModal />
 
       {/* 1. HERO TRENDING 5-GAME SLIDER */}
@@ -72,7 +70,7 @@ export default function HomePage() {
 
       {/* 2. CATEGORY FILTER NAVIGATION PILLS */}
       <section className="overflow-x-auto pb-1 scrollbar-none">
-        <div className="flex items-center gap-2.5 min-w-max">
+        <div className="flex items-center gap-3 min-w-max p-0.5">
           {CATEGORY_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -83,10 +81,10 @@ export default function HomePage() {
                   soundFx.playClick();
                   setActiveTab(tab.id);
                 }}
-                className={`group flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-display text-xs font-bold transition-all duration-200 border ${
+                className={`group flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-display text-xs font-bold transition-all duration-200 border whitespace-nowrap leading-normal ${
                   isActive
                     ? 'bg-gradient-to-r from-[#0F1629] to-[#151D33] border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/15 scale-[1.02]'
-                    : 'bg-[#0D1220]/80 border-gray-800/80 text-gray-400 hover:text-white hover:border-gray-700 hover:bg-[#12192C]'
+                    : 'bg-[#0D1220] border-gray-800 text-gray-400 hover:text-white hover:border-gray-700 hover:bg-[#12192C]'
                 }`}
               >
                 <div

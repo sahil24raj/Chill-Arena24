@@ -36,32 +36,32 @@ export const JackpotterGameRow: React.FC<GameRowProps> & { Card: typeof Jackpott
   const handleScroll = (direction: 'left' | 'right') => {
     soundFx.playClick();
     if (rowRef.current) {
-      const scrollAmount = direction === 'left' ? -340 : 340;
+      const scrollAmount = direction === 'left' ? -360 : 360;
       rowRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
   return (
-    <section className="space-y-3.5">
-      {/* Section Header with View All & Arrow Controls (Jackpotter Style) */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {icon && <div className="text-xl">{icon}</div>}
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-black text-white font-display uppercase tracking-wide">
+    <section className="space-y-4">
+      {/* Section Header with View All & Arrow Controls */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          {icon && <div className="text-xl shrink-0">{icon}</div>}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base sm:text-lg font-black text-white font-display uppercase tracking-wide truncate">
                 {title}
               </h3>
               {badge && (
                 <span
-                  className={`text-[9px] font-mono font-bold border px-2 py-0.5 rounded-full ${badgeColor}`}
+                  className={`text-[9px] font-mono font-bold border px-2.5 py-0.5 rounded-full leading-none shrink-0 ${badgeColor}`}
                 >
                   {badge}
                 </span>
               )}
             </div>
             {subtitle && (
-              <p className="text-[11px] text-gray-400 font-sans mt-0.5 hidden sm:block">
+              <p className="text-[11px] text-gray-400 font-sans mt-0.5 hidden sm:block truncate">
                 {subtitle}
               </p>
             )}
@@ -69,29 +69,29 @@ export const JackpotterGameRow: React.FC<GameRowProps> & { Card: typeof Jackpott
         </div>
 
         {/* View All & Navigation Arrows */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           {finalHref && (
             <Link
               href={finalHref}
               onClick={() => soundFx.playClick()}
-              className="text-xs font-mono font-bold text-gray-400 hover:text-[#00F0FF] transition-colors flex items-center gap-1 mr-2"
+              className="text-xs font-mono font-bold text-gray-400 hover:text-[#00F0FF] transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-[#121829] leading-none"
             >
               <span>View All ({games.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           )}
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => handleScroll('left')}
-              className="p-1.5 rounded-lg bg-[#121522] border border-[#1e2235] hover:border-[#00F0FF]/50 text-gray-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-[#101524] border border-[#1E2844] hover:border-[#00F0FF]/50 text-gray-400 hover:text-white transition-colors"
               title="Scroll Left"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => handleScroll('right')}
-              className="p-1.5 rounded-lg bg-[#121522] border border-[#1e2235] hover:border-[#00F0FF]/50 text-gray-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-[#101524] border border-[#1E2844] hover:border-[#00F0FF]/50 text-gray-400 hover:text-white transition-colors"
               title="Scroll Right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -103,11 +103,11 @@ export const JackpotterGameRow: React.FC<GameRowProps> & { Card: typeof Jackpott
       {/* Horizontal Scrollable Row / Grid of Game Cards */}
       <div
         ref={rowRef}
-        className="grid grid-flow-col auto-cols-[minmax(240px,280px)] sm:auto-cols-[minmax(260px,290px)] gap-4 overflow-x-auto scrollbar-none pb-2 pt-1"
+        className="grid grid-flow-col auto-cols-[minmax(240px,280px)] sm:auto-cols-[minmax(260px,300px)] gap-4 overflow-x-auto scrollbar-none pb-2 pt-1"
         style={{ scrollSnapType: 'x mandatory' }}
       >
         {games.map((game) => (
-          <div key={game.id} style={{ scrollSnapAlign: 'start' }}>
+          <div key={game.id} style={{ scrollSnapAlign: 'start' }} className="h-full">
             <JackpotterCard game={game} onQuickPlay={onQuickPlay} />
           </div>
         ))}
