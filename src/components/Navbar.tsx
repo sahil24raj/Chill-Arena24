@@ -10,14 +10,11 @@ import {
   Trophy,
   Swords,
   Target,
-  Flame,
+  User,
   Volume2,
   VolumeX,
-  User,
   Gift,
   Search,
-  Zap,
-  Play,
   Menu,
   X
 } from 'lucide-react';
@@ -25,24 +22,24 @@ import {
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isMuted, toggleMute, openAuthModal, openSpinModal, openMultiplayerModal } = useAppStore();
+  const { user, isMuted, toggleMute, openSpinModal } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const navLinks = [
     { href: '/', label: 'HOME', icon: Gamepad2 },
-    { href: '/games', label: 'GAMES', icon: Flame },
     { href: '/multiplayer', label: 'MULTIPLAYER', icon: Swords },
     { href: '/leaderboard', label: 'LEADERBOARD', icon: Trophy },
-    { href: '/categories', label: 'CATEGORIES', icon: Target }
+    { href: '/categories', label: 'CATEGORIES', icon: Target },
+    { href: '/profile', label: 'PROFILE', icon: User }
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     soundFx.playClick();
-    router.push(`/games?q=${encodeURIComponent(searchQuery.trim())}`);
+    router.push(`/categories?q=${encodeURIComponent(searchQuery.trim())}`);
     setSearchOpen(false);
   };
 
@@ -104,7 +101,7 @@ export const Navbar = () => {
           })}
         </nav>
 
-        {/* Right Section: Currency, Level, Spin & Profile */}
+        {/* Right Section: Search, Spin, Currency, Level & User Avatar Pill */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Search Trigger */}
           <div className="relative">
@@ -175,19 +172,7 @@ export const Navbar = () => {
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
 
-          {/* PLAY NOW Quick Button */}
-          <button
-            onClick={() => {
-              soundFx.playClick();
-              openMultiplayerModal();
-            }}
-            className="hidden sm:flex cyber-button px-4 py-1.5 rounded-lg text-xs font-black text-slate-950 items-center gap-1.5 font-display shadow-md shadow-[#00F0FF]/20"
-          >
-            <Play className="w-3.5 h-3.5 fill-slate-950" />
-            <span>PLAY NOW</span>
-          </button>
-
-          {/* User Profile Avatar */}
+          {/* User Profile Avatar Pill */}
           <Link
             href="/profile"
             onClick={() => soundFx.playClick()}
@@ -236,19 +221,6 @@ export const Navbar = () => {
               </Link>
             );
           })}
-
-          <div className="pt-2 flex gap-2">
-            <button
-              onClick={() => {
-                soundFx.playClick();
-                setMobileMenuOpen(false);
-                openMultiplayerModal();
-              }}
-              className="flex-1 py-2.5 rounded-xl cyber-button text-xs font-black text-slate-950 flex items-center justify-center gap-1.5"
-            >
-              <Play className="w-4 h-4 fill-slate-950" /> PLAY NOW
-            </button>
-          </div>
         </div>
       )}
     </header>
