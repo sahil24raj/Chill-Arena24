@@ -3,11 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { soundFx } from '@/lib/audio';
+import { ChillArenaLogo } from '@/components/ChillArenaLogo';
 import { Gamepad2, Heart, Sparkles, Trophy, Users, Shield, Code2 } from 'lucide-react';
 
 export const Footer = () => {
   return (
-    <footer className="w-full border-t border-gray-800/80 bg-[#06080c] py-12 px-4 lg:px-8 mt-16 text-gray-400">
+    <footer className="w-full border-t border-gray-800/80 bg-[#05070a] py-12 px-4 lg:px-8 mt-16 text-gray-400">
       <div className="max-w-7xl mx-auto space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           
@@ -16,27 +17,17 @@ export const Footer = () => {
             <Link
               href="/"
               onClick={() => soundFx.playClick()}
-              className="flex items-center gap-2.5"
+              className="flex items-center"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00F0FF] to-[#ADFF2F] flex items-center justify-center text-slate-950 font-black text-lg shadow-md shadow-[#00F0FF]/20">
-                🎮
-              </div>
-              <div className="flex flex-col font-display">
-                <span className="text-lg font-black text-white tracking-tight">
-                  MEMEVERSE
-                </span>
-                <span className="text-[9px] font-mono text-[#00F0FF] uppercase -mt-0.5">
-                  Multiplayer Mini-Game Platform
-                </span>
-              </div>
+              <ChillArenaLogo size="md" showTagline={false} />
             </Link>
 
             <p className="text-xs text-gray-400 font-sans leading-relaxed max-w-sm">
-              The premier browser esports platform for Indian meme culture, classroom nostalgia, and lightning-fast 1v1 multiplayer games. 0 downloads. 100% pure dopamine.
+              The ultimate Indian multiplayer gaming lounge. Built for midnight hostel banter, canteen pen flips, and chaotic squad roasts with friends. 0 downloads. 100% pure dopamine.
             </p>
 
-            <div className="p-3 rounded-xl bg-slate-950/80 border border-gray-800 text-[11px] font-mono text-[#ADFF2F]">
-              💬 "Made for people who take games seriously... but not too seriously."
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-cyan-500/20 text-[11px] font-mono text-[#ADFF2F]">
+              💬 "Built for midnight hostel banter, canteen pen flips, and chaotic squad roasts."
             </div>
           </div>
 
@@ -45,17 +36,17 @@ export const Footer = () => {
             <h4 className="text-xs font-black text-white uppercase tracking-wider">GAME MODES</h4>
             <ul className="space-y-2 text-xs font-sans text-gray-400">
               <li>
-                <Link href="/games?cat=meme" className="hover:text-[#00F0FF] transition-colors">
+                <Link href="/categories?cat=meme" className="hover:text-[#00F0FF] transition-colors">
                   🔥 Trending Meme Games
                 </Link>
               </li>
               <li>
-                <Link href="/games?cat=school" className="hover:text-amber-400 transition-colors">
+                <Link href="/categories?cat=school" className="hover:text-amber-400 transition-colors">
                   🏫 School Vibes Duels
                 </Link>
               </li>
               <li>
-                <Link href="/games?cat=mind" className="hover:text-purple-400 transition-colors">
+                <Link href="/categories?cat=mind" className="hover:text-purple-400 transition-colors">
                   🧠 Mind Games Arena
                 </Link>
               </li>
@@ -110,7 +101,7 @@ export const Footer = () => {
                 <span className="text-gray-500 text-[11px] block">Terms of Service</span>
               </li>
               <li>
-                <span className="text-gray-500 text-[11px] block">Support & Feedback</span>
+                <span className="text-gray-500 text-[11px] block">Support & Squad Chat</span>
               </li>
             </ul>
           </div>
@@ -119,7 +110,7 @@ export const Footer = () => {
 
         {/* Bottom Copyright */}
         <div className="pt-6 border-t border-gray-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-mono text-gray-500">
-          <span>&copy; {new Date().getFullYear()} MemeVerse Gaming Platform. All meme rights reserved.</span>
+          <span>&copy; {new Date().getFullYear()} CHILL ARENA Gaming Platform. All rights reserved.</span>
           <div className="flex items-center gap-2">
             <span>Powered by Next.js 16 & Turbopack</span>
             <span>•</span>

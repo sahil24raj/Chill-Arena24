@@ -7,9 +7,9 @@ import { AuthModal } from '@/components/AuthModal';
 import { DailySpinModal } from '@/components/DailySpinModal';
 
 export const metadata: Metadata = {
-  title: 'MemeVerse Arena — Multiplayer Mini-Game Platform | Pen Flip, School Vibes & Meme Duels',
-  description: 'Instant multiplayer browser mini-games with friends. Play Pen Flip, Eraser Throw, Spin Cricket, Caught Modi, Word Builder, and rapid mind duels. No downloads, 60 FPS esports action!',
-  keywords: ['Meme games', 'multiplayer browser games', 'pen flip', 'school vibes', 'indian meme games', 'spin cricket', 'browser esports', 'mini games online']
+  title: 'Chill Arena — Multiplayer Browser Games & Squad Roasts | Indian Meme Arcade',
+  description: 'Instant multiplayer browser games for you & your squad. Play Pen Flip, Eraser Throw, Spin Cricket, Caught Modi, Word Builder, and rapid mind duels with college friends. 0 downloads, 60 FPS esports action!',
+  keywords: ['Chill Arena', 'multiplayer browser games', 'pen flip', 'school vibes', 'indian meme games', 'spin cricket', 'browser esports', 'mini games online', 'squad games']
 };
 
 export default function RootLayout({

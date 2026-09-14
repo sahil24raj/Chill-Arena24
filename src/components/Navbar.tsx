@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
+import { ChillArenaLogo } from '@/components/ChillArenaLogo';
 import {
   Gamepad2,
   Trophy,
@@ -51,31 +52,13 @@ export const Navbar = () => {
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-[#00F0FF]/20 px-4 lg:px-8 py-2.5 bg-[#080a0e]/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         
-        {/* Logo & Brand Mark */}
+        {/* Brand Logo with ChillArenaLogo */}
         <Link
           href="/"
           onClick={() => soundFx.playClick()}
-          className="flex items-center gap-2.5 group cursor-pointer shrink-0"
+          className="flex items-center"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00F0FF] via-purple-500 to-[#ADFF2F] p-[1.5px] shadow-lg shadow-[#00F0FF]/20 group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-[#080a0e] rounded-[10px] flex items-center justify-center font-display font-black text-[#00F0FF] text-xl">
-              🎮
-            </div>
-          </div>
-          <div className="flex flex-col font-display">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl font-black tracking-tight text-white group-hover:text-[#00F0FF] transition-colors">
-                MEMEVERSE
-              </span>
-              <span className="text-[9px] font-black bg-[#00F0FF]/15 text-[#00F0FF] border border-[#00F0FF]/40 px-1.5 py-0.5 rounded leading-none">
-                ARENA
-              </span>
-            </div>
-            <span className="text-[9px] font-mono text-gray-400 tracking-wider uppercase -mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ADFF2F] animate-pulse" />
-              Multiplayer Browser Esports
-            </span>
-          </div>
+          <ChillArenaLogo size="md" showTagline={true} />
         </Link>
 
         {/* Desktop Navigation Links */}

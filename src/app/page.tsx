@@ -9,6 +9,7 @@ import { SchoolVibesSection } from '@/components/SchoolVibesSection';
 import { MindGamesSection } from '@/components/MindGamesSection';
 import { GameCard } from '@/components/GameCard';
 import { DailyChallengesSection } from '@/components/DailyChallengesSection';
+import { SquadPartyLounge } from '@/components/SquadPartyLounge';
 import { RecentMatchesCommunity } from '@/components/RecentMatchesCommunity';
 import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
 import {
@@ -45,9 +46,9 @@ export default function HomePage() {
   ].filter(Boolean);
 
   const topPlayers = [
-    { rank: 1, name: 'Gigachad_69', score: '14,250 pts', avatar: '🗿', badge: 'Meme Lord' },
-    { rank: 2, name: 'Daya_Smash', score: '11,890 pts', avatar: '🚪', badge: 'CID Specialist' },
-    { rank: 3, name: 'ChaiTapriBoss', score: '9,450 pts', avatar: '☕', badge: 'Tapri Master' }
+    { rank: 1, name: 'Gigachad_69', score: '18,450 pts', avatar: '🗿', badge: 'Meme Lord' },
+    { rank: 2, name: 'Daya_Smash', score: '15,890 pts', avatar: '🚪', badge: 'CID Destroyer' },
+    { rank: 3, name: 'ChaiTapriBoss', score: '11,750 pts', avatar: '☕', badge: 'Tapri Master' }
   ];
 
   return (
@@ -70,7 +71,7 @@ export default function HomePage() {
               ⚡ LIVE NOW / INSTANT QUICK PLAY
             </h2>
           </div>
-          <span className="text-[11px] font-mono text-gray-500">Pick any game & jump right in</span>
+          <span className="text-[11px] font-mono text-gray-400">Pick any game & start playing in 3 seconds</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -122,7 +123,7 @@ export default function HomePage() {
           </div>
 
           <Link
-            href="/games?cat=meme"
+            href="/categories?cat=meme"
             onClick={() => soundFx.playClick()}
             className="relative z-10 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 text-xs font-bold text-pink-300 font-display transition-all hover:translate-x-1 shrink-0"
           >
@@ -136,6 +137,7 @@ export default function HomePage() {
             <GameCard
               key={game.id}
               game={game}
+              theme="meme"
               onQuickPlay={() => openMultiplayerModal(game)}
             />
           ))}
@@ -154,7 +156,10 @@ export default function HomePage() {
         onOpenMultiplayer={(game) => openMultiplayerModal(game)}
       />
 
-      {/* 6. ⚡ QUICK DUELS & CHALLENGE BANNER */}
+      {/* 6. ☕ SQUAD PARTY & ROAST LOUNGE */}
+      <SquadPartyLounge />
+
+      {/* 7. ⚡ QUICK DUELS & CHALLENGE BANNER */}
       <section className="p-8 rounded-3xl border-2 border-[#00F0FF]/30 bg-gradient-to-r from-[#0a121e] via-[#0e1626] to-[#070b12] relative overflow-hidden shadow-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-8 space-y-3">
@@ -194,7 +199,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 7. 🏆 LEADERBOARDS PODIUM SUMMARY */}
+      {/* 8. 🏆 LEADERBOARDS PODIUM SUMMARY */}
       <section className="p-6 lg:p-8 rounded-3xl glass-panel border border-[#00F0FF]/20 bg-[#0e1218]/90 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
           <div>
@@ -253,10 +258,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 8. 🎯 DAILY CHALLENGES */}
+      {/* 9. 🎯 DAILY CHALLENGES */}
       <DailyChallengesSection />
 
-      {/* 9. COMMUNITY & RECENT MATCHES */}
+      {/* 10. COMMUNITY & RECENT MATCHES */}
       <RecentMatchesCommunity />
 
     </div>
