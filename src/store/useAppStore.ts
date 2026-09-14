@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch } from '@/types';
 import { soundFx } from '@/lib/audio';
 
+export type Game = GameItem;
+export type { GameItem };
+
 const INITIAL_USER: UserProfile = {
   id: 'usr_memelord',
   username: 'Sigma_Gamer69',
