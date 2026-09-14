@@ -157,19 +157,19 @@ export const HeroTrendingCarousel: React.FC = () => {
             <Link
               href={`/game/${currentGame.id}`}
               onClick={() => soundFx.playClick()}
-              className="relative rounded-2xl overflow-hidden border-2 border-[#00F0FF]/40 shadow-2xl shadow-[#00F0FF]/20 group/poster hover:scale-105 transition-all duration-300 w-72 aspect-[16/11]"
+              className="relative rounded-2xl overflow-hidden border-2 border-[#00F0FF]/50 shadow-2xl shadow-[#00F0FF]/25 group/poster hover:scale-105 transition-all duration-300 w-80 aspect-[4/3] bg-[#070A12]"
             >
               <img
                 src={currentGame.bannerImage}
                 alt={currentGame.title}
-                className="w-full h-full object-cover group-hover/poster:scale-110 transition-transform duration-500"
+                className="w-full h-full object-cover object-center group-hover/poster:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-end p-4">
                 <div>
-                  <span className="text-[10px] font-mono font-bold text-[#00F0FF] block">
+                  <span className="text-[10px] font-mono font-bold text-[#00F0FF] uppercase tracking-wider block">
                     {currentGame.category}
                   </span>
-                  <span className="text-xs font-bold text-white font-display">
+                  <span className="text-sm font-bold text-white font-display">
                     {currentGame.title}
                   </span>
                 </div>
