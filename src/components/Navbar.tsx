@@ -155,14 +155,31 @@ export const Navbar = () => {
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
 
+          {/* Google Sign In / Auth Button if Guest */}
+          {user.authType === 'guest' ? (
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                useAppStore.getState().openAuthModal();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600 via-amber-600 to-blue-600 hover:brightness-110 text-white font-display text-xs font-black shadow-md shadow-red-950/40 hover:scale-105 transition-all"
+            >
+              <span className="text-xs">🌐</span>
+              <span className="hidden sm:inline">SIGN IN</span>
+            </button>
+          ) : null}
+
           {/* User Profile Avatar Pill */}
           <Link
             href="/profile"
             onClick={() => soundFx.playClick()}
             className="flex items-center gap-2 p-1 pr-2.5 rounded-lg bg-[#0e1218] border border-gray-800 hover:border-[#00F0FF]/40 transition-all cursor-pointer"
           >
-            <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-[#00F0FF] to-[#ADFF2F] text-slate-950 flex items-center justify-center text-sm font-bold">
+            <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-[#00F0FF] to-[#ADFF2F] text-slate-950 flex items-center justify-center text-sm font-bold relative">
               {user.avatar}
+              {user.authType === 'google' && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-1 ring-slate-950"></span>
+              )}
             </div>
             <span className="text-xs font-bold text-gray-300 hidden xl:inline max-w-[80px] truncate font-display">
               {user.username}

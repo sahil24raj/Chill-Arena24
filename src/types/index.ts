@@ -37,6 +37,10 @@ export interface GameItem {
 
 export interface UserProfile {
   id: string;
+  uid?: string;
+  email?: string;
+  photoURL?: string;
+  isCloudSynced?: boolean;
   username: string;
   avatar: string;
   authType: 'guest' | 'google' | 'discord';

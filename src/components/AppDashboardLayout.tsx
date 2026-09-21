@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LeftSidebar } from '@/components/LeftSidebar';
 import { TopHeaderBar } from '@/components/TopHeaderBar';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { DailySpinModal } from '@/components/DailySpinModal';
 import { BackgroundParticles } from '@/components/BackgroundParticles';
+import { useAppStore } from '@/store/useAppStore';
 
 interface AppDashboardLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,14 @@ interface AppDashboardLayoutProps {
 
 export function AppDashboardLayout({ children }: AppDashboardLayoutProps) {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const initAuthListener = useAppStore((state) => state.initAuthListener);
+
+  useEffect(() => {
+    const unsub = initAuthListener();
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [initAuthListener]);
 
   return (
     <div className="h-screen w-screen bg-[#05070E] text-gray-100 flex flex-row overflow-hidden font-sans selection:bg-[#00F0FF] selection:text-slate-950">

@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch } from '@/types';
 import { soundFx } from '@/lib/audio';
+import {
+  signInWithGoogle,
+  signInAnonymouslyWithFirebase,
+  generateDemoProfile,
+  logoutFromFirebase,
+  syncUserProfileToCloud,
+  saveScoreToCloudLeaderboard,
+  subscribeToAuth
+} from '@/lib/firebaseService';
 
 export type Game = GameItem;
 export type { GameItem };
@@ -510,6 +519,12 @@ interface AppState {
   openMultiplayerModal: (game?: GameItem) => void;
   closeMultiplayerModal: () => void;
   setUser: (user: Partial<UserProfile>) => void;
+  loginWithGoogle: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
+  loginAnonymously: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
+  loginWithDemo: (customDetails?: Partial<UserProfile>, authType?: 'google' | 'guest') => void;
+  initAuthListener: () => () => void;
+  logout: () => Promise<void>;
+  syncCloudData: () => Promise<boolean>;
   addCoins: (amount: number) => void;
   addXP: (amount: number) => void;
   updateHighScore: (gameId: string, score: number) => void;
@@ -553,16 +568,98 @@ export const useAppStore = create<AppState>()(
       openMultiplayerModal: (game) => set({ activeMultiplayerModal: true, selectedMultiplayerGame: game || GAMES_CATALOG[6] }),
       closeMultiplayerModal: () => set({ activeMultiplayerModal: false, selectedMultiplayerGame: null }),
 
-      setUser: (userUpdate) =>
-        set((state) => ({
-          user: { ...state.user, ...userUpdate }
-        })),
+      setUser: (userUpdate) => {
+        const updated = { ...get().user, ...userUpdate };
+        set({ user: updated });
+        if (updated.isCloudSynced && updated.uid) {
+          syncUserProfileToCloud(updated);
+        }
+      },
+
+      loginWithGoogle: async (customDetails) => {
+        const res = await signInWithGoogle({ ...get().user, ...customDetails });
+        if (res.success && res.user) {
+          set({ user: res.user, activeAuthModal: false });
+          soundFx.playLevelUp();
+          return { success: true, isFallback: res.isFallback };
+        }
+        return { success: false, error: res.error || 'Failed to sign in with Google', code: res.code };
+      },
+
+      loginAnonymously: async (customDetails) => {
+        const res = await signInAnonymouslyWithFirebase({ ...get().user, ...customDetails });
+        if (res.success && res.user) {
+          set({ user: res.user, activeAuthModal: false });
+          soundFx.playLevelUp();
+          return { success: true, isFallback: res.isFallback };
+        }
+        return { success: false, error: res.error || 'Failed to connect anonymously', code: res.code };
+      },
+
+      loginWithDemo: (customDetails, authType = 'google') => {
+        const demoUser = generateDemoProfile({ ...get().user, ...customDetails }, authType);
+        set({ user: demoUser, activeAuthModal: false });
+        soundFx.playLevelUp();
+      },
+
+      initAuthListener: () => {
+        const unsubscribe = subscribeToAuth((fbUser) => {
+          if (fbUser) {
+            const currentUser = get().user;
+            if (currentUser.uid !== fbUser.uid) {
+              set({
+                user: {
+                  ...currentUser,
+                  id: fbUser.uid,
+                  uid: fbUser.uid,
+                  email: fbUser.email || currentUser.email,
+                  photoURL: fbUser.photoURL || currentUser.photoURL,
+                  username: currentUser.username.startsWith('Guest_') && fbUser.displayName ? fbUser.displayName : currentUser.username,
+                  isCloudSynced: true
+                }
+              });
+            }
+          }
+        });
+        return unsubscribe;
+      },
+
+      logout: async () => {
+        await logoutFromFirebase();
+        set({
+          user: {
+            ...INITIAL_USER,
+            id: `guest_${Date.now().toString().slice(-4)}`,
+            username: `Guest_${Math.floor(1000 + Math.random() * 9000)}`,
+            authType: 'guest',
+            isCloudSynced: false,
+            uid: undefined,
+            email: undefined,
+            photoURL: undefined
+          }
+        });
+        soundFx.playClick();
+      },
+
+      syncCloudData: async () => {
+        const currentUser = get().user;
+        if (!currentUser.uid && currentUser.authType !== 'google') {
+          return false;
+        }
+        const synced = await syncUserProfileToCloud(currentUser);
+        if (synced) {
+          set((state) => ({ user: { ...state.user, isCloudSynced: true } }));
+        }
+        return synced;
+      },
 
       addCoins: (amount) => {
         soundFx.playCoin();
-        set((state) => ({
-          user: { ...state.user, coins: state.user.coins + amount }
-        }));
+        const updatedUser = { ...get().user, coins: get().user.coins + amount };
+        set({ user: updatedUser });
+        if (updatedUser.isCloudSynced && updatedUser.uid) {
+          syncUserProfileToCloud(updatedUser);
+        }
       },
 
       addXP: (amount) => {
@@ -572,9 +669,11 @@ export const useAppStore = create<AppState>()(
         if (newLevel > current.level) {
           soundFx.playLevelUp();
         }
-        set((state) => ({
-          user: { ...state.user, xp: newXp, level: newLevel }
-        }));
+        const updatedUser = { ...current, xp: newXp, level: newLevel };
+        set({ user: updatedUser });
+        if (updatedUser.isCloudSynced && updatedUser.uid) {
+          syncUserProfileToCloud(updatedUser);
+        }
       },
 
       updateHighScore: (gameId, score) => {
@@ -582,18 +681,23 @@ export const useAppStore = create<AppState>()(
         const prevHigh = currentStats.highScores[gameId] || 0;
         if (score > prevHigh) {
           soundFx.playLevelUp();
-          set((state) => ({
-            user: {
-              ...state.user,
-              stats: {
-                ...state.user.stats,
-                highScores: {
-                  ...state.user.stats.highScores,
-                  [gameId]: score
-                }
+          const updatedUser: UserProfile = {
+            ...get().user,
+            stats: {
+              ...get().user.stats,
+              highScores: {
+                ...get().user.stats.highScores,
+                [gameId]: score
               }
             }
-          }));
+          };
+          set({ user: updatedUser });
+          
+          const game = GAMES_CATALOG.find((g) => g.id === gameId);
+          saveScoreToCloudLeaderboard(gameId, game?.title || gameId, score, updatedUser);
+          if (updatedUser.isCloudSynced && updatedUser.uid) {
+            syncUserProfileToCloud(updatedUser);
+          }
         }
       },
 
@@ -603,17 +707,20 @@ export const useAppStore = create<AppState>()(
         const totalWins = state.user.stats.totalWins + 1;
         const winRate = Math.round((totalWins / gamesPlayed) * 100);
 
-        set({
-          user: {
-            ...state.user,
-            stats: {
-              ...state.user.stats,
-              gamesPlayed,
-              totalWins,
-              winRate
-            }
+        const updatedUser: UserProfile = {
+          ...state.user,
+          stats: {
+            ...state.user.stats,
+            gamesPlayed,
+            totalWins,
+            winRate
           }
-        });
+        };
+
+        set({ user: updatedUser });
+        if (updatedUser.isCloudSynced && updatedUser.uid) {
+          syncUserProfileToCloud(updatedUser);
+        }
 
         // Trigger challenge progress
         get().updateChallengeProgress('general', 1);

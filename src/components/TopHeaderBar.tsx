@@ -116,14 +116,38 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
+        {/* Google Sign In / Auth Button if Guest */}
+        {user.authType === 'guest' ? (
+          <button
+            onClick={() => {
+              soundFx.playClick();
+              useAppStore.getState().openAuthModal();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-blue-600 hover:brightness-110 text-white font-display text-xs font-black shadow-md shadow-red-950/40 hover:scale-105 transition-all shrink-0"
+          >
+            <span className="text-xs">🌐</span>
+            <span className="hidden sm:inline">SIGN IN</span>
+          </button>
+        ) : (
+          <div className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>CLOUD SYNCED</span>
+          </div>
+        )}
+
         {/* User Profile Pill */}
         <Link
           href="/profile"
           onClick={() => soundFx.playClick()}
           className="flex items-center gap-2.5 p-1 pr-2.5 sm:pr-3 rounded-xl bg-[#101524] border border-[#1E2842] hover:border-[#00F0FF]/50 transition-all cursor-pointer group shrink-0"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#00F0FF] via-purple-500 to-[#ADFF2F] text-slate-950 flex items-center justify-center text-sm font-bold shadow">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#00F0FF] via-purple-500 to-[#ADFF2F] text-slate-950 flex items-center justify-center text-sm font-bold shadow relative">
             {user.avatar}
+            {user.authType === 'google' && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-[8px] text-white rounded-full flex items-center justify-center border border-slate-950 font-bold">
+                G
+              </span>
+            )}
           </div>
           <div className="hidden md:flex flex-col text-left">
             <span className="text-xs font-bold text-white group-hover:text-[#00F0FF] transition-colors font-display leading-tight truncate max-w-[100px]">

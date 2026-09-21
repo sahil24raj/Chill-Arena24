@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAppStore, GAMES_CATALOG } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import {
   User,
   Trophy,
@@ -15,11 +16,20 @@ import {
   Shield,
   Star,
   CheckCircle2,
-  Clock
+  Clock,
+  Cloud,
+  CloudCheck,
+  LogOut,
+  RefreshCw,
+  LogIn,
+  Mail,
+  Key
 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, recentlyPlayedIds } = useAppStore();
+  const { user, recentlyPlayedIds, openAuthModal, logout, syncCloudData } = useAppStore();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const xpInLevel = user.xp % 500;
   const xpPercent = Math.min(100, Math.round((xpInLevel / 500) * 100));
@@ -27,6 +37,31 @@ export default function ProfilePage() {
   const recentlyPlayedGames = recentlyPlayedIds
     .map((id) => GAMES_CATALOG.find((g) => g.id === id))
     .filter(Boolean);
+
+  const handleManualSync = async () => {
+    soundFx.playClick();
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await syncCloudData();
+      if (res) {
+        soundFx.playLevelUp();
+        setSyncMessage('Cloud sync successful! All stats saved to Firestore.');
+      } else {
+        setSyncMessage('Local stats saved. Link Google account for Cloud Firestore backup.');
+      }
+    } catch {
+      setSyncMessage('Sync failed. Please check connection.');
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncMessage(null), 4000);
+    }
+  };
+
+  const handleLogout = async () => {
+    soundFx.playClick();
+    await logout();
+  };
 
   return (
     <div className="space-y-8 pb-16 max-w-5xl mx-auto">
@@ -51,9 +86,15 @@ export default function ProfilePage() {
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white font-display flex items-center justify-center sm:justify-start gap-2">
                   <span>{user.username}</span>
-                  <span className="text-xs font-mono font-normal text-[#00F0FF] px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40">
-                    CLASSROOM VETERAN
-                  </span>
+                  {user.authType === 'google' ? (
+                    <span className="text-xs font-mono font-bold text-emerald-400 px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center gap-1">
+                      <span>🌐</span> GOOGLE VERIFIED
+                    </span>
+                  ) : (
+                    <span className="text-xs font-mono font-normal text-[#00F0FF] px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40">
+                      GUEST MEMER
+                    </span>
+                  )}
                 </h1>
                 <p className="text-xs text-gray-400 font-sans">
                   Member of MemeVerse Arena • Streak: {user.streak} Days Active 🔥
@@ -63,10 +104,10 @@ export default function ProfilePage() {
               {/* Currency Badges */}
               <div className="flex items-center justify-center gap-2 font-mono text-xs">
                 <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-amber-500/30 text-amber-400 font-bold">
-                  🪙 {user.coins} Coins
+                  🪙 {user.coins.toLocaleString()} Coins
                 </div>
                 <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-purple-500/30 text-purple-300 font-bold">
-                  ✨ {user.xp} Total XP
+                  ✨ {user.xp.toLocaleString()} Total XP
                 </div>
               </div>
             </div>
@@ -86,6 +127,69 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Firebase Cloud Sync & Account Status Card */}
+      <div className="p-6 rounded-3xl glass-panel border border-[#00F0FF]/30 bg-[#0c1017] shadow-xl">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <h3 className="text-sm font-black text-white font-display uppercase tracking-wider flex items-center gap-1.5">
+                <span>Firebase Authentication & Cloud Database</span>
+              </h3>
+            </div>
+            <p className="text-xs text-gray-400">
+              {user.authType === 'google'
+                ? `Signed in as Google account (${user.email || user.username}). High scores & coins automatically save to Firestore.`
+                : 'Currently in Guest mode. Sign in with Google to permanently back up your high scores and badges to the cloud.'}
+            </p>
+            {user.uid && (
+              <p className="text-[10px] font-mono text-gray-500">
+                Cloud UID: <code className="text-[#00F0FF]">{user.uid}</code>
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {user.authType === 'guest' ? (
+              <button
+                onClick={() => {
+                  soundFx.playClick();
+                  openAuthModal();
+                }}
+                className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 via-amber-600 to-blue-600 hover:brightness-110 text-white font-display text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 hover:scale-105 transition-all"
+              >
+                <span>🌐</span>
+                <span>SIGN IN WITH GOOGLE</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  disabled={isSyncing}
+                  onClick={handleManualSync}
+                  className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-gray-700 text-white font-display text-xs font-bold flex items-center justify-center gap-2 hover:border-[#00F0FF]/50 transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#00F0FF]' : 'text-emerald-400'}`} />
+                  <span>{isSyncing ? 'SYNCING...' : 'SYNC NOW'}</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-300 font-display text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>SIGN OUT</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {syncMessage && (
+          <div className="mt-3 p-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-200 text-xs font-mono">
+            {syncMessage}
+          </div>
+        )}
       </div>
 
       {/* Gamer Career Stats Grid */}
@@ -152,7 +256,7 @@ export default function ProfilePage() {
                 <span className="text-[10px] text-gray-400 truncate">
                   {game?.title.split(':')[0] || gameKey}
                 </span>
-                <span className="text-base font-black text-[#ADFF2F]">{score} pts</span>
+                <span className="text-base font-black text-[#ADFF2F]">{score.toLocaleString()} pts</span>
               </div>
             );
           })}
