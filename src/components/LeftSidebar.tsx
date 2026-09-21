@@ -39,8 +39,10 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
 }) => {
   const isActualCollapsed = isCollapsed !== undefined ? isCollapsed : collapsed;
   const pathname = usePathname();
-  const { openSpinModal } = useAppStore();
+  const { user, openSpinModal } = useAppStore();
   const [vibesOpen, setVibesOpen] = useState(true);
+
+  const isLoggedIn = user.authType === 'email' || user.authType === 'google';
 
   // Daily Streak Timer
   const [timeLeft, setTimeLeft] = useState({ hours: 18, minutes: 42, seconds: 15 });
@@ -59,9 +61,12 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
 
   const mainNav = [
     { href: '/', label: 'Home Page', icon: Home },
+    ...(isLoggedIn
+      ? [{ href: '/dashboard', label: 'Gamer Dashboard', icon: Sparkles }]
+      : []),
+    { href: '/games', label: 'All Games', icon: Layers },
     { href: '/multiplayer', label: '1v1 Multiplayer', icon: Swords },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { href: '/categories', label: 'All Collections', icon: Layers },
     { href: '/profile', label: 'Gamer Profile', icon: User }
   ];
 

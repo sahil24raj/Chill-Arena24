@@ -287,10 +287,28 @@ export const AuthModal = () => {
           <button
             disabled={isLoading}
             onClick={() => handleOtherLogin('guest')}
-            className="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-gray-800 text-xs font-bold text-gray-400 hover:text-white flex items-center justify-center gap-2 transition-colors font-display"
+            className="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-gray-800 text-xs font-bold text-gray-400 hover:text-white flex items-center justify-center gap-2 transition-colors font-display cursor-pointer"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#00F0FF]" /> Play Locally as Guest
           </button>
+        </div>
+
+        {/* Links to SaaS Login & Signup */}
+        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+          <a
+            href="/login"
+            onClick={() => closeAuthModal()}
+            className="text-[#00F0FF] hover:underline font-bold"
+          >
+            Email Login →
+          </a>
+          <a
+            href="/signup"
+            onClick={() => closeAuthModal()}
+            className="text-[#ADFF2F] hover:underline font-bold"
+          >
+            Create SaaS Account →
+          </a>
         </div>
 
         {!isFirebaseConfigured() && (

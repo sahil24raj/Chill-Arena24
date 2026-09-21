@@ -43,19 +43,26 @@ export interface UserProfile {
   isCloudSynced?: boolean;
   username: string;
   avatar: string;
-  authType: 'guest' | 'google' | 'discord';
+  displayName?: string;
+  bio?: string;
+  createdAt?: string;
+  authType: 'guest' | 'google' | 'email' | 'discord';
   xp: number;
   level: number;
   coins: number;
   streak: number;
   lastLoginDate: string;
+  rank?: string | number;
   badges: Badge[];
   unlockedSkins: string[];
   equippedSkin: string;
   stats: {
     gamesPlayed: number;
     totalWins: number;
+    totalLosses?: number;
     winRate: number;
+    totalScore?: number;
+    bestScore?: number;
     highScores: Record<string, number>;
     roastsWon: number;
     sixesHit: number;
@@ -64,6 +71,7 @@ export interface UserProfile {
     eraserHits: number;
   };
 }
+
 
 export interface Badge {
   id: string;

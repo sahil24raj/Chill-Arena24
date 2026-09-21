@@ -7,6 +7,11 @@ import {
   signInWithGoogleRedirect,
   checkRedirectResult,
   signInAnonymouslyWithFirebase,
+  signUpWithEmail,
+  signInWithEmail,
+  sendPasswordReset,
+  updateUserProfileData,
+  submitGameScoreSecure,
   generateDemoProfile,
   logoutFromFirebase,
   syncUserProfileToCloud,
@@ -523,6 +528,11 @@ interface AppState {
   setUser: (user: Partial<UserProfile>) => void;
   loginWithGoogle: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
   loginWithGoogleRedirect: () => Promise<void>;
+  loginWithEmail: (emailOrUsername: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string; code?: string }>;
+  registerWithEmail: (params: { email: string; password: string; username: string; displayName?: string; avatar?: string }) => Promise<{ success: boolean; error?: string; code?: string }>;
+  sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfileData: (updates: { avatar?: string; displayName?: string; bio?: string }) => Promise<{ success: boolean; error?: string }>;
+  submitGameScore: (gameId: string, score: number) => Promise<{ success: boolean; xpEarned: number; newHighScore: boolean }>;
   loginAnonymously: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
   loginWithDemo: (customDetails?: Partial<UserProfile>, authType?: 'google' | 'guest') => void;
   initAuthListener: () => () => void;
@@ -591,6 +601,64 @@ export const useAppStore = create<AppState>()(
 
       loginWithGoogleRedirect: async () => {
         await signInWithGoogleRedirect();
+      },
+
+      loginWithEmail: async (emailOrUsername, password, rememberMe = true) => {
+        const res = await signInWithEmail(emailOrUsername, password, rememberMe, get().user);
+        if (res.success && res.user) {
+          set({ user: res.user, activeAuthModal: false });
+          soundFx.playLevelUp();
+          return { success: true };
+        }
+        return { success: false, error: res.error || 'Login failed', code: res.code };
+      },
+
+      registerWithEmail: async (params) => {
+        const res = await signUpWithEmail(params, get().user);
+        if (res.success && res.user) {
+          set({ user: res.user, activeAuthModal: false });
+          soundFx.playLevelUp();
+          return { success: true };
+        }
+        return { success: false, error: res.error || 'Registration failed', code: res.code };
+      },
+
+      sendPasswordResetEmail: async (email) => {
+        return await sendPasswordReset(email);
+      },
+
+      updateProfileData: async (updates) => {
+        const currentUser = get().user;
+        const uid = currentUser.uid || currentUser.id;
+        
+        // Optimistically update local store with safe editable fields
+        const localUpdates: Partial<UserProfile> = {};
+        if (updates.avatar) localUpdates.avatar = updates.avatar;
+        if (updates.displayName) localUpdates.displayName = updates.displayName;
+        if (updates.bio !== undefined) localUpdates.bio = updates.bio;
+
+        set({ user: { ...currentUser, ...localUpdates } });
+        soundFx.playClick();
+
+        const res = await updateUserProfileData(uid, updates);
+        return res;
+      },
+
+      submitGameScore: async (gameId, score) => {
+        const currentUser = get().user;
+        const game = GAMES_CATALOG.find((g) => g.id === gameId);
+        const gameTitle = game?.title || gameId;
+
+        const res = await submitGameScoreSecure(gameId, gameTitle, score, currentUser);
+        
+        if (res.success) {
+          get().addXP(res.xpEarned);
+          if (res.newHighScore) {
+            get().updateHighScore(gameId, score);
+          }
+          get().recordGameWin(gameId);
+        }
+        return res;
       },
 
       loginAnonymously: async (customDetails) => {

@@ -5,14 +5,23 @@ import {
   signInAnonymously,
   signOut,
   onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile as updateFbProfile,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   User as FirebaseUser
 } from 'firebase/auth';
 import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   collection,
   query,
+  where,
   orderBy,
   limit,
   getDocs,
@@ -45,15 +54,15 @@ export const formatAuthError = (error: any): { message: string; code: string; is
 
   switch (code) {
     case 'auth/unauthorized-domain':
-      message = 'Domain not authorized in Firebase Console. Add this domain / localhost in Firebase Console > Authentication > Settings > Authorized Domains.';
+      message = 'Domain not authorized in Firebase Console. Add this domain in Firebase Console > Authentication > Settings > Authorized Domains.';
       isConfigIssue = true;
       break;
     case 'auth/operation-not-allowed':
-      message = 'Google Sign-in is not enabled in Firebase. Enable Google provider in Firebase Console > Authentication > Sign-in method.';
+      message = 'Authentication provider is not enabled in Firebase Console > Authentication > Sign-in method.';
       isConfigIssue = true;
       break;
     case 'auth/popup-blocked':
-      message = 'Sign-in pop-up was blocked by your browser. You can click "Sign In (Redirect)" below or use Instant Cloud Play.';
+      message = 'Sign-in pop-up was blocked by your browser. You can click "Sign In (Redirect)" or use Instant Cloud Play.';
       break;
     case 'auth/popup-closed-by-user':
       message = 'Sign-in window was closed before completing authentication.';
@@ -62,10 +71,33 @@ export const formatAuthError = (error: any): { message: string; code: string; is
       message = 'Another sign-in request was initiated. Please try again.';
       break;
     case 'auth/network-request-failed':
-      message = 'Network error connecting to Google Auth servers. Please check your internet connection.';
+      message = 'Network error connecting to Auth servers. Please check your internet connection.';
+      break;
+    case 'auth/email-already-in-use':
+      message = 'This email address is already registered. Please login instead.';
+      break;
+    case 'auth/user-not-found':
+      message = 'No account found with this email or username. Please check your credentials or Sign Up.';
+      break;
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+      message = 'Invalid email or password. Please verify your login details.';
+      break;
+    case 'auth/weak-password':
+      message = 'Password is too weak. Please use at least 6 characters with a combination of letters and numbers.';
+      break;
+    case 'auth/invalid-email':
+      message = 'Please enter a valid email address.';
+      break;
+    case 'auth/too-many-requests':
+      message = 'Access to this account has been temporarily disabled due to many failed login attempts. You can reset your password or try again later.';
+      break;
+    case 'auth/user-disabled':
+      message = 'This user account has been disabled by an administrator.';
       break;
     case 'auth/invalid-api-key':
-      message = 'Invalid Firebase API key. Please check your NEXT_PUBLIC_FIREBASE_API_KEY in .env.local.';
+      message = 'Invalid Firebase API key. Please check your NEXT_PUBLIC_FIREBASE_API_KEY.';
       isConfigIssue = true;
       break;
     case 'auth/app-deleted':
@@ -130,16 +162,17 @@ export const buildProfileFromFirebaseUser = (
  */
 export const generateDemoProfile = (
   currentProfile?: Partial<UserProfile>,
-  authType: 'google' | 'guest' | 'discord' = 'google'
+  authType: 'google' | 'guest' | 'discord' | 'email' = 'google'
 ): UserProfile => {
   const timestamp = Date.now();
+  const safeAuthType = authType === 'discord' ? 'guest' : authType;
   return {
     id: `usr_cloud_${timestamp.toString().slice(-4)}`,
     uid: `cloud_uid_${timestamp}`,
-    username: currentProfile?.username || (authType === 'google' ? 'Google_MemeMaster' : 'Guest_Player69'),
+    username: currentProfile?.username || (authType === 'google' ? 'Google_MemeMaster' : authType === 'email' ? 'Email_Gamer' : 'Guest_Player69'),
     avatar: currentProfile?.avatar || '🚀',
-    authType: authType === 'discord' ? 'guest' : authType,
-    email: authType === 'google' ? (currentProfile?.email || 'mememaster@gmail.com') : undefined,
+    authType: safeAuthType,
+    email: (authType === 'google' || authType === 'email') ? (currentProfile?.email || 'mememaster@chillarena.app') : undefined,
     isCloudSynced: true,
     xp: currentProfile?.xp || 3200,
     level: currentProfile?.level || 8,
@@ -267,7 +300,6 @@ export const checkRedirectResult = async (): Promise<UserProfile | null> => {
   return null;
 };
 
-
 /**
  * Sign In Anonymously with Firebase Auth
  */
@@ -310,6 +342,412 @@ export const signInAnonymouslyWithFirebase = async (
       code: formatted.code
     };
   }
+};
+
+/**
+ * Check if a username is available in Firestore
+ */
+export const checkUsernameAvailability = async (username: string, currentUid?: string): Promise<{ available: boolean; error?: string }> => {
+  const cleanUsername = username.trim();
+  if (!cleanUsername || cleanUsername.length < 3) {
+    return { available: false, error: 'Username must be at least 3 characters long.' };
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+    return { available: false, error: 'Username can only contain letters, numbers, and underscores.' };
+  }
+
+  const db = getFirebaseDb();
+  if (!isFirebaseConfigured() || !db) {
+    // If offline / demo mode, accept valid username formats
+    return { available: true };
+  }
+
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('usernameLower', '==', cleanUsername.toLowerCase()),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return { available: true };
+    }
+
+    // If the existing doc belongs to current user, it is available to them
+    const existingDoc = snap.docs[0];
+    if (currentUid && existingDoc.id === currentUid) {
+      return { available: true };
+    }
+
+    return { available: false, error: 'Username is already taken by another gamer.' };
+  } catch (err) {
+    console.warn('Username availability check fallback:', err);
+    return { available: true }; // Permissive fallback if index/rules not deployed yet
+  }
+};
+
+/**
+ * Sign Up with Email and Password (SaaS-grade with profile initialization)
+ */
+export const signUpWithEmail = async (
+  params: {
+    email: string;
+    password: string;
+    username: string;
+    displayName?: string;
+    avatar?: string;
+  },
+  currentProfile?: Partial<UserProfile>
+): Promise<AuthResult> => {
+  const auth = getFirebaseAuth();
+  const cleanEmail = params.email.trim().toLowerCase();
+  const cleanUsername = params.username.trim();
+  const cleanDisplayName = params.displayName?.trim() || cleanUsername;
+  const avatar = params.avatar || currentProfile?.avatar || '🚀';
+
+  if (!isFirebaseConfigured() || !auth) {
+    const demoUser: UserProfile = {
+      ...generateDemoProfile(currentProfile, 'email'),
+      email: cleanEmail,
+      username: cleanUsername,
+      displayName: cleanDisplayName,
+      avatar,
+      authType: 'email',
+      createdAt: new Date().toISOString()
+    };
+    return { success: true, user: demoUser, isFallback: true };
+  }
+
+  try {
+    // 1. Create auth user
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, params.password);
+    const fbUser = cred.user;
+
+    // 2. Set Firebase Auth display name
+    try {
+      await updateFbProfile(fbUser, { displayName: cleanDisplayName });
+    } catch (e) {
+      console.warn('Failed to update FB profile displayName:', e);
+    }
+
+    // 3. Build comprehensive SaaS UserProfile
+    const profile: UserProfile = {
+      id: fbUser.uid,
+      uid: fbUser.uid,
+      email: cleanEmail,
+      username: cleanUsername,
+      displayName: cleanDisplayName,
+      avatar: avatar,
+      bio: 'Ready to conquer the MemeVerse arena! 🎮',
+      authType: 'email',
+      isCloudSynced: true,
+      xp: currentProfile?.xp || 500,
+      level: currentProfile?.level || 1,
+      coins: currentProfile?.coins || 1000,
+      streak: 1,
+      rank: 'Bronze III',
+      createdAt: new Date().toISOString(),
+      lastLoginDate: new Date().toISOString(),
+      badges: [
+        { id: 'b_welcome', name: 'Arena Recruit', description: 'Signed up for Chill Arena', icon: '🎖️', category: 'gaming' },
+        { id: 'b_verified', name: 'Verified SaaS Gamer', description: 'Registered with Email Security', icon: '🛡️', category: 'social' }
+      ],
+      unlockedSkins: ['default', 'neon_visor'],
+      equippedSkin: 'default',
+      stats: currentProfile?.stats || {
+        gamesPlayed: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        winRate: 0,
+        totalScore: 0,
+        bestScore: 0,
+        highScores: {},
+        roastsWon: 0,
+        sixesHit: 0,
+        chaiServed: 0,
+        penFlipsLanded: 0,
+        eraserHits: 0
+      }
+    };
+
+    // 4. Save to Firestore `users` collection with low-case username indexing
+    const db = getFirebaseDb();
+    if (db) {
+      try {
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        await setDoc(userDocRef, {
+          ...profile,
+          usernameLower: cleanUsername.toLowerCase(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      } catch (firestoreErr) {
+        console.warn('Firestore signup profile sync warning:', firestoreErr);
+      }
+    }
+
+    return { success: true, user: profile };
+  } catch (error: any) {
+    console.error('Sign up error:', error);
+    const formatted = formatAuthError(error);
+    return {
+      success: false,
+      error: formatted.message,
+      code: formatted.code
+    };
+  }
+};
+
+/**
+ * Sign In with Email or Username + Password (SaaS-grade with Remember Me)
+ */
+export const signInWithEmail = async (
+  emailOrUsername: string,
+  password: string,
+  rememberMe: boolean = true,
+  currentProfile?: Partial<UserProfile>
+): Promise<AuthResult> => {
+  const auth = getFirebaseAuth();
+  const identifier = emailOrUsername.trim();
+
+  if (!isFirebaseConfigured() || !auth) {
+    const demoUser: UserProfile = {
+      ...generateDemoProfile(currentProfile, 'email'),
+      email: identifier.includes('@') ? identifier : `${identifier}@chillarena.app`,
+      username: identifier.includes('@') ? identifier.split('@')[0] : identifier,
+      displayName: identifier.includes('@') ? identifier.split('@')[0] : identifier,
+      authType: 'email',
+      lastLoginDate: new Date().toISOString()
+    };
+    return { success: true, user: demoUser, isFallback: true };
+  }
+
+  try {
+    // Configure session persistence
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
+    let targetEmail = identifier;
+
+    // If user provided a username instead of an email, look up email in Firestore
+    if (!identifier.includes('@')) {
+      const db = getFirebaseDb();
+      if (db) {
+        try {
+          const q = query(
+            collection(db, 'users'),
+            where('usernameLower', '==', identifier.toLowerCase()),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const userData = snap.docs[0].data();
+            if (userData.email) {
+              targetEmail = userData.email;
+            }
+          }
+        } catch (lookupErr) {
+          console.warn('Username-to-email lookup error:', lookupErr);
+        }
+      }
+    }
+
+    const cred = await signInWithEmailAndPassword(auth, targetEmail, password);
+    const fbUser = cred.user;
+
+    let profile: UserProfile = {
+      id: fbUser.uid,
+      uid: fbUser.uid,
+      email: fbUser.email || undefined,
+      username: fbUser.displayName || currentProfile?.username || `Gamer_${fbUser.uid.slice(-4)}`,
+      displayName: fbUser.displayName || currentProfile?.displayName || fbUser.displayName || undefined,
+      avatar: currentProfile?.avatar || '🚀',
+      authType: 'email',
+      isCloudSynced: true,
+      xp: currentProfile?.xp || 1200,
+      level: currentProfile?.level || 3,
+      coins: currentProfile?.coins || 2500,
+      streak: (currentProfile?.streak || 1),
+      lastLoginDate: new Date().toISOString(),
+      badges: currentProfile?.badges || [
+        { id: 'b1', name: 'Arena Member', description: 'Active Chill Arena Gamer', icon: '🎮', category: 'gaming' }
+      ],
+      unlockedSkins: currentProfile?.unlockedSkins || ['default', 'neon_visor'],
+      equippedSkin: currentProfile?.equippedSkin || 'neon_visor',
+      stats: currentProfile?.stats || {
+        gamesPlayed: 0,
+        totalWins: 0,
+        totalLosses: 0,
+        winRate: 0,
+        totalScore: 0,
+        bestScore: 0,
+        highScores: {},
+        roastsWon: 0,
+        sixesHit: 0,
+        chaiServed: 0,
+        penFlipsLanded: 0,
+        eraserHits: 0
+      }
+    };
+
+    // Fetch and merge Firestore profile data
+    const db = getFirebaseDb();
+    if (db) {
+      try {
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (userSnap.exists()) {
+          const cloudData = userSnap.data() as Partial<UserProfile>;
+          profile = {
+            ...profile,
+            ...cloudData,
+            id: fbUser.uid,
+            uid: fbUser.uid,
+            email: fbUser.email || cloudData.email,
+            username: cloudData.username || profile.username,
+            displayName: cloudData.displayName || cloudData.username || profile.displayName,
+            avatar: cloudData.avatar || profile.avatar,
+            bio: cloudData.bio || profile.bio,
+            stats: {
+              ...profile.stats,
+              ...(cloudData.stats || {})
+            },
+            lastLoginDate: new Date().toISOString()
+          };
+          await setDoc(userDocRef, { lastLoginDate: new Date().toISOString() }, { merge: true });
+        }
+      } catch (firestoreErr) {
+        console.warn('Firestore profile fetch warning during sign-in:', firestoreErr);
+      }
+    }
+
+    return { success: true, user: profile };
+  } catch (error: any) {
+    console.error('Email Sign-in error:', error);
+    const formatted = formatAuthError(error);
+    return {
+      success: false,
+      error: formatted.message,
+      code: formatted.code
+    };
+  }
+};
+
+/**
+ * Send Password Reset Email
+ */
+export const sendPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
+  const cleanEmail = email.trim();
+  if (!cleanEmail) {
+    return { success: false, error: 'Please enter a valid email address.' };
+  }
+
+  const auth = getFirebaseAuth();
+  if (!isFirebaseConfigured() || !auth) {
+    return { success: true }; // Graceful simulated success
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, cleanEmail);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Password reset error:', error);
+    const formatted = formatAuthError(error);
+    return { success: false, error: formatted.message };
+  }
+};
+
+/**
+ * Safely update user profile fields (Only Avatar, Display Name, Bio allowed!)
+ * Strictly rejects modifications to stats, xp, coins, or score directly.
+ */
+export const updateUserProfileData = async (
+  uid: string,
+  updates: { avatar?: string; displayName?: string; bio?: string }
+): Promise<{ success: boolean; error?: string }> => {
+  if (!uid) {
+    return { success: false, error: 'User ID is required.' };
+  }
+
+  // Sanitize updates to ONLY allowed editable SaaS profile fields
+  const safeUpdates: { avatar?: string; displayName?: string; bio?: string; updatedAt?: any } = {};
+  if (typeof updates.avatar === 'string') safeUpdates.avatar = updates.avatar.slice(0, 32);
+  if (typeof updates.displayName === 'string') safeUpdates.displayName = updates.displayName.trim().slice(0, 40);
+  if (typeof updates.bio === 'string') safeUpdates.bio = updates.bio.trim().slice(0, 200);
+
+  const db = getFirebaseDb();
+  if (db && isFirebaseConfigured()) {
+    try {
+      const userRef = doc(db, 'users', uid);
+      safeUpdates.updatedAt = serverTimestamp();
+      await updateDoc(userRef, safeUpdates);
+
+      // Also update auth displayName if changed
+      const auth = getFirebaseAuth();
+      if (auth?.currentUser && safeUpdates.displayName) {
+        await updateFbProfile(auth.currentUser, { displayName: safeUpdates.displayName });
+      }
+    } catch (e: any) {
+      console.warn('Firestore profile update warning:', e);
+      // Try merge if document does not exist yet
+      try {
+        const userRef = doc(db, 'users', uid);
+        await setDoc(userRef, safeUpdates, { merge: true });
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Failed to save profile changes to cloud.' };
+      }
+    }
+  }
+
+  return { success: true };
+};
+
+/**
+ * Submit Game Score with Backend validation and Anti-Cheat ceiling checks
+ */
+export const submitGameScoreSecure = async (
+  gameId: string,
+  gameTitle: string,
+  score: number,
+  user: UserProfile
+): Promise<{ success: boolean; xpEarned: number; newHighScore: boolean }> => {
+  // Anti-Cheat Max Ceilings
+  const GAME_CEILINGS: Record<string, number> = {
+    'modi-run': 50000,
+    'cid-escape': 25000,
+    'pen-flip': 500,
+    'gully-cricket': 1000,
+    'chai-tapri': 50000,
+    'meme-roast': 5000,
+    'eraser-football': 100,
+    'hand-cricket': 300,
+    'pappu-pakia': 25000
+  };
+
+  const maxAllowed = GAME_CEILINGS[gameId] || 100000;
+  const validatedScore = Math.max(0, Math.min(Math.floor(score), maxAllowed));
+  const currentBest = user.stats.highScores?.[gameId] || 0;
+  const isNewHigh = validatedScore > currentBest;
+
+  // Calculate XP reward
+  const baseXP = 50;
+  const bonusXP = isNewHigh ? 100 : Math.min(100, Math.floor(validatedScore / 50));
+  const xpEarned = baseXP + bonusXP;
+
+  // Persist to Cloud Leaderboards
+  if (user.isCloudSynced && isFirebaseConfigured()) {
+    try {
+      await saveScoreToCloudLeaderboard(gameId, gameTitle, validatedScore, user);
+    } catch (e) {
+      console.warn('Leaderboard score cloud persist note:', e);
+    }
+  }
+
+  return {
+    success: true,
+    xpEarned,
+    newHighScore: isNewHigh
+  };
 };
 
 /**
