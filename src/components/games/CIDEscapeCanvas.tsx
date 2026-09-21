@@ -7,7 +7,7 @@ import { RotateCcw, Play } from 'lucide-react';
 
 export const CIDEscapeCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateHighScore, addCoins, addXP } = useAppStore();
+  const { updateHighScore, addCoins, addXP, submitGameScore } = useAppStore();
 
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER'>('IDLE');
   const [score, setScore] = useState(0);
@@ -151,9 +151,8 @@ export const CIDEscapeCanvas = () => {
         ) {
           soundFx.playGameOver();
           setGameState('GAMEOVER');
-          updateHighScore('cid-escape', currentScore);
-          addCoins(currentClues * 10);
-          addXP(Math.floor(currentScore / 2));
+          submitGameScore('cid-escape', currentScore, currentScore > 50);
+          if (currentClues > 0) addCoins(currentClues * 10);
           cancelAnimationFrame(animId);
           window.removeEventListener('keydown', handleKeyDown);
           return;

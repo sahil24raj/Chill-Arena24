@@ -11,7 +11,7 @@ interface PenFlipProps {
 }
 
 export const PenFlipCanvas: React.FC<PenFlipProps> = ({ mode: initialMode = 'local' }) => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin } = useAppStore();
+  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
 
   const [gameMode, setGameMode] = useState<'local' | 'ai' | 'solo'>(initialMode);
   const [player1Score, setPlayer1Score] = useState(0);
@@ -151,11 +151,9 @@ export const PenFlipCanvas: React.FC<PenFlipProps> = ({ mode: initialMode = 'loc
     soundFx.playLevelUp();
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
+    submitGameScore('pen-flip', player1Score, winningPlayer === 1);
     if (winningPlayer === 1) {
       addCoins(250);
-      addXP(200);
-      recordGameWin('pen-flip');
-      updateHighScore('pen-flip', 10);
     }
   };
 

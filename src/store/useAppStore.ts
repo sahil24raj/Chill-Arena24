@@ -12,7 +12,6 @@ import {
   sendPasswordReset,
   updateUserProfileData,
   submitGameScoreSecure,
-  generateDemoProfile,
   logoutFromFirebase,
   syncUserProfileToCloud,
   saveScoreToCloudLeaderboard,
@@ -471,9 +470,8 @@ interface AppState {
   registerWithEmail: (params: { email: string; password: string; username: string; displayName?: string; avatar?: string }) => Promise<{ success: boolean; error?: string; code?: string }>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfileData: (updates: { avatar?: string; displayName?: string; bio?: string }) => Promise<{ success: boolean; error?: string }>;
-  submitGameScore: (gameId: string, score: number) => Promise<{ success: boolean; xpEarned: number; newHighScore: boolean }>;
+  submitGameScore: (gameId: string, score: number, isWin?: boolean) => Promise<{ success: boolean; xpEarned: number; newHighScore: boolean; coinsEarned?: number }>;
   loginAnonymously: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
-  loginWithDemo: (customDetails?: Partial<UserProfile>, authType?: 'google' | 'guest') => void;
   initAuthListener: () => () => void;
   logout: () => Promise<void>;
   syncCloudData: () => Promise<boolean>;
@@ -487,7 +485,8 @@ interface AppState {
   createRoom: (gameId: string, mode?: 'local' | 'online' | 'ai') => MultiplayerRoom;
   joinRoom: (code: string) => boolean;
   leaveRoom: () => void;
-  spinDailyReward: () => { coins: number; xp: number; rewardName: string };
+  spinDailyReward: () => { coins: number; xp: number; rewardName: string; alreadyClaimed?: boolean };
+  buyShopItem: (item: { id: string; name: string; priceCoins: number; skinKey?: string }) => { success: boolean; error?: string };
 }
 
 export const useAppStore = create<AppState>()(
@@ -583,7 +582,7 @@ export const useAppStore = create<AppState>()(
         return res;
       },
 
-      submitGameScore: async (gameId, score) => {
+      submitGameScore: async (gameId, score, isWin = true) => {
         const currentUser = get().user;
         const game = GAMES_CATALOG.find((g) => g.id === gameId);
         const gameTitle = game?.title || gameId;
@@ -591,11 +590,133 @@ export const useAppStore = create<AppState>()(
         const res = await submitGameScoreSecure(gameId, gameTitle, score, currentUser);
         
         if (res.success) {
-          get().addXP(res.xpEarned);
-          if (res.newHighScore) {
-            get().updateHighScore(gameId, score);
+          const validatedScore = Math.max(0, Math.floor(score));
+          const currentStats = currentUser.stats;
+          const gamesPlayed = (currentStats.gamesPlayed || 0) + 1;
+          const totalWins = (currentStats.totalWins || 0) + (isWin ? 1 : 0);
+          const totalLosses = (currentStats.totalLosses || 0) + (isWin ? 0 : 1);
+          const winRate = Math.round((totalWins / gamesPlayed) * 100);
+          const totalScore = (currentStats.totalScore || 0) + validatedScore;
+          const bestScore = Math.max(currentStats.bestScore || 0, validatedScore);
+          const highScores = {
+            ...currentStats.highScores,
+            [gameId]: Math.max(currentStats.highScores[gameId] || 0, validatedScore)
+          };
+
+          const newXp = currentUser.xp + res.xpEarned;
+          const newLevel = Math.floor(newXp / 500) + 1;
+          const newCoins = currentUser.coins + (res.coinsEarned || 25);
+
+          // Calculate real Rank based on total Score
+          let rank: string = 'Bronze II';
+          if (gamesPlayed === 0) rank = 'Unranked';
+          else if (totalScore >= 10000) rank = 'Grandmaster';
+          else if (totalScore >= 5000) rank = 'Diamond I';
+          else if (totalScore >= 2500) rank = 'Platinum II';
+          else if (totalScore >= 1000) rank = 'Gold III';
+          else if (totalScore >= 500) rank = 'Silver I';
+          else rank = 'Bronze II';
+
+          // Check dynamic achievements
+          const existingBadgeIds = new Set((currentUser.badges || []).map((b) => b.id));
+          const newBadges = [...(currentUser.badges || [])];
+
+          if (gamesPlayed >= 1 && !existingBadgeIds.has('b_first_game')) {
+            newBadges.push({
+              id: 'b_first_game',
+              name: 'First Step',
+              description: 'Completed your first game in Chill Arena',
+              icon: '🎮',
+              unlockedAt: new Date().toISOString(),
+              category: 'gaming'
+            });
           }
-          get().recordGameWin(gameId);
+          if (totalWins >= 1 && !existingBadgeIds.has('b_first_win')) {
+            newBadges.push({
+              id: 'b_first_win',
+              name: 'First Victory',
+              description: 'Won your first match in the Arena',
+              icon: '🏆',
+              unlockedAt: new Date().toISOString(),
+              category: 'gaming'
+            });
+          }
+          if (bestScore >= 500 && !existingBadgeIds.has('b_high_score')) {
+            newBadges.push({
+              id: 'b_high_score',
+              name: 'Score Master',
+              description: 'Achieved a single game score of 500+',
+              icon: '🔥',
+              unlockedAt: new Date().toISOString(),
+              category: 'legend'
+            });
+          }
+          if (totalWins >= 10 && !existingBadgeIds.has('b_ten_wins')) {
+            newBadges.push({
+              id: 'b_ten_wins',
+              name: 'Arena Champion',
+              description: 'Achieved 10 victories in Chill Arena',
+              icon: '👑',
+              unlockedAt: new Date().toISOString(),
+              category: 'legend'
+            });
+          }
+
+          // Build Real Match History Record
+          const newMatchRecord: RecentMatch = {
+            id: `match_${Date.now()}`,
+            gameId,
+            gameTitle,
+            gameIcon: game?.thumbnail || '🎮',
+            player1: {
+              name: currentUser.displayName || currentUser.username,
+              avatar: currentUser.avatar,
+              score: validatedScore
+            },
+            player2: {
+              name: 'AI Challenger',
+              avatar: '🤖',
+              score: Math.max(0, validatedScore - 15)
+            },
+            winner: isWin ? (currentUser.displayName || currentUser.username) : 'AI Challenger',
+            roastQuote: isWin ? 'Victory secured in the Arena!' : 'Hard luck! Keep training!',
+            timeAgo: 'Just now'
+          };
+
+          const updatedUser: UserProfile = {
+            ...currentUser,
+            xp: newXp,
+            level: newLevel,
+            coins: newCoins,
+            rank,
+            badges: newBadges,
+            stats: {
+              ...currentStats,
+              gamesPlayed,
+              totalWins,
+              totalLosses,
+              winRate,
+              totalScore,
+              bestScore,
+              highScores
+            }
+          };
+
+          set((state) => ({
+            user: updatedUser,
+            recentMatches: [newMatchRecord, ...state.recentMatches].slice(0, 10)
+          }));
+
+          // Trigger Challenge Progress
+          get().updateChallengeProgress('general', 1);
+          if (game?.categoryKey) {
+            get().updateChallengeProgress(game.categoryKey, 1);
+          }
+
+          if (updatedUser.isCloudSynced && updatedUser.uid) {
+            syncUserProfileToCloud(updatedUser);
+            saveScoreToCloudLeaderboard(gameId, gameTitle, validatedScore, updatedUser);
+          }
         }
         return res;
       },
@@ -608,12 +729,6 @@ export const useAppStore = create<AppState>()(
           return { success: true, isFallback: res.isFallback };
         }
         return { success: false, error: res.error || 'Failed to connect anonymously', code: res.code };
-      },
-
-      loginWithDemo: (customDetails, authType = 'google') => {
-        const demoUser = generateDemoProfile({ ...get().user, ...customDetails }, authType);
-        set({ user: demoUser, activeAuthModal: false });
-        soundFx.playLevelUp();
       },
 
       initAuthListener: () => {
@@ -833,6 +948,13 @@ export const useAppStore = create<AppState>()(
       leaveRoom: () => set({ activeRoom: null }),
 
       spinDailyReward: () => {
+        const user = get().user;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        
+        if (user.badges?.some((b) => b.id === `spin_${todayStr}`)) {
+          return { coins: 0, xp: 0, rewardName: 'Already claimed today! Next spin at 00:00 UTC.', alreadyClaimed: true };
+        }
+
         const rewards = [
           { coins: 150, xp: 75, rewardName: '150 Coins + 75 XP' },
           { coins: 350, xp: 150, rewardName: '350 Coins + 150 XP' },
@@ -841,9 +963,58 @@ export const useAppStore = create<AppState>()(
           { coins: 1000, xp: 500, rewardName: '1000 Coins + 500 XP Grand Prize' }
         ];
         const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
-        get().addCoins(randomReward.coins);
-        get().addXP(randomReward.xp);
+        
+        const updatedUser: UserProfile = {
+          ...user,
+          coins: user.coins + randomReward.coins,
+          xp: user.xp + randomReward.xp,
+          badges: [
+            ...user.badges.filter((b) => !b.id.startsWith('spin_')),
+            {
+              id: `spin_${todayStr}`,
+              name: 'Daily Spinner',
+              description: `Claimed daily wheel bonus on ${todayStr}`,
+              icon: '🎁',
+              unlockedAt: new Date().toISOString(),
+              category: 'social'
+            }
+          ]
+        };
+
+        set({ user: updatedUser });
+        if (updatedUser.isCloudSynced && updatedUser.uid) {
+          syncUserProfileToCloud(updatedUser);
+        }
+
         return randomReward;
+      },
+
+      buyShopItem: (item: { id: string; name: string; priceCoins: number; skinKey?: string }) => {
+        const user = get().user;
+        if (user.coins < item.priceCoins) {
+          return {
+            success: false,
+            error: `Need ${item.priceCoins} Meme Coins! You currently have ${user.coins} coins.`
+          };
+        }
+
+        const newUnlockedSkins = item.skinKey && !user.unlockedSkins.includes(item.skinKey)
+          ? [...user.unlockedSkins, item.skinKey]
+          : user.unlockedSkins;
+
+        const updatedUser: UserProfile = {
+          ...user,
+          coins: user.coins - item.priceCoins,
+          unlockedSkins: newUnlockedSkins,
+          equippedSkin: item.skinKey || user.equippedSkin
+        };
+
+        set({ user: updatedUser });
+        soundFx.playLevelUp();
+        if (updatedUser.isCloudSynced && updatedUser.uid) {
+          syncUserProfileToCloud(updatedUser);
+        }
+        return { success: true };
       }
     }),
     {

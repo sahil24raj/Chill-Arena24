@@ -83,7 +83,7 @@ const PUZZLE_BANK: PuzzleQuestion[] = [
 ];
 
 export const BrainPotCanvas: React.FC = () => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin } = useAppStore();
+  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -155,11 +155,7 @@ export const BrainPotCanvas: React.FC = () => {
       setGameOver(true);
       setIsPlaying(false);
       soundFx.playLevelUp();
-      confetti({ particleCount: 100, spread: 70 });
-      recordGameWin('brain-pot');
-      updateHighScore('brain-pot', score);
-      addCoins(300);
-      addXP(250);
+      submitGameScore('brain-pot', score, true);
       return;
     }
 

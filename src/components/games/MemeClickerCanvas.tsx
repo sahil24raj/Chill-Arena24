@@ -21,7 +21,9 @@ export const MemeClickerCanvas = () => {
     setViews(newViews);
     addCoins(added);
     addXP(1);
-    updateHighScore('meme-clicker', newViews);
+    if (newViews % 100 === 0 && newViews > 0) {
+      useAppStore.getState().submitGameScore('meme-clicker', newViews, true);
+    }
 
     if (newViews % 500 === 0) {
       confetti({ particleCount: 50, spread: 60 });

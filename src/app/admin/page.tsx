@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import { Shield, PlusCircle, Users, BarChart3, DollarSign, Upload, Check } from 'lucide-react';
 import { soundFx } from '@/lib/audio';
 
+import { GAMES_CATALOG } from '@/store/useAppStore';
+
 export default function AdminPage() {
   const [gameTitle, setGameTitle] = useState('');
-  const [category, setCategory] = useState('🇮🇳 Indian Meme Games');
+  const [category, setCategory] = useState('🔥 Trending Meme');
   const [controls, setControls] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -20,33 +22,37 @@ export default function AdminPage() {
     setControls('');
   };
 
+  const totalPublishedGames = GAMES_CATALOG.length;
+  const multiplayerGames = GAMES_CATALOG.filter((g) => g.multiplayer).length;
+  const categoriesCount = new Set(GAMES_CATALOG.map((g) => g.categoryKey)).size;
+
   return (
     <div className="space-y-8 pb-12">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-black text-white flex items-center justify-center gap-2">
-          <Shield className="w-8 h-8 text-cyan-400" /> MemeVerse Creator & Admin Control Panel
+          <Shield className="w-8 h-8 text-cyan-400" /> Chill Arena Developer & Studio Dashboard
         </h1>
-        <p className="text-xs text-gray-400">Manage games, analytics, tournament hosts, and platform monetization</p>
+        <p className="text-xs text-gray-400">Manage catalog games, engines, deployment pipelines, and game features</p>
       </div>
 
-      {/* Overview Analytics Dashboard */}
+      {/* Overview Real Platform Analytics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="glass-panel p-5 rounded-2xl border-purple-900/40">
-          <span className="text-xs font-bold text-gray-400 block mb-1">Total Platform Gamers</span>
-          <span className="text-2xl font-black text-cyan-400">542,890</span>
+          <span className="text-xs font-bold text-gray-400 block mb-1">Published Games</span>
+          <span className="text-2xl font-black text-cyan-400">{totalPublishedGames} Active</span>
         </div>
         <div className="glass-panel p-5 rounded-2xl border-purple-900/40">
-          <span className="text-xs font-bold text-gray-400 block mb-1">Active Game Plays</span>
-          <span className="text-2xl font-black text-pink-400">1,428,900</span>
+          <span className="text-xs font-bold text-gray-400 block mb-1">Multiplayer Enabled</span>
+          <span className="text-2xl font-black text-pink-400">{multiplayerGames} Games</span>
         </div>
         <div className="glass-panel p-5 rounded-2xl border-purple-900/40">
-          <span className="text-xs font-bold text-gray-400 block mb-1">Monthly Revenue (Est.)</span>
-          <span className="text-2xl font-black text-emerald-400">₹4,28,500</span>
+          <span className="text-xs font-bold text-gray-400 block mb-1">Game Categories</span>
+          <span className="text-2xl font-black text-emerald-400">{categoriesCount} Categories</span>
         </div>
         <div className="glass-panel p-5 rounded-2xl border-purple-900/40">
-          <span className="text-xs font-bold text-gray-400 block mb-1">Server Status</span>
+          <span className="text-xs font-bold text-gray-400 block mb-1">Cloud Engine Status</span>
           <span className="text-xs font-black text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/40">
-            ● 99.9% Uptime
+            ● Firestore Live
           </span>
         </div>
       </div>

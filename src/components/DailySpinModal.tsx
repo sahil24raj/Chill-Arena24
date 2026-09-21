@@ -7,14 +7,17 @@ import { X, Gift, Sparkles, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const DailySpinModal = () => {
-  const { activeSpinModal, closeSpinModal, spinDailyReward } = useAppStore();
+  const { user, activeSpinModal, closeSpinModal, spinDailyReward } = useAppStore();
   const [spinning, setSpinning] = useState(false);
   const [rewardResult, setRewardResult] = useState<string | null>(null);
 
   if (!activeSpinModal) return null;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isClaimedToday = user.badges.some((b) => b.id === `spin_${todayStr}`);
+
   const handleSpin = () => {
-    if (spinning) return;
+    if (spinning || isClaimedToday) return;
     setSpinning(true);
     soundFx.playSpin();
 
@@ -23,11 +26,15 @@ export const DailySpinModal = () => {
       setSpinning(false);
       setRewardResult(result.rewardName);
 
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      if (result.alreadyClaimed) {
+        soundFx.playBuzzer();
+      } else {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
     }, 2000);
   };
 
@@ -89,11 +96,17 @@ export const DailySpinModal = () => {
 
         <button
           onClick={handleSpin}
-          disabled={spinning}
-          className="cyber-button w-full py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+          disabled={spinning || isClaimedToday}
+          className="cyber-button w-full py-3 rounded-xl text-sm font-black text-white flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Gift className="w-4 h-4" />
-          <span>{spinning ? 'Spinning...' : 'SPIN WHEEL NOW!'}</span>
+          <span>
+            {spinning
+              ? 'Spinning...'
+              : isClaimedToday
+              ? 'CLAIMED TODAY (NEXT AT 00:00 UTC)'
+              : 'SPIN WHEEL NOW!'}
+          </span>
         </button>
       </div>
     </div>

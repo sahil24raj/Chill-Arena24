@@ -128,25 +128,26 @@ export const buildProfileFromFirebaseUser = (
     uid: fbUser.uid,
     email: fbUser.email || undefined,
     photoURL: fbUser.photoURL || undefined,
-    username: fbUser.displayName || currentProfile?.username || `MemeGamer_${fbUser.uid.slice(-4)}`,
+    username: fbUser.displayName || currentProfile?.username || `Gamer_${fbUser.uid.slice(-4)}`,
     avatar: currentProfile?.avatar || '🚀',
     authType: authType,
     isCloudSynced: true,
-    xp: currentProfile?.xp || 2840,
-    level: currentProfile?.level || 7,
-    coins: currentProfile?.coins || 4850,
-    streak: (currentProfile?.streak || 1),
+    xp: currentProfile?.xp || 0,
+    level: currentProfile?.level || 1,
+    coins: currentProfile?.coins || 0,
+    streak: currentProfile?.streak || 0,
+    rank: currentProfile?.rank || 'Unranked',
     lastLoginDate: new Date().toISOString(),
-    badges: currentProfile?.badges || [
-      { id: 'b1', name: 'Meme Pioneer', description: 'Joined MemeVerse on Launch Day', icon: '🔥', category: 'legend' },
-      { id: 'b_google', name: 'Cloud Connected', description: 'Firebase Authenticated Account', icon: '🌐', category: 'social' }
-    ],
-    unlockedSkins: currentProfile?.unlockedSkins || ['default', 'gold_crown', 'neon_visor'],
-    equippedSkin: currentProfile?.equippedSkin || 'neon_visor',
+    badges: currentProfile?.badges || [],
+    unlockedSkins: currentProfile?.unlockedSkins || ['default'],
+    equippedSkin: currentProfile?.equippedSkin || 'default',
     stats: currentProfile?.stats || {
       gamesPlayed: 0,
       totalWins: 0,
+      totalLosses: 0,
       winRate: 0,
+      totalScore: 0,
+      bestScore: 0,
       highScores: {},
       roastsWon: 0,
       sixesHit: 0,
@@ -158,54 +159,7 @@ export const buildProfileFromFirebaseUser = (
 };
 
 /**
- * Generates an instant verified demo user profile when live keys aren't ready.
- */
-export const generateDemoProfile = (
-  currentProfile?: Partial<UserProfile>,
-  authType: 'google' | 'guest' | 'discord' | 'email' = 'google'
-): UserProfile => {
-  const timestamp = Date.now();
-  const safeAuthType = authType === 'discord' ? 'guest' : authType;
-  return {
-    id: `usr_cloud_${timestamp.toString().slice(-4)}`,
-    uid: `cloud_uid_${timestamp}`,
-    username: currentProfile?.username || (authType === 'google' ? 'Google_MemeMaster' : authType === 'email' ? 'Email_Gamer' : 'Guest_Player69'),
-    avatar: currentProfile?.avatar || '🚀',
-    authType: safeAuthType,
-    email: (authType === 'google' || authType === 'email') ? (currentProfile?.email || 'mememaster@chillarena.app') : undefined,
-    isCloudSynced: true,
-    xp: currentProfile?.xp || 3200,
-    level: currentProfile?.level || 8,
-    coins: currentProfile?.coins || 5200,
-    streak: (currentProfile?.streak || 5) + 1,
-    lastLoginDate: new Date().toISOString(),
-    badges: currentProfile?.badges || [
-      { id: 'b1', name: 'Meme Pioneer', description: 'Joined MemeVerse on Launch Day', icon: '🔥', category: 'legend' },
-      { id: 'b_google', name: 'Cloud Verified', description: 'Connected Cloud Account & Cloud Save', icon: '🌐', category: 'social' }
-    ],
-    unlockedSkins: currentProfile?.unlockedSkins || ['default', 'gold_crown', 'neon_visor'],
-    equippedSkin: currentProfile?.equippedSkin || 'neon_visor',
-    stats: currentProfile?.stats || {
-      gamesPlayed: 75,
-      totalWins: 54,
-      winRate: 72,
-      highScores: {
-        'modi-run': 2100,
-        'cid-escape': 1450,
-        'chai-tapri': 3100,
-        'gully-cricket': 165
-      },
-      roastsWon: 28,
-      sixesHit: 42,
-      chaiServed: 140,
-      penFlipsLanded: 50,
-      eraserHits: 38
-    }
-  };
-};
-
-/**
- * Sign In with Google Popup (with isolated Firestore sync & smart fallbacks)
+ * Sign In with Google Popup (with isolated Firestore sync)
  */
 export const signInWithGoogle = async (
   currentProfile?: Partial<UserProfile>
@@ -213,10 +167,11 @@ export const signInWithGoogle = async (
   const auth = getFirebaseAuth();
   const googleProvider = getGoogleProvider();
 
-  // If Firebase keys aren't configured, provide instant simulated cloud account
   if (!isFirebaseConfigured() || !auth || !googleProvider) {
-    const demoUser = generateDemoProfile(currentProfile, 'google');
-    return { success: true, user: demoUser, isFallback: true };
+    return {
+      success: false,
+      error: 'Firebase authentication is not configured or offline.'
+    };
   }
 
   try {
@@ -309,8 +264,10 @@ export const signInAnonymouslyWithFirebase = async (
   const auth = getFirebaseAuth();
 
   if (!isFirebaseConfigured() || !auth) {
-    const demoUser = generateDemoProfile(currentProfile, 'guest');
-    return { success: true, user: demoUser, isFallback: true };
+    return {
+      success: false,
+      error: 'Firebase authentication is not configured or offline.'
+    };
   }
 
   try {
@@ -358,7 +315,6 @@ export const checkUsernameAvailability = async (username: string, currentUid?: s
 
   const db = getFirebaseDb();
   if (!isFirebaseConfigured() || !db) {
-    // If offline / demo mode, accept valid username formats
     return { available: true };
   }
 
@@ -383,7 +339,7 @@ export const checkUsernameAvailability = async (username: string, currentUid?: s
     return { available: false, error: 'Username is already taken by another gamer.' };
   } catch (err) {
     console.warn('Username availability check fallback:', err);
-    return { available: true }; // Permissive fallback if index/rules not deployed yet
+    return { available: true };
   }
 };
 
@@ -407,16 +363,10 @@ export const signUpWithEmail = async (
   const avatar = params.avatar || currentProfile?.avatar || '🚀';
 
   if (!isFirebaseConfigured() || !auth) {
-    const demoUser: UserProfile = {
-      ...generateDemoProfile(currentProfile, 'email'),
-      email: cleanEmail,
-      username: cleanUsername,
-      displayName: cleanDisplayName,
-      avatar,
-      authType: 'email',
-      createdAt: new Date().toISOString()
+    return {
+      success: false,
+      error: 'Firebase authentication is not configured or offline.'
     };
-    return { success: true, user: demoUser, isFallback: true };
   }
 
   try {
@@ -431,7 +381,7 @@ export const signUpWithEmail = async (
       console.warn('Failed to update FB profile displayName:', e);
     }
 
-    // 3. Build comprehensive SaaS UserProfile
+    // 3. Build comprehensive SaaS UserProfile with genuine starting baseline
     const profile: UserProfile = {
       id: fbUser.uid,
       uid: fbUser.uid,
@@ -439,21 +389,18 @@ export const signUpWithEmail = async (
       username: cleanUsername,
       displayName: cleanDisplayName,
       avatar: avatar,
-      bio: 'Ready to conquer the MemeVerse arena! 🎮',
+      bio: 'Chill Arena Gamer 🎮',
       authType: 'email',
       isCloudSynced: true,
-      xp: currentProfile?.xp || 500,
+      xp: currentProfile?.xp || 0,
       level: currentProfile?.level || 1,
-      coins: currentProfile?.coins || 1000,
-      streak: 1,
-      rank: 'Bronze III',
+      coins: currentProfile?.coins || 100,
+      streak: 0,
+      rank: 'Unranked',
       createdAt: new Date().toISOString(),
       lastLoginDate: new Date().toISOString(),
-      badges: [
-        { id: 'b_welcome', name: 'Arena Recruit', description: 'Signed up for Chill Arena', icon: '🎖️', category: 'gaming' },
-        { id: 'b_verified', name: 'Verified SaaS Gamer', description: 'Registered with Email Security', icon: '🛡️', category: 'social' }
-      ],
-      unlockedSkins: ['default', 'neon_visor'],
+      badges: [],
+      unlockedSkins: ['default'],
       equippedSkin: 'default',
       stats: currentProfile?.stats || {
         gamesPlayed: 0,
@@ -512,15 +459,10 @@ export const signInWithEmail = async (
   const identifier = emailOrUsername.trim();
 
   if (!isFirebaseConfigured() || !auth) {
-    const demoUser: UserProfile = {
-      ...generateDemoProfile(currentProfile, 'email'),
-      email: identifier.includes('@') ? identifier : `${identifier}@chillarena.app`,
-      username: identifier.includes('@') ? identifier.split('@')[0] : identifier,
-      displayName: identifier.includes('@') ? identifier.split('@')[0] : identifier,
-      authType: 'email',
-      lastLoginDate: new Date().toISOString()
+    return {
+      success: false,
+      error: 'Firebase authentication is not configured or offline.'
     };
-    return { success: true, user: demoUser, isFallback: true };
   }
 
   try {
@@ -564,16 +506,15 @@ export const signInWithEmail = async (
       avatar: currentProfile?.avatar || '🚀',
       authType: 'email',
       isCloudSynced: true,
-      xp: currentProfile?.xp || 1200,
-      level: currentProfile?.level || 3,
-      coins: currentProfile?.coins || 2500,
-      streak: (currentProfile?.streak || 1),
+      xp: currentProfile?.xp || 0,
+      level: currentProfile?.level || 1,
+      coins: currentProfile?.coins || 0,
+      streak: currentProfile?.streak || 0,
+      rank: currentProfile?.rank || 'Unranked',
       lastLoginDate: new Date().toISOString(),
-      badges: currentProfile?.badges || [
-        { id: 'b1', name: 'Arena Member', description: 'Active Chill Arena Gamer', icon: '🎮', category: 'gaming' }
-      ],
-      unlockedSkins: currentProfile?.unlockedSkins || ['default', 'neon_visor'],
-      equippedSkin: currentProfile?.equippedSkin || 'neon_visor',
+      badges: currentProfile?.badges || [],
+      unlockedSkins: currentProfile?.unlockedSkins || ['default'],
+      equippedSkin: currentProfile?.equippedSkin || 'default',
       stats: currentProfile?.stats || {
         gamesPlayed: 0,
         totalWins: 0,
@@ -710,7 +651,7 @@ export const submitGameScoreSecure = async (
   gameTitle: string,
   score: number,
   user: UserProfile
-): Promise<{ success: boolean; xpEarned: number; newHighScore: boolean }> => {
+): Promise<{ success: boolean; xpEarned: number; newHighScore: boolean; coinsEarned: number }> => {
   // Anti-Cheat Max Ceilings
   const GAME_CEILINGS: Record<string, number> = {
     'modi-run': 50000,
@@ -733,6 +674,7 @@ export const submitGameScoreSecure = async (
   const baseXP = 50;
   const bonusXP = isNewHigh ? 100 : Math.min(100, Math.floor(validatedScore / 50));
   const xpEarned = baseXP + bonusXP;
+  const coinsEarned = Math.max(10, Math.min(250, Math.floor(validatedScore / 10)));
 
   // Persist to Cloud Leaderboards
   if (user.isCloudSynced && isFirebaseConfigured()) {
@@ -746,7 +688,8 @@ export const submitGameScoreSecure = async (
   return {
     success: true,
     xpEarned,
-    newHighScore: isNewHigh
+    newHighScore: isNewHigh,
+    coinsEarned
   };
 };
 

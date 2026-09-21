@@ -23,8 +23,7 @@ export const AuthModal = () => {
     closeAuthModal,
     setUser,
     loginWithGoogle,
-    loginAnonymously,
-    loginWithDemo
+    loginAnonymously
   } = useAppStore();
 
   const [usernameInput, setUsernameInput] = useState('');
@@ -95,23 +94,14 @@ export const AuthModal = () => {
     }
   };
 
-  const handleInstantDemoLogin = () => {
+  const handleGuestLogin = () => {
     soundFx.playLevelUp();
-    loginWithDemo({
-      username: usernameInput.trim() || undefined,
-      avatar: selectedAvatar
-    }, 'google');
-    closeAuthModal();
-  };
-
-  const handleOtherLogin = (provider: 'discord' | 'guest') => {
-    soundFx.playLevelUp();
-    const finalUsername = usernameInput.trim() || (provider === 'guest' ? `Guest_${Math.floor(1000 + Math.random() * 9000)}` : `${provider.toUpperCase()}_MemeKing`);
+    const finalUsername = usernameInput.trim() || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
     setUser({
       username: finalUsername,
       avatar: selectedAvatar,
-      authType: provider,
-      isCloudSynced: provider !== 'guest'
+      authType: 'guest',
+      isCloudSynced: false
     });
     closeAuthModal();
   };
@@ -136,53 +126,41 @@ export const AuthModal = () => {
             </div>
           </div>
           <h3 className="text-xl font-black text-white tracking-wide font-display">
-            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F]">MemeVerse</span>
+            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F]">Chill Arena</span>
           </h3>
           <p className="text-xs text-gray-400 mt-1 font-sans">
-            Sync high scores, unlock global leaderboards, earn Meme Coins & Gigachad badges!
+            Sync your high scores, climb real global leaderboards, earn genuine XP and badges!
           </p>
 
           <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] text-emerald-400 font-mono">
             <ShieldCheck className="w-3 h-3" />
-            <span>Firebase Cloud Sync Ready</span>
+            <span>Secure Cloud Auth Ready</span>
           </div>
         </div>
 
-        {/* Error notification with actionable instructions & 1-click fallback */}
+        {/* Error notification */}
         {authError && (
           <div className="mb-4 p-3 rounded-2xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs space-y-2">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
               <div className="flex-1">
-                <span className="font-semibold block text-red-300">Authentication Notice:</span>
+                <span className="font-semibold block text-red-300">Authentication Error:</span>
                 <p className="text-[11px] text-red-200/90 leading-relaxed">{authError.message}</p>
               </div>
             </div>
 
-            <div className="space-y-1.5 pt-1">
-              {/* Option A: Google Fullscreen Redirect if popup blocked */}
-              {authError.code === 'auth/popup-blocked' && (
-                <button
-                  onClick={() => {
-                    soundFx.playClick();
-                    useAppStore.getState().loginWithGoogleRedirect();
-                  }}
-                  className="w-full py-2 px-3 rounded-xl bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/50 text-blue-200 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <LogIn className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Sign In via Google Fullscreen (Redirect)</span>
-                </button>
-              )}
-
-              {/* Option B: Instant 1-click Cloud Verified Session */}
+            {authError.code === 'auth/popup-blocked' && (
               <button
-                onClick={handleInstantDemoLogin}
-                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/25 to-yellow-500/25 hover:from-amber-500/35 hover:to-yellow-500/35 border border-amber-500/50 text-amber-300 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-950/40"
+                onClick={() => {
+                  soundFx.playClick();
+                  useAppStore.getState().loginWithGoogleRedirect();
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/50 text-blue-200 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Continue with Instant Verified Cloud Session</span>
+                <LogIn className="w-3.5 h-3.5 text-blue-400" />
+                <span>Sign In via Google Fullscreen (Redirect)</span>
               </button>
-            </div>
+            )}
           </div>
         )}
 
@@ -286,7 +264,7 @@ export const AuthModal = () => {
           {/* Guest Button */}
           <button
             disabled={isLoading}
-            onClick={() => handleOtherLogin('guest')}
+            onClick={handleGuestLogin}
             className="w-full py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-gray-800 text-xs font-bold text-gray-400 hover:text-white flex items-center justify-center gap-2 transition-colors font-display cursor-pointer"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#00F0FF]" /> Play Locally as Guest

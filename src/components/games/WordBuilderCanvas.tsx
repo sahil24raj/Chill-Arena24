@@ -32,7 +32,7 @@ const VALID_DICTIONARY = new Set([
 ]);
 
 export const WordBuilderCanvas: React.FC<WordBuilderProps> = ({ mode: initialMode = 'local' }) => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin } = useAppStore();
+  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
 
   const [gameMode, setGameMode] = useState<'local' | 'ai' | 'solo'>(initialMode);
   const [letters, setLetters] = useState<string[]>(LETTER_POOLS[0]);
@@ -154,12 +154,8 @@ export const WordBuilderCanvas: React.FC<WordBuilderProps> = ({ mode: initialMod
     soundFx.playLevelUp();
     confetti({ particleCount: 80, spread: 60 });
 
-    if (player1Score >= player2Score || gameMode === 'solo') {
-      recordGameWin('word-builder');
-      updateHighScore('word-builder', player1Score);
-      addCoins(250);
-      addXP(200);
-    }
+    const isWin = player1Score >= player2Score || gameMode === 'solo';
+    submitGameScore('word-builder', player1Score, isWin);
   };
 
   const resetGame = () => {

@@ -97,9 +97,7 @@ export const EmojiDodgeCanvas = () => {
           if (em.type === 'cringe') {
             soundFx.playGameOver();
             setGameState('GAMEOVER');
-            updateHighScore('emoji-dodge', currentScore);
-            addCoins(Math.floor(currentScore / 10));
-            addXP(Math.floor(currentScore / 5));
+            useAppStore.getState().submitGameScore('emoji-dodge', currentScore, currentScore > 200);
             cancelAnimationFrame(animId);
             canvas.removeEventListener('mousemove', handleMouseMove);
             return;

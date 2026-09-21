@@ -7,7 +7,7 @@ import { RotateCcw, Play } from 'lucide-react';
 
 export const ChaiTapriCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateHighScore, addCoins, addXP } = useAppStore();
+  const { updateHighScore, addCoins, addXP, submitGameScore } = useAppStore();
 
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER'>('IDLE');
   const [score, setScore] = useState(0);
@@ -41,9 +41,8 @@ export const ChaiTapriCanvas = () => {
         clearInterval(interval);
         soundFx.playGameOver();
         setGameState('GAMEOVER');
-        updateHighScore('chai-tapri', currentScore);
-        addCoins(currentChai * 15);
-        addXP(Math.floor(currentScore / 2));
+        submitGameScore('chai-tapri', currentScore, currentScore > 50);
+        if (currentChai > 0) addCoins(currentChai * 15);
       }
     }, 1000);
 

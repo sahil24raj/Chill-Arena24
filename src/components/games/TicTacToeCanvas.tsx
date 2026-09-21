@@ -150,12 +150,9 @@ export const TicTacToeCanvas: React.FC<TicTacToeProps> = ({ mode: initialMode = 
     soundFx.playLevelUp();
     confetti({ particleCount: 100, spread: 70 });
 
-    if (msg.includes('X') || msg.includes(user.username)) {
-      addCoins(250);
-      addXP(200);
-      recordGameWin('tic-tac-toe');
-      updateHighScore('tic-tac-toe', p1Wins + 1);
-    }
+    const isWin = msg.includes('X') || (user?.username ? msg.includes(user.username) : false);
+    const finalScore = isWin ? 100 : 25;
+    useAppStore.getState().submitGameScore('tic-tac-toe', finalScore, isWin);
   };
 
   const resetSet = () => {

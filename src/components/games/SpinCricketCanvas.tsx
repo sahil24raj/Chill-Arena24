@@ -24,7 +24,7 @@ const SPINNER_SLICES: { label: ShotOutcome; name: string; color: string; bg: str
 ];
 
 export const SpinCricketCanvas: React.FC<SpinCricketProps> = ({ mode: initialMode = 'local' }) => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin } = useAppStore();
+  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
 
   const [gameMode, setGameMode] = useState<'local' | 'ai' | 'solo'>(initialMode);
   const [currentInnings, setCurrentInnings] = useState<1 | 2>(1);
@@ -155,11 +155,10 @@ export const SpinCricketCanvas: React.FC<SpinCricketProps> = ({ mode: initialMod
     soundFx.playLevelUp();
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    if (resultText.includes('P1') || resultText.includes(user.username)) {
+    const isP1Win = resultText.includes('P1') || resultText.includes(user.username);
+    submitGameScore('spin-cricket', innings1Score.runs, isP1Win);
+    if (isP1Win) {
       addCoins(300);
-      addXP(250);
-      recordGameWin('spin-cricket');
-      updateHighScore('spin-cricket', innings1Score.runs);
     }
   };
 

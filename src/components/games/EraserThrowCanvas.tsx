@@ -11,7 +11,7 @@ interface EraserThrowProps {
 }
 
 export const EraserThrowCanvas: React.FC<EraserThrowProps> = ({ mode: initialMode = 'local' }) => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin } = useAppStore();
+  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
 
   const [gameMode, setGameMode] = useState<'local' | 'ai' | 'solo'>(initialMode);
   const [activeItem, setActiveItem] = useState<'eraser' | 'sharpener'>('eraser');
@@ -196,11 +196,10 @@ export const EraserThrowCanvas: React.FC<EraserThrowProps> = ({ mode: initialMod
 
     const p1 = player1Score;
     const p2 = player2Score;
-    if (p1 > p2 || gameMode === 'solo') {
-      recordGameWin('eraser-throw');
-      updateHighScore('eraser-throw', p1);
+    const isWin = p1 > p2 || gameMode === 'solo';
+    submitGameScore('eraser-throw', p1, isWin);
+    if (isWin) {
       addCoins(200);
-      addXP(150);
     }
   };
 

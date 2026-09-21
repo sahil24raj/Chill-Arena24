@@ -11,7 +11,7 @@ export const ModiRunCanvas = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   
-  const { updateHighScore, addCoins, addXP, isMuted, toggleMute } = useAppStore();
+  const { updateHighScore, addCoins, addXP, isMuted, toggleMute, submitGameScore } = useAppStore();
 
   const [gameState, setGameState] = useState<'IDLE' | 'TUTORIAL' | 'PLAYING' | 'GAMEOVER'>('IDLE');
   const [score, setScore] = useState(0);
@@ -293,9 +293,8 @@ export const ModiRunCanvas = () => {
         ) {
           soundFx.playGameOver();
           setGameState('GAMEOVER');
-          updateHighScore('modi-run', currentScore);
-          addCoins(currentCoins);
-          addXP(Math.floor(currentScore / 2));
+          submitGameScore('modi-run', currentScore, currentScore > 50);
+          if (currentCoins > 0) addCoins(currentCoins);
           cancelAnimationFrame(animId);
           
           window.removeEventListener('keydown', handleKeyDown);

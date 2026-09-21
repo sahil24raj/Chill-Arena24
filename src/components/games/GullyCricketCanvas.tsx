@@ -8,7 +8,7 @@ import confetti from 'canvas-confetti';
 
 export const GullyCricketCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateHighScore, addCoins, addXP } = useAppStore();
+  const { updateHighScore, addCoins, addXP, submitGameScore } = useAppStore();
 
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER'>('IDLE');
   const [runs, setRuns] = useState(0);
@@ -89,9 +89,8 @@ export const GullyCricketCanvas = () => {
       setTimeout(() => {
         if (remainingBalls <= 0) {
           setGameState('GAMEOVER');
-          updateHighScore('gully-cricket', currentRuns);
-          addCoins(currentRuns * 10);
-          addXP(currentRuns * 5);
+          submitGameScore('gully-cricket', currentRuns, currentRuns >= 12);
+          if (currentRuns > 0) addCoins(currentRuns * 10);
         } else {
           ball = { x: 700, y: 180, radius: 10, vx: -7, vy: 0, active: true };
           bat.swinging = false;
