@@ -1,5 +1,7 @@
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInAnonymously,
   signOut,
   onAuthStateChanged,
@@ -51,7 +53,7 @@ export const formatAuthError = (error: any): { message: string; code: string; is
       isConfigIssue = true;
       break;
     case 'auth/popup-blocked':
-      message = 'Sign-in pop-up was blocked by your browser. Please allow pop-ups for this site or try Guest / Anonymous login.';
+      message = 'Sign-in pop-up was blocked by your browser. You can click "Sign In (Redirect)" below or use Instant Cloud Play.';
       break;
     case 'auth/popup-closed-by-user':
       message = 'Sign-in window was closed before completing authentication.';
@@ -236,6 +238,35 @@ export const signInWithGoogle = async (
     };
   }
 };
+
+/**
+ * Sign In with Google Redirect (Bypasses popup blocker completely)
+ */
+export const signInWithGoogleRedirect = async (): Promise<void> => {
+  const auth = getFirebaseAuth();
+  const googleProvider = getGoogleProvider();
+  if (auth && googleProvider) {
+    await signInWithRedirect(auth, googleProvider);
+  }
+};
+
+/**
+ * Check and process redirect login result after page reload
+ */
+export const checkRedirectResult = async (): Promise<UserProfile | null> => {
+  const auth = getFirebaseAuth();
+  if (!auth) return null;
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      return buildProfileFromFirebaseUser(result.user, undefined, 'google');
+    }
+  } catch (err) {
+    console.warn('Redirect auth result notice:', err);
+  }
+  return null;
+};
+
 
 /**
  * Sign In Anonymously with Firebase Auth

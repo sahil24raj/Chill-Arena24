@@ -4,6 +4,8 @@ import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch } f
 import { soundFx } from '@/lib/audio';
 import {
   signInWithGoogle,
+  signInWithGoogleRedirect,
+  checkRedirectResult,
   signInAnonymouslyWithFirebase,
   generateDemoProfile,
   logoutFromFirebase,
@@ -520,6 +522,7 @@ interface AppState {
   closeMultiplayerModal: () => void;
   setUser: (user: Partial<UserProfile>) => void;
   loginWithGoogle: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
+  loginWithGoogleRedirect: () => Promise<void>;
   loginAnonymously: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
   loginWithDemo: (customDetails?: Partial<UserProfile>, authType?: 'google' | 'guest') => void;
   initAuthListener: () => () => void;
@@ -586,6 +589,10 @@ export const useAppStore = create<AppState>()(
         return { success: false, error: res.error || 'Failed to sign in with Google', code: res.code };
       },
 
+      loginWithGoogleRedirect: async () => {
+        await signInWithGoogleRedirect();
+      },
+
       loginAnonymously: async (customDetails) => {
         const res = await signInAnonymouslyWithFirebase({ ...get().user, ...customDetails });
         if (res.success && res.user) {
@@ -603,6 +610,14 @@ export const useAppStore = create<AppState>()(
       },
 
       initAuthListener: () => {
+        // Check for redirect login result on mount
+        checkRedirectResult().then((redirectUser) => {
+          if (redirectUser) {
+            set({ user: redirectUser, activeAuthModal: false });
+            soundFx.playLevelUp();
+          }
+        });
+
         const unsubscribe = subscribeToAuth((fbUser) => {
           if (fbUser) {
             const currentUser = get().user;
@@ -623,6 +638,7 @@ export const useAppStore = create<AppState>()(
         });
         return unsubscribe;
       },
+
 
       logout: async () => {
         await logoutFromFirebase();

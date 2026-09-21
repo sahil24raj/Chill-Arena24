@@ -159,16 +159,33 @@ export const AuthModal = () => {
               </div>
             </div>
 
-            {/* Instant Fallback Button if configuration issue */}
-            <button
-              onClick={handleInstantDemoLogin}
-              className="w-full mt-2 py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>Continue with Instant Verified Cloud Session</span>
-            </button>
+            <div className="space-y-1.5 pt-1">
+              {/* Option A: Google Fullscreen Redirect if popup blocked */}
+              {authError.code === 'auth/popup-blocked' && (
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    useAppStore.getState().loginWithGoogleRedirect();
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/50 text-blue-200 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Sign In via Google Fullscreen (Redirect)</span>
+                </button>
+              )}
+
+              {/* Option B: Instant 1-click Cloud Verified Session */}
+              <button
+                onClick={handleInstantDemoLogin}
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/25 to-yellow-500/25 hover:from-amber-500/35 hover:to-yellow-500/35 border border-amber-500/50 text-amber-300 text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-950/40"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Continue with Instant Verified Cloud Session</span>
+              </button>
+            </div>
           </div>
         )}
+
 
         {/* Avatar Selection */}
         <div className="mb-4">
