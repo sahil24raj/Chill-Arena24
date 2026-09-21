@@ -6,25 +6,17 @@ import { soundFx } from '@/lib/audio';
 import {
   Users,
   MessageSquare,
-  Sparkles,
   Share2,
-  Copy,
   Check,
-  Flame,
   Swords,
-  Headphones,
-  Smile
+  Headphones
 } from 'lucide-react';
 
 export const SquadPartyLounge: React.FC = () => {
   const { user, openMultiplayerModal } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [roastInput, setRoastInput] = useState('');
-  const [roastFeed, setRoastFeed] = useState([
-    { id: '1', user: 'Backbencher_Raju', avatar: '😎', msg: 'Koi Pen Flip me aao na re, sab dar gaye kya? 😂', time: '1m ago' },
-    { id: '2', user: 'Gully_Virat', avatar: '🏏', msg: 'Spin Cricket me last over me 18 runs maar ke jita hu bro! 🔥', time: '3m ago' },
-    { id: '3', user: 'ChaiLover_OP', avatar: '☕', msg: 'Hostel me chai party chalu hai, room code #K72LP join karo squad!', time: '6m ago' }
-  ]);
+  const [roastFeed, setRoastFeed] = useState<{ id: string; user: string; avatar: string; msg: string; time: string }[]>([]);
 
   const quickRoasts = [
     'Skill issue bro 💀',
@@ -39,7 +31,13 @@ export const SquadPartyLounge: React.FC = () => {
     if (!msgToSend.trim()) return;
     soundFx.playCoin();
     setRoastFeed([
-      { id: Date.now().toString(), user: user.username, avatar: user.avatar, msg: msgToSend, time: 'Just now' },
+      {
+        id: Date.now().toString(),
+        user: user.displayName || user.username,
+        avatar: user.avatar,
+        msg: msgToSend.trim(),
+        time: 'Just now'
+      },
       ...roastFeed
     ]);
     setRoastInput('');
@@ -70,7 +68,7 @@ export const SquadPartyLounge: React.FC = () => {
             HOSTEL & CANTEEN SQUAD LOUNGE ☕
           </h2>
           <p className="text-xs text-gray-400 font-sans mt-0.5">
-            Dosto ke saath hangout karo, live trash talk share karo aur instant duel room banao.
+            Hangout with friends, share live trash talk, and create instant duel rooms.
           </p>
         </div>
 
@@ -97,35 +95,38 @@ export const SquadPartyLounge: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-        
         {/* Left Col: Live Squad Chat & Banter Feed */}
         <div className="lg:col-span-8 space-y-4">
           <div className="flex items-center justify-between text-xs font-mono text-gray-400">
             <span className="flex items-center gap-1.5 text-white font-bold font-display">
-              <MessageSquare className="w-4 h-4 text-pink-400" /> LIVE TRASH TALK & BANTER FEED
-            </span>
-            <span className="text-[#ADFF2F] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ADFF2F] animate-ping" /> 48 Gamers In Room
+              <MessageSquare className="w-4 h-4 text-pink-400" /> SQUAD TRASH TALK & BANTER FEED
             </span>
           </div>
 
           {/* Chat Stream Box */}
           <div className="p-4 rounded-2xl bg-slate-950/90 border border-gray-800/80 space-y-2.5 max-h-56 overflow-y-auto font-mono text-xs">
-            {roastFeed.map((r) => (
-              <div
-                key={r.id}
-                className="p-2.5 rounded-xl bg-slate-900/60 border border-gray-850 flex items-start justify-between gap-3 hover:border-gray-700 transition-colors"
-              >
-                <div className="flex items-start gap-2.5">
-                  <span className="text-xl shrink-0 mt-0.5">{r.avatar}</span>
-                  <div>
-                    <span className="font-bold text-[#00F0FF] text-[11px] block">{r.user}</span>
-                    <p className="text-gray-300 font-sans text-xs mt-0.5">{r.msg}</p>
+            {roastFeed.length > 0 ? (
+              roastFeed.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-2.5 rounded-xl bg-slate-900/60 border border-gray-850 flex items-start justify-between gap-3 hover:border-gray-700 transition-colors"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-xl shrink-0 mt-0.5">{r.avatar}</span>
+                    <div>
+                      <span className="font-bold text-[#00F0FF] text-[11px] block">{r.user}</span>
+                      <p className="text-gray-300 font-sans text-xs mt-0.5">{r.msg}</p>
+                    </div>
                   </div>
+                  <span className="text-[9px] text-gray-500 shrink-0">{r.time}</span>
                 </div>
-                <span className="text-[9px] text-gray-500 shrink-0">{r.time}</span>
+              ))
+            ) : (
+              <div className="text-center py-6 space-y-1">
+                <p className="text-xs text-gray-400 font-mono">No messages in squad banter yet.</p>
+                <p className="text-[10px] text-gray-600">Type a message below or click a quick roast pill to drop the first roast!</p>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Quick Roast Pills */}
@@ -170,9 +171,9 @@ export const SquadPartyLounge: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-gray-850 pb-2.5">
               <span className="text-xs font-bold text-white font-display flex items-center gap-1.5">
-                <Headphones className="w-4 h-4 text-[#ADFF2F]" /> CHILL PARTY ROOM #01
+                <Headphones className="w-4 h-4 text-[#ADFF2F]" /> CHILL PARTY LOUNGE
               </span>
-              <span className="text-[10px] font-mono text-[#ADFF2F] font-bold">🟢 ACTIVE</span>
+              <span className="text-[10px] font-mono text-[#ADFF2F] font-bold">READY</span>
             </div>
 
             <p className="text-[11px] text-gray-400 font-sans leading-relaxed">
@@ -180,28 +181,14 @@ export const SquadPartyLounge: React.FC = () => {
             </p>
 
             <div className="space-y-2 pt-1 font-mono text-xs">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-gray-800">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-gray-800">
                 <div className="flex items-center gap-2">
                   <span>{user.avatar}</span>
-                  <span className="text-white font-bold">{user.username} (You)</span>
+                  <span className="text-white font-bold">{user.displayName || user.username} (You)</span>
                 </div>
-                <span className="text-[10px] text-[#ADFF2F]">Party Leader</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-gray-800">
-                <div className="flex items-center gap-2">
-                  <span>😎</span>
-                  <span className="text-gray-300">Backbencher_Raju</span>
-                </div>
-                <span className="text-[10px] text-cyan-300">In Pen Flip</span>
-              </div>
-
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-gray-800">
-                <div className="flex items-center gap-2">
-                  <span>☕</span>
-                  <span className="text-gray-300">ChaiBoss_Delhi</span>
-                </div>
-                <span className="text-[10px] text-amber-400">Serving Chai</span>
+                <span className="text-[10px] text-[#ADFF2F]">
+                  LVL {user.level}
+                </span>
               </div>
             </div>
           </div>
@@ -214,10 +201,9 @@ export const SquadPartyLounge: React.FC = () => {
             className="w-full py-3 rounded-xl bg-slate-900 hover:bg-[#00F0FF] border border-[#00F0FF]/40 text-white hover:text-slate-950 text-xs font-black font-display flex items-center justify-center gap-1.5 transition-colors"
           >
             <Swords className="w-3.5 h-3.5" />
-            <span>JOIN PARTY & PLAY</span>
+            <span>CREATE / JOIN PARTY ROOM</span>
           </button>
         </div>
-
       </div>
     </section>
   );

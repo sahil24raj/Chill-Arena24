@@ -86,13 +86,13 @@ export const JackpotterCard: React.FC<JackpotterCardProps> = ({
           </p>
         </div>
 
-        {/* Bottom Bar: Duration, Plays & Play Button */}
+        {/* Bottom Bar: Duration, Difficulty & Play Button */}
         <div className="pt-2.5 border-t border-[#1A243C] flex items-center justify-between text-[10px] font-mono text-gray-400">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3 h-3 text-gray-400" />
             <span>{game.duration}</span>
             <span>•</span>
-            <span>{(game.playCount / 1000).toFixed(0)}k plays</span>
+            <span className="text-[#00F0FF]">{game.difficulty}</span>
           </div>
 
           <span className="text-[#00F0FF] font-bold group-hover:translate-x-1 transition-transform font-display flex items-center gap-1 text-xs">

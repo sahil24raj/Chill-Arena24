@@ -96,7 +96,7 @@ export const GameCard: React.FC<GameCardProps> = ({ game, theme = 'default', onQ
               <Clock className="w-3 h-3 text-gray-500" /> {game.duration}
             </span>
             <span>•</span>
-            <span className="text-gray-400">{(game.playCount / 1000).toFixed(0)}k plays</span>
+            <span className="text-[#00F0FF]">{game.difficulty}</span>
           </div>
 
           <span className="text-[#00F0FF] font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5">

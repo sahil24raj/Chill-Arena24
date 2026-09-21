@@ -22,16 +22,9 @@ import { useRouter } from 'next/navigation';
 
 export default function MultiplayerPage() {
   const router = useRouter();
-  const { user, createRoom, openMultiplayerModal } = useAppStore();
+  const { user, activeRoom, createRoom, openMultiplayerModal } = useAppStore();
   const [selectedGame, setSelectedGame] = useState<string>('pen-flip');
   const [roomCodeInput, setRoomCodeInput] = useState('');
-
-  const publicRooms = [
-    { code: '#FLIP9', game: 'Pen Flip Battle 🖊️', host: 'Backbencher_Raju', players: '1/2', mode: '1v1 Duel' },
-    { code: '#CRIC4', game: 'Spin Cricket 🏏', host: 'Gully_Master99', players: '1/2', mode: '1 Over' },
-    { code: '#WORD2', game: 'Word Builder Scramble 🔠', host: 'AlphaCoder', players: '1/2', mode: '30s Duel' },
-    { code: '#TICT7', game: 'Neon Tic-Tac-Toe ❌', host: 'Sigma_Lord', players: '1/2', mode: 'Best of 3' }
-  ];
 
   const handleCreateAndPlay = (mode: 'local' | 'online' | 'ai') => {
     soundFx.playClick();
@@ -135,41 +128,56 @@ export default function MultiplayerPage() {
         </div>
       </div>
 
-      {/* Public Duel Rooms List */}
+      {/* Public Duel Rooms List / Active Room View */}
       <div className="p-6 lg:p-8 rounded-3xl glass-panel border border-gray-800 bg-[#0c1017]/90 space-y-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-3">
           <h3 className="text-base font-black text-white font-display flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#00F0FF]" /> PUBLIC DUEL LOBBIES OPEN NOW
+            <Users className="w-5 h-5 text-[#00F0FF]" /> ACTIVE MULTIPLAYER ROOMS
           </h3>
-          <span className="text-[10px] font-mono text-[#ADFF2F]">4 LOBBIES WAITING</span>
+          <span className="text-[10px] font-mono text-[#00F0FF]">
+            {activeRoom ? '1 ACTIVE ROOM' : '0 ACTIVE ROOMS'}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono">
-          {publicRooms.map((r, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-2xl bg-slate-950/80 border border-gray-850 hover:border-[#00F0FF]/40 flex items-center justify-between gap-3 transition-all"
-            >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#ADFF2F] font-black text-sm">{r.code}</span>
-                  <span className="text-xs font-bold text-white font-display">{r.game}</span>
-                </div>
-                <span className="text-[10px] text-gray-400 block">Host: {r.host} • {r.mode}</span>
+        {activeRoom ? (
+          <div className="p-4 rounded-2xl bg-slate-950/80 border border-[#00F0FF]/40 flex items-center justify-between gap-3 font-mono">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[#ADFF2F] font-black text-sm">{activeRoom.code}</span>
+                <span className="text-xs font-bold text-white font-display">{activeRoom.gameTitle}</span>
               </div>
-
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  openMultiplayerModal();
-                }}
-                className="px-4 py-2 rounded-xl bg-[#00F0FF]/15 hover:bg-[#00F0FF] border border-[#00F0FF]/40 text-[#00F0FF] hover:text-slate-950 text-xs font-bold font-display transition-colors"
-              >
-                JOIN DUEL &rarr;
-              </button>
+              <span className="text-[10px] text-gray-400 block">
+                Host: {activeRoom.hostName} • Status: {activeRoom.status}
+              </span>
             </div>
-          ))}
-        </div>
+
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                router.push(`/game/${activeRoom.gameId}?room=${activeRoom.code.replace('#', '')}`);
+              }}
+              className="px-4 py-2 rounded-xl cyber-button text-slate-950 text-xs font-black font-display transition-transform hover:scale-105"
+            >
+              RESUME MATCH &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-10 px-4 space-y-3">
+            <p className="text-xs font-bold text-gray-300">No active multiplayer lobbies open right now.</p>
+            <p className="text-[11px] text-gray-500 max-w-md mx-auto">
+              Create a custom room code above to challenge a friend, or jump into Pass & Play mode on this device!
+            </p>
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                openMultiplayerModal();
+              }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 text-white font-display text-xs font-bold shadow-lg"
+            >
+              CREATE CUSTOM ROOM
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

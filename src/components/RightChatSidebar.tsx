@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { MessageSquare, Users, Send, Smile, Sparkles, ChevronRight, ChevronLeft, Bot } from 'lucide-react';
+import { MessageSquare, Send, Sparkles, ChevronRight, Bot } from 'lucide-react';
 
 interface ChatSidebarProps {
   collapsed?: boolean;
@@ -21,12 +21,9 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
   const isActualCollapsed = isCollapsed !== undefined ? isCollapsed : collapsed;
   const handleToggle = onToggleCollapse || onToggle || (() => {});
   const { user } = useAppStore();
-  const [messages, setMessages] = useState([
-    { id: '1', user: 'Alex_HostelPro', avatar: '😎', badge: 'Pen Master', time: '14:28 PM', text: 'Bro Pen Flip ka sweet spot 72% power pe hai! Try karo sab! 🖊️🔥' },
-    { id: '2', user: 'Maria_ChaiTapri', avatar: '☕', badge: 'Tapri Owner', time: '14:30 PM', text: 'Just served 50 cutting chais without losing a customer! New high score!' },
-    { id: '3', user: 'Gully_Virat77', avatar: '🏏', badge: 'Sixer Machine', time: '14:32 PM', text: 'Spin Cricket over me 2 sixes back to back maar diya 😂' },
-    { id: '4', user: 'DankLord_Sigma', avatar: '🗿', badge: 'Gigachad', time: '14:35 PM', text: 'Tic Tac Toe room code #T99X2 join karo koi 1v1 duel!' }
-  ]);
+  const [messages, setMessages] = useState<
+    { id: string; user: string; avatar: string; badge: string; time: string; text: string }[]
+  >([]);
 
   const [inputMsg, setInputMsg] = useState('');
 
@@ -41,9 +38,9 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
       ...prev,
       {
         id: Date.now().toString(),
-        user: user.username,
+        user: user.displayName || user.username,
         avatar: user.avatar,
-        badge: 'Squad Leader',
+        badge: user.authType === 'google' ? 'Google' : user.authType === 'email' ? 'Verified' : 'Gamer',
         time: 'Just now',
         text: inputMsg.trim()
       }
@@ -57,12 +54,12 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
         <button
           onClick={handleToggle}
           className="p-2.5 rounded-xl bg-[#161926] hover:bg-[#00F0FF]/20 text-[#00F0FF] border border-gray-800 transition-colors shadow-lg"
-          title="Open Live Online Chat"
+          title="Open Arena Chat"
         >
           <MessageSquare className="w-5 h-5" />
         </button>
         <span className="[writing-mode:vertical-lr] text-[10px] font-mono text-gray-500 font-bold tracking-widest uppercase mt-6">
-          ONLINE CHAT (642)
+          ARENA CHAT
         </span>
       </div>
     );
@@ -77,9 +74,9 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
             <Bot className="w-4 h-4 text-[#00F0FF]" />
           </div>
           <div>
-            <h3 className="text-xs font-black text-white font-display uppercase tracking-wide">ONLINE CHAT</h3>
-            <span className="text-[10px] font-mono text-[#ADFF2F] flex items-center gap-1 font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ADFF2F] animate-pulse" /> 642 GAMERS LIVE
+            <h3 className="text-xs font-black text-white font-display uppercase tracking-wide">ARENA CHAT</h3>
+            <span className="text-[10px] font-mono text-[#00F0FF] flex items-center gap-1 font-bold">
+              <span>SQUAD LOBBY</span>
             </span>
           </div>
         </div>
@@ -93,29 +90,36 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
         </button>
       </div>
 
-
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto space-y-3 font-mono text-xs pr-1">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className="p-3 rounded-2xl bg-[#131624] border border-[#1e2235] hover:border-[#00F0FF]/30 transition-all space-y-1"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm">{m.avatar}</span>
-                <span className="text-[11px] font-bold text-[#00F0FF] font-display truncate max-w-[110px]">
-                  {m.user}
-                </span>
-                <span className="text-[8px] bg-purple-950/80 text-purple-300 border border-purple-800/40 px-1 py-0.2 rounded font-mono">
-                  {m.badge}
-                </span>
+        {messages.length > 0 ? (
+          messages.map((m) => (
+            <div
+              key={m.id}
+              className="p-3 rounded-2xl bg-[#131624] border border-[#1e2235] hover:border-[#00F0FF]/30 transition-all space-y-1"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{m.avatar}</span>
+                  <span className="text-[11px] font-bold text-[#00F0FF] font-display truncate max-w-[110px]">
+                    {m.user}
+                  </span>
+                  <span className="text-[8px] bg-purple-950/80 text-purple-300 border border-purple-800/40 px-1 py-0.2 rounded font-mono">
+                    {m.badge}
+                  </span>
+                </div>
+                <span className="text-[9px] text-gray-400">{m.time}</span>
               </div>
-              <span className="text-[9px] text-gray-400">{m.time}</span>
+              <p className="text-[11px] text-gray-200 font-sans leading-relaxed pt-0.5">{m.text}</p>
             </div>
-            <p className="text-[11px] text-gray-200 font-sans leading-relaxed pt-0.5">{m.text}</p>
+          ))
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-2">
+            <MessageSquare className="w-8 h-8 text-gray-600" />
+            <p className="text-xs font-bold text-gray-400">No chat messages yet</p>
+            <p className="text-[10px] text-gray-600">Type below to share duel room codes or send trash talk!</p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Quick Emojis & Input Form */}
@@ -138,7 +142,7 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <input
             type="text"
-            placeholder="Type trash talk / roast..."
+            placeholder="Type trash talk / message..."
             value={inputMsg}
             onChange={(e) => setInputMsg(e.target.value)}
             className="flex-1 bg-[#131624] border border-[#1e2235] rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#00F0FF] font-sans"

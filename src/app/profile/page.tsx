@@ -358,7 +358,7 @@ export default function ProfilePage() {
           <div className="bg-[#121624]/70 border border-white/10 rounded-2xl p-4">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Current Rank</span>
             <div className="text-lg sm:text-xl font-black text-[#ADFF2F]">
-              {user.level >= 10 ? 'Diamond II' : user.level >= 5 ? 'Gold I' : 'Silver III'}
+              {user.stats.gamesPlayed === 0 ? 'Unranked' : user.level >= 10 ? 'Diamond II' : user.level >= 5 ? 'Gold I' : 'Silver III'}
             </div>
             <span className="text-[10px] text-slate-500 mt-1 block">Tier status</span>
           </div>
@@ -394,22 +394,31 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {(user.badges || []).map((badge) => (
-            <div
-              key={badge.id}
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3.5 hover:border-amber-400/40 transition-colors"
-            >
-              <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl flex-shrink-0">
-                {badge.icon}
+        {(user.badges && user.badges.length > 0) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {user.badges.map((badge) => (
+              <div
+                key={badge.id}
+                className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3.5 hover:border-amber-400/40 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl flex-shrink-0">
+                  {badge.icon}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">{badge.name}</h4>
+                  <p className="text-xs text-slate-400 leading-tight mt-0.5">{badge.description}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">{badge.name}</h4>
-                <p className="text-xs text-slate-400 leading-tight mt-0.5">{badge.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 px-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 space-y-2">
+            <p className="text-xs font-bold text-slate-300">No achievements unlocked yet</p>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+              Play mini-games, land difficult pen flips, and complete daily challenges to earn verified badges!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Cloud Sync & Data Management */}

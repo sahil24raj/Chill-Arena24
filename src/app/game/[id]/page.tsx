@@ -41,16 +41,14 @@ import confetti from 'canvas-confetti';
 
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { addRecentlyPlayed, openMultiplayerModal } = useAppStore();
+  const { user, addRecentlyPlayed, openMultiplayerModal } = useAppStore();
 
-  const [likes, setLikes] = useState(1420);
   const [hasLiked, setHasLiked] = useState(false);
+  const [likes, setLikes] = useState(0);
   const [commentText, setCommentText] = useState('');
-  const [commentsList, setCommentsList] = useState([
-    { id: '1', user: 'SigmaGamer_99', text: 'That pen flip sweet spot on the desk is so addicting! 😂', time: '2 mins ago', likes: 14 },
-    { id: '2', user: 'ChaiLover_IN', text: 'Best-of-3 Tic Tac Toe and Spin Cricket are absolute cinema 🔥', time: '10 mins ago', likes: 8 },
-    { id: '3', user: 'Backbencher_Raju', text: 'Hit the blackboard target right before teacher entered! 💀', time: '25 mins ago', likes: 19 }
-  ]);
+  const [commentsList, setCommentsList] = useState<
+    { id: string; user: string; text: string; time: string; likes: number }[]
+  >([]);
 
   const game = GAMES_CATALOG.find((g) => g.id === id) || GAMES_CATALOG[0];
 
@@ -64,6 +62,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
       setLikes(likes + 1);
       setHasLiked(true);
       confetti({ particleCount: 30, spread: 40 });
+    } else {
+      setLikes(Math.max(0, likes - 1));
+      setHasLiked(false);
     }
   };
 
@@ -80,7 +81,13 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
     if (!commentText.trim()) return;
     soundFx.playLevelUp();
     setCommentsList([
-      { id: Date.now().toString(), user: 'You (Meme Champion)', text: commentText, time: 'Just now', likes: 0 },
+      {
+        id: Date.now().toString(),
+        user: user.displayName || user.username,
+        text: commentText.trim(),
+        time: 'Just now',
+        likes: 0
+      },
       ...commentsList
     ]);
     setCommentText('');
@@ -267,17 +274,24 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
               </button>
             </form>
 
-            <div className="space-y-3 pt-2 font-mono">
-              {commentsList.map((c) => (
-                <div key={c.id} className="p-3.5 rounded-xl bg-slate-950/80 border border-gray-850 text-xs space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-[#00F0FF]">{c.user}</span>
-                    <span className="text-[10px] text-gray-500">{c.time}</span>
+            {commentsList.length > 0 ? (
+              <div className="space-y-3 pt-2 font-mono">
+                {commentsList.map((c) => (
+                  <div key={c.id} className="p-3.5 rounded-xl bg-slate-950/80 border border-gray-850 text-xs space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-[#00F0FF]">{c.user}</span>
+                      <span className="text-[10px] text-gray-500">{c.time}</span>
+                    </div>
+                    <p className="text-gray-300 font-sans">{c.text}</p>
                   </div>
-                  <p className="text-gray-300 font-sans">{c.text}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 border border-dashed border-gray-800 rounded-2xl bg-slate-950/40 space-y-1">
+                <p className="text-xs text-gray-400 font-sans">No reviews or roasts posted yet.</p>
+                <p className="text-[10px] text-gray-600 font-sans">Be the first gamer to share tips or strategies for this game!</p>
+              </div>
+            )}
           </div>
         </div>
 

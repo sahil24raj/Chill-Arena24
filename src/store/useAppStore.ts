@@ -23,47 +23,31 @@ export type Game = GameItem;
 export type { GameItem };
 
 const INITIAL_USER: UserProfile = {
-  id: 'usr_memelord',
-  username: 'Sigma_Gamer69',
+  id: 'usr_guest',
+  username: 'Gamer',
   avatar: '🚀',
   authType: 'guest',
-  xp: 2840,
-  level: 7,
-  coins: 4850,
-  streak: 5,
+  xp: 0,
+  level: 1,
+  coins: 0,
+  streak: 0,
   lastLoginDate: new Date().toISOString(),
-  badges: [
-    { id: 'b1', name: 'Meme Pioneer', description: 'Joined MemeVerse on Launch Day', icon: '🔥', category: 'legend' },
-    { id: 'b2', name: 'School Legend', description: 'Flipped 50 pens on the desk', icon: '🏫', category: 'school' },
-    { id: 'b3', name: 'Big Brain', description: 'Solved 25 rapid mind puzzles', icon: '🧠', category: 'mind' },
-    { id: 'b4', name: 'Tea Collector', description: 'Served 50+ cutting chais', icon: '☕', category: 'meme' },
-    { id: 'b5', name: 'Speed Demon', description: 'Reaction time under 180ms', icon: '⚡', category: 'gaming' }
-  ],
-  unlockedSkins: ['default', 'gold_crown', 'neon_visor', 'desk_master'],
-  equippedSkin: 'neon_visor',
+  badges: [],
+  unlockedSkins: ['default'],
+  equippedSkin: 'default',
   stats: {
-    gamesPlayed: 68,
-    totalWins: 49,
-    winRate: 72,
-    highScores: {
-      'modi-run': 1850,
-      'cid-escape': 1120,
-      'chai-tapri': 2650,
-      'emoji-dodge': 4100,
-      'meme-clicker': 42000,
-      'gully-cricket': 142,
-      'pen-flip': 10,
-      'eraser-throw': 18,
-      'spin-cricket': 36,
-      'word-builder': 24,
-      'tic-tac-toe': 12,
-      'brain-pot': 850
-    },
-    roastsWon: 24,
-    sixesHit: 38,
-    chaiServed: 120,
-    penFlipsLanded: 44,
-    eraserHits: 32
+    gamesPlayed: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    winRate: 0,
+    totalScore: 0,
+    bestScore: 0,
+    highScores: {},
+    roastsWon: 0,
+    sixesHit: 0,
+    chaiServed: 0,
+    penFlipsLanded: 0,
+    eraserHits: 0
   }
 };
 
@@ -75,7 +59,7 @@ export const INITIAL_CHALLENGES: DailyChallenge[] = [
     icon: '🎯',
     rewardXP: 300,
     rewardCoins: 250,
-    progress: 2,
+    progress: 0,
     target: 3,
     category: 'general',
     claimed: false
@@ -87,7 +71,7 @@ export const INITIAL_CHALLENGES: DailyChallenge[] = [
     icon: '🏫',
     rewardXP: 250,
     rewardCoins: 200,
-    progress: 3,
+    progress: 0,
     target: 5,
     category: 'school',
     claimed: false
@@ -99,7 +83,7 @@ export const INITIAL_CHALLENGES: DailyChallenge[] = [
     icon: '🧠',
     rewardXP: 350,
     rewardCoins: 300,
-    progress: 4,
+    progress: 0,
     target: 6,
     category: 'mind',
     claimed: false
@@ -111,59 +95,14 @@ export const INITIAL_CHALLENGES: DailyChallenge[] = [
     icon: '🔥',
     rewardXP: 200,
     rewardCoins: 150,
-    progress: 5,
+    progress: 0,
     target: 5,
     category: 'meme',
     claimed: false
   }
 ];
 
-export const INITIAL_RECENT_MATCHES: RecentMatch[] = [
-  {
-    id: 'm1',
-    gameId: 'pen-flip',
-    gameTitle: 'Pen Flip 1v1',
-    gameIcon: '🖊️',
-    player1: { name: 'Sigma_Gamer69', avatar: '🚀', score: 10 },
-    player2: { name: 'ChaiBoss_Delhi', avatar: '☕', score: 7 },
-    winner: 'Sigma_Gamer69',
-    roastQuote: 'Bro got lucky on that final tip flip 💀',
-    timeAgo: '1 min ago'
-  },
-  {
-    id: 'm2',
-    gameId: 'eraser-throw',
-    gameTitle: 'Eraser Throw',
-    gameIcon: '✏️',
-    player1: { name: 'Backbencher_Raju', avatar: '😎', score: 14 },
-    player2: { name: 'Monitor_Pooja', avatar: '📚', score: 9 },
-    winner: 'Backbencher_Raju',
-    roastQuote: 'ABSOLUTE CINEMA! Hit blackboard right before teacher entered!',
-    timeAgo: '4 mins ago'
-  },
-  {
-    id: 'm3',
-    gameId: 'spin-cricket',
-    gameTitle: 'Spin Cricket Duel',
-    gameIcon: '🏏',
-    player1: { name: 'GullyKing_Virat', avatar: '🏏', score: 28 },
-    player2: { name: 'BoomBoom_Afridi', avatar: '⚡', score: 24 },
-    winner: 'GullyKing_Virat',
-    roastQuote: 'Last ball six into aunty ki balcony 😂',
-    timeAgo: '8 mins ago'
-  },
-  {
-    id: 'm4',
-    gameId: 'tic-tac-toe',
-    gameTitle: 'Tic-Tac-Toe Duel',
-    gameIcon: '❌',
-    player1: { name: 'AlphaCoder', avatar: '🤖', score: 2 },
-    player2: { name: 'Dank_Lord', avatar: '🗿', score: 1 },
-    winner: 'AlphaCoder',
-    roastQuote: 'Classic corner fork move. Pure 200 IQ! 🧠',
-    timeAgo: '12 mins ago'
-  }
-];
+export const INITIAL_RECENT_MATCHES: RecentMatch[] = [];
 
 export const GAMES_CATALOG: GameItem[] = [
   // ================= 1. 🔥 TRENDING MEME GAMES =================
@@ -560,7 +499,7 @@ export const useAppStore = create<AppState>()(
       activeSpinModal: false,
       activeMultiplayerModal: false,
       selectedMultiplayerGame: null,
-      recentlyPlayedIds: ['pen-flip', 'modi-run', 'eraser-throw', 'word-builder'],
+      recentlyPlayedIds: [],
       challenges: INITIAL_CHALLENGES,
       activeRoom: null,
       recentMatches: INITIAL_RECENT_MATCHES,
@@ -879,7 +818,7 @@ export const useAppStore = create<AppState>()(
           code: normalized.startsWith('#') ? normalized : `#${normalized}`,
           gameId: 'pen-flip',
           gameTitle: 'Pen Flip Battle 🖊️',
-          hostName: 'Alpha_Player1',
+          hostName: 'Room Host',
           hostAvatar: '👑',
           guestName: get().user.username,
           guestAvatar: get().user.avatar,
@@ -895,11 +834,11 @@ export const useAppStore = create<AppState>()(
 
       spinDailyReward: () => {
         const rewards = [
-          { coins: 150, xp: 75, rewardName: '150 Meme Coins + 75 XP' },
-          { coins: 350, xp: 150, rewardName: '350 Meme Coins + 150 XP' },
-          { coins: 750, xp: 300, rewardName: '750 Jackpot Coins 🪙' },
+          { coins: 150, xp: 75, rewardName: '150 Coins + 75 XP' },
+          { coins: 350, xp: 150, rewardName: '350 Coins + 150 XP' },
+          { coins: 750, xp: 300, rewardName: '750 Bonus Coins 🪙' },
           { coins: 100, xp: 250, rewardName: '250 XP Boost 🚀' },
-          { coins: 1500, xp: 700, rewardName: '👑 Gigachad Classroom Legend Pack' }
+          { coins: 1000, xp: 500, rewardName: '1000 Coins + 500 XP Grand Prize' }
         ];
         const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
         get().addCoins(randomReward.coins);

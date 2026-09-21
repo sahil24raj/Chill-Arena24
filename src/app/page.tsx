@@ -23,6 +23,9 @@ import {
   ArrowRight
 } from 'lucide-react';
 
+import { subscribeToCloudLeaderboard } from '@/lib/firebaseService';
+import { LeaderboardEntry } from '@/types';
+
 const CATEGORY_TABS = [
   { id: 'all', label: 'All Games', icon: Sparkles, color: 'from-[#00F0FF] to-[#00A3FF]' },
   { id: 'school', label: 'School Nostalgia', icon: GraduationCap, color: 'from-[#FFB800] to-[#FF8800]' },
@@ -33,7 +36,22 @@ const CATEGORY_TABS = [
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState('all');
+  const [topLeaderboard, setTopLeaderboard] = useState<LeaderboardEntry[]>([]);
   const { openMultiplayerModal } = useAppStore();
+
+  React.useEffect(() => {
+    const unsub = subscribeToCloudLeaderboard((entries) => {
+      if (entries && entries.length > 0) {
+        const sorted = [...entries].sort((a, b) => b.score - a.score);
+        setTopLeaderboard(sorted.slice(0, 3).map((e, idx) => ({ ...e, rank: idx + 1 })));
+      } else {
+        setTopLeaderboard([]);
+      }
+    });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
   const trendingGames: Game[] = [
     GAMES_CATALOG.find((g) => g.id === 'pen-flip')!,
@@ -48,12 +66,6 @@ export default function HomePage() {
   const mindGames: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'mind');
   const memeGames: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'meme');
   const multiplayerGames: Game[] = GAMES_CATALOG.filter((g) => g.multiplayer);
-
-  const topPlayers = [
-    { rank: 1, name: 'Gigachad_69', score: '24,850 pts', avatar: '🗿', badge: 'Meme Emperor', winRate: '88%' },
-    { rank: 2, name: 'Daya_Smash', score: '19,420 pts', avatar: '🚪', badge: 'CID Destroyer', winRate: '82%' },
-    { rank: 3, name: 'ChaiTapriBoss', score: '15,750 pts', avatar: '☕', badge: 'Tapri Master', winRate: '79%' }
-  ];
 
   const filteredGames = React.useMemo(() => {
     if (activeTab === 'all') return null;
@@ -124,7 +136,7 @@ export default function HomePage() {
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filteredGames.map((game) => (
+            {filteredGames.map((game: Game) => (
               <div key={game.id} className="w-full">
                 <JackpotterGameRow.Card game={game} />
               </div>
@@ -244,57 +256,64 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Podium Top 3 Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {topPlayers.map((usr) => (
-            <div
-              key={usr.rank}
-              className={`p-5 rounded-2xl border transition-all flex items-center justify-between relative overflow-hidden ${
-                usr.rank === 1
-                  ? 'bg-gradient-to-tr from-amber-500/15 via-[#121927] to-[#0A0E17] border-amber-500/50 shadow-lg shadow-amber-500/10'
-                  : 'bg-[#0B0F1A] border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              {usr.rank === 1 && (
-                <div className="absolute top-2 right-2 text-amber-400/30">
-                  <Crown className="w-12 h-12" />
+        {/* Podium Top 3 Cards or Empty State */}
+        {topLeaderboard.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {topLeaderboard.map((usr) => (
+              <div
+                key={usr.rank}
+                className={`p-5 rounded-2xl border transition-all flex items-center justify-between relative overflow-hidden ${
+                  usr.rank === 1
+                    ? 'bg-gradient-to-tr from-amber-500/15 via-[#121927] to-[#0A0E17] border-amber-500/50 shadow-lg shadow-amber-500/10'
+                    : 'bg-[#0B0F1A] border-gray-800 hover:border-gray-700'
+                }`}
+              >
+                {usr.rank === 1 && (
+                  <div className="absolute top-2 right-2 text-amber-400/30">
+                    <Crown className="w-12 h-12" />
+                  </div>
+                )}
+                <div className="flex items-center gap-3.5 relative z-10">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-sm border ${
+                      usr.rank === 1
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                        : usr.rank === 2
+                        ? 'bg-gray-400/20 border-gray-400/40 text-gray-300'
+                        : 'bg-amber-700/20 border-amber-700/40 text-amber-600'
+                    }`}
+                  >
+                    #{usr.rank}
+                  </div>
+                  <div className="w-11 h-11 rounded-xl bg-slate-900 border border-gray-800 flex items-center justify-center text-2xl shadow-inner">
+                    {usr.avatar || '🎮'}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white font-display">{usr.username}</h4>
+                    <span className="text-[10px] text-gray-400 font-mono block">{usr.badge || '⚡ Player'}</span>
+                    <span className="text-[9px] text-emerald-400 font-mono">{usr.wins || 0} Wins</span>
+                  </div>
                 </div>
-              )}
-              <div className="flex items-center gap-3.5 relative z-10">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center font-display font-black text-sm border ${
-                    usr.rank === 1
-                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                      : usr.rank === 2
-                      ? 'bg-gray-400/20 border-gray-400/40 text-gray-300'
-                      : 'bg-amber-700/20 border-amber-700/40 text-amber-600'
-                  }`}
-                >
-                  #{usr.rank}
-                </div>
-                <div className="w-11 h-11 rounded-xl bg-slate-900 border border-gray-800 flex items-center justify-center text-2xl shadow-inner">
-                  {usr.avatar}
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white font-display">{usr.name}</h4>
-                  <span className="text-[10px] text-gray-400 font-mono block">{usr.badge}</span>
-                  <span className="text-[9px] text-emerald-400 font-mono">Winrate: {usr.winRate}</span>
-                </div>
-              </div>
 
-              <div className="text-right font-mono relative z-10">
-                <span
-                  className={`text-sm font-black block ${
-                    usr.rank === 1 ? 'text-amber-400' : 'text-[#00F0FF]'
-                  }`}
-                >
-                  {usr.score}
-                </span>
-                <span className="text-[9px] text-gray-500">POINTS</span>
+                <div className="text-right font-mono relative z-10">
+                  <span
+                    className={`text-sm font-black block ${
+                      usr.rank === 1 ? 'text-amber-400' : 'text-[#00F0FF]'
+                    }`}
+                  >
+                    {usr.score.toLocaleString()}
+                  </span>
+                  <span className="text-[9px] text-gray-500">POINTS</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 px-4 rounded-2xl bg-[#0B0F1A] border border-gray-800 space-y-2">
+            <p className="text-xs font-bold text-gray-300">No leaderboard scores yet.</p>
+            <p className="text-[11px] text-gray-500">Play any game to set the first verified record on the platform!</p>
+          </div>
+        )}
       </section>
 
       {/* 10. DAILY CHALLENGES SECTION */}

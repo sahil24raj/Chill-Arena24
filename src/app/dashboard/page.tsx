@@ -146,9 +146,9 @@ export default function DashboardPage() {
             <Award className="w-4 h-4 text-[#ADFF2F]" />
           </div>
           <div className="text-lg sm:text-xl font-black text-[#ADFF2F]">
-            {user.level >= 10 ? 'Diamond II' : user.level >= 5 ? 'Gold I' : 'Silver III'}
+            {user.stats.gamesPlayed === 0 ? 'Unranked' : user.level >= 10 ? 'Diamond II' : user.level >= 5 ? 'Gold I' : 'Silver III'}
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">Season 1 Active</span>
+          <span className="text-[10px] text-slate-400 mt-1 block">Tier status</span>
         </div>
 
         {/* Games Played */}

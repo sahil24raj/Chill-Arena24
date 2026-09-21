@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, GAMES_CATALOG } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
 import { ChillArenaLogo } from '@/components/ChillArenaLogo';
 import {
@@ -44,16 +44,27 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
 
   const isLoggedIn = user.authType === 'email' || user.authType === 'google';
 
-  // Daily Streak Timer
-  const [timeLeft, setTimeLeft] = useState({ hours: 18, minutes: 42, seconds: 15 });
+  // Real countdown to next UTC midnight
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date();
+    const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    const diff = Math.max(0, Math.floor((nextMidnight.getTime() - now.getTime()) / 1000));
+    return {
+      hours: Math.floor(diff / 3600),
+      minutes: Math.floor((diff % 3600) / 60),
+      seconds: diff % 60
+    };
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return { hours: 24, minutes: 0, seconds: 0 };
+      const now = new Date();
+      const nextMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      const diff = Math.max(0, Math.floor((nextMidnight.getTime() - now.getTime()) / 1000));
+      setTimeLeft({
+        hours: Math.floor(diff / 3600),
+        minutes: Math.floor((diff % 3600) / 60),
+        seconds: diff % 60
       });
     }, 1000);
     return () => clearInterval(timer);
@@ -70,13 +81,19 @@ export const LeftSidebar: React.FC<SidebarProps> = ({
     { href: '/profile', label: 'Gamer Profile', icon: User }
   ];
 
-  // 100% Working Trending Vibes Categories
+  // Dynamic game counts computed from registered games catalog
+  const schoolCount = GAMES_CATALOG.filter((g) => g.categoryKey === 'school').length;
+  const mindCount = GAMES_CATALOG.filter((g) => g.categoryKey === 'mind').length;
+  const memeCount = GAMES_CATALOG.filter((g) => g.categoryKey === 'meme').length;
+  const multiplayerCount = GAMES_CATALOG.filter((g) => g.multiplayer).length;
+  const rapidCount = GAMES_CATALOG.filter((g) => g.duration.includes('30s') || g.duration.includes('60s') || g.duration.includes('1m')).length;
+
   const trendingVibes = [
-    { href: '/categories?cat=school', label: 'School Nostalgia', icon: Backpack, color: 'text-amber-400', count: '4 Games' },
-    { href: '/categories?cat=mind', label: 'Mind Battles & IQ', icon: Brain, color: 'text-purple-400', count: '4 Games' },
-    { href: '/categories?cat=meme', label: 'Desi Meme Vibes', icon: Coffee, color: 'text-pink-400', count: '4 Games' },
-    { href: '/categories?cat=multiplayer', label: '1v1 Squad Duels', icon: Users, color: 'text-[#00F0FF]', count: '6 Games' },
-    { href: '/categories?cat=rapid', label: 'Rapid 60s Battles', icon: Zap, color: 'text-[#ADFF2F]', count: '5 Games' }
+    { href: '/categories?cat=school', label: 'School Nostalgia', icon: Backpack, color: 'text-amber-400', count: `${schoolCount} Games` },
+    { href: '/categories?cat=mind', label: 'Mind Battles & IQ', icon: Brain, color: 'text-purple-400', count: `${mindCount} Games` },
+    { href: '/categories?cat=meme', label: 'Desi Meme Vibes', icon: Coffee, color: 'text-pink-400', count: `${memeCount} Games` },
+    { href: '/categories?cat=multiplayer', label: '1v1 Squad Duels', icon: Users, color: 'text-[#00F0FF]', count: `${multiplayerCount} Games` },
+    { href: '/categories?cat=rapid', label: 'Rapid 60s Battles', icon: Zap, color: 'text-[#ADFF2F]', count: `${rapidCount} Games` }
   ];
 
   return (
