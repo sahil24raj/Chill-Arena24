@@ -95,35 +95,18 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const renderGameCanvas = () => {
     switch (game.id) {
-      // 6 New Interactive Mini-Games
-      case 'pen-flip':
-        return <PenFlipCanvas />;
-      case 'eraser-throw':
-        return <EraserThrowCanvas />;
-      case 'spin-cricket':
-        return <SpinCricketCanvas />;
       case 'word-builder':
         return <WordBuilderCanvas />;
       case 'tic-tac-toe':
         return <TicTacToeCanvas />;
+      case 'spin-cricket':
+        return <SpinCricketCanvas />;
+      case 'pen-flip':
+        return <PenFlipCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
-
-      // Existing 6 Games
-      case 'modi-run':
-        return <ModiRunCanvas />;
-      case 'cid-escape':
-        return <CIDEscapeCanvas />;
-      case 'chai-tapri':
-        return <ChaiTapriCanvas />;
-      case 'emoji-dodge':
-        return <EmojiDodgeCanvas />;
-      case 'meme-clicker':
-        return <MemeClickerCanvas />;
-      case 'gully-cricket':
-        return <GullyCricketCanvas />;
       default:
-        return <PenFlipCanvas />;
+        return <WordBuilderCanvas />;
     }
   };
 

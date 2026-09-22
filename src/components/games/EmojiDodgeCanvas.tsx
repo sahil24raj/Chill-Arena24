@@ -3,183 +3,326 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { RotateCcw, Play } from 'lucide-react';
+import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
+import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
+import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import confetti from 'canvas-confetti';
 
-export const EmojiDodgeCanvas = () => {
+export const EmojiDodgeCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateHighScore, addCoins, addXP } = useAppStore();
+  const { user, submitGameScore } = useAppStore();
 
-  const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER'>('IDLE');
+  const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [resultData, setResultData] = useState<GameSessionFinishResponse | null>(null);
 
-  const startGame = () => {
-    soundFx.playJump();
-    setGameState('PLAYING');
-    setScore(0);
-  };
+  const gameLoopRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (gameState !== 'PLAYING') return;
+    const stored = user.stats.highScores?.['emoji-dodge'] || 0;
+    setHighScore(stored);
+  }, [user.stats.highScores]);
+
+  const handleStartGame = async () => {
+    await GameSessionManager.startSession('emoji-dodge', user);
+    setStatus('PLAYING');
+    setScore(0);
+    setCombo(0);
+    setResultData(null);
+  };
+
+  const handlePause = () => {
+    if (status === 'PLAYING') {
+      setStatus('PAUSED');
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    }
+  };
+
+  const handleResume = () => {
+    if (status === 'PAUSED') {
+      setStatus('PLAYING');
+    }
+  };
+
+  const handleRestart = () => {
+    if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    handleStartGame();
+  };
+
+  // Main Game Loop
+  useEffect(() => {
+    if (status !== 'PLAYING') return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animId: number;
+    canvas.width = 800;
+    canvas.height = 480;
+
     let currentScore = 0;
+    let localCombo = 0;
+    let frame = 0;
+    let hasShield = false;
+    let shieldTimer = 0;
 
     const player = {
-      x: 380,
-      y: 300,
-      width: 40,
-      height: 40
+      x: 375,
+      y: 390,
+      width: 50,
+      height: 50,
+      speed: 8,
     };
 
-    let emojis: Array<{ x: number; y: number; type: 'cringe' | 'dank'; text: string; speed: number }> = [];
-    const cringeEmojis = ['🤦‍♂️', '💩', '🤡', '🤢', '🤮'];
-    const dankEmojis = ['🗿', '👑', '🔥', ' Pepe', '🚀'];
+    let keysPressed: Record<string, boolean> = {};
 
-    const handleMouseMove = (e: MouseEvent) => {
+    interface EmojiObj {
+      x: number;
+      y: number;
+      type: 'cringe' | 'dank' | 'shield';
+      text: string;
+      speed: number;
+      radius: number;
+    }
+
+    let emojis: EmojiObj[] = [];
+    let particles: Array<{ x: number; y: number; vx: number; vy: number; color: string; life: number }> = [];
+
+    const cringeEmojis = ['🤦‍♂️', '💩', '🤡', '🤢', '🤮', '💣'];
+    const dankEmojis = ['🗿', '👑', '🔥', '🚀', '💎'];
+
+    const handlePointerMove = (clientX: number) => {
       const rect = canvas.getBoundingClientRect();
-      const mouseX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+      const mouseX = ((clientX - rect.left) / rect.width) * canvas.width;
       player.x = Math.max(0, Math.min(canvas.width - player.width, mouseX - player.width / 2));
+      GameSessionManager.recordAction();
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
+    const onMouseMove = (e: MouseEvent) => handlePointerMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) {
+        e.preventDefault();
+        handlePointerMove(e.touches[0].clientX);
+      }
+    };
 
-    let frame = 0;
+    const onKeyDown = (e: KeyboardEvent) => {
+      keysPressed[e.code] = true;
+      if (e.code === 'Escape') handlePause();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      keysPressed[e.code] = false;
+    };
+
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+
+    const onGameOver = async () => {
+      soundFx.playGameOver();
+      setStatus('GAMEOVER');
+
+      const res = await GameSessionManager.finishSession(currentScore, currentScore > 300, user, highScore);
+      setResultData(res);
+      await submitGameScore('emoji-dodge', currentScore, currentScore > 300);
+
+      if (currentScore > highScore) {
+        setHighScore(currentScore);
+        confetti({ particleCount: 50, spread: 60 });
+      }
+    };
+
     const loop = () => {
+      frame++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Cyber Matrix Background
-      ctx.fillStyle = '#050a14';
+      // Keyboard movement support
+      if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+        player.x = Math.max(0, player.x - player.speed);
+      }
+      if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+        player.x = Math.min(canvas.width - player.width, player.x + player.speed);
+      }
+
+      // Background Cyber Matrix
+      const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bg.addColorStop(0, '#030712');
+      bg.addColorStop(0.5, '#0b1329');
+      bg.addColorStop(1, '#030712');
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Player Meme Avatar
-      ctx.fillStyle = '#22c55e';
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '24px sans-serif';
-      ctx.fillText('😎', player.x + 8, player.y + 30);
+      // Grid Lines
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.1)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+
+      // Shield Timer check
+      if (hasShield) {
+        shieldTimer--;
+        if (shieldTimer <= 0) hasShield = false;
+      }
+
+      // Draw Player Avatar
+      ctx.font = '36px sans-serif';
+      ctx.fillText('😎', player.x + 6, player.y + 38);
+
+      // Shield Aura
+      if (hasShield) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 34, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
       // Spawn falling emojis
-      frame++;
-      if (frame % 15 === 0) {
-        const isDank = Math.random() > 0.7;
-        const text = isDank
-          ? dankEmojis[Math.floor(Math.random() * dankEmojis.length)]
-          : cringeEmojis[Math.floor(Math.random() * cringeEmojis.length)];
+      if (frame % Math.max(8, 20 - Math.floor(currentScore / 200)) === 0) {
+        const roll = Math.random();
+        let type: 'cringe' | 'dank' | 'shield' = 'cringe';
+        let text = cringeEmojis[Math.floor(Math.random() * cringeEmojis.length)];
+
+        if (roll < 0.05) {
+          type = 'shield';
+          text = '🛡️';
+        } else if (roll < 0.35) {
+          type = 'dank';
+          text = dankEmojis[Math.floor(Math.random() * dankEmojis.length)];
+        }
 
         emojis.push({
-          x: Math.random() * (canvas.width - 30),
+          x: Math.random() * (canvas.width - 40) + 10,
           y: -30,
-          type: isDank ? 'dank' : 'cringe',
+          type,
           text,
-          speed: 3 + Math.random() * 4
+          speed: 3.5 + Math.random() * 3.5 + currentScore * 0.002,
+          radius: 18,
         });
       }
 
-      // Update Emojis
+      // Update & Render Emojis
       for (let i = emojis.length - 1; i >= 0; i--) {
         const em = emojis[i];
         em.y += em.speed;
 
-        ctx.fillText(em.text, em.x, em.y);
+        ctx.font = '28px sans-serif';
+        ctx.fillText(em.text, em.x - 14, em.y + 10);
 
-        // Collision Check
-        if (
-          player.x < em.x + 25 &&
-          player.x + player.width > em.x &&
-          player.y < em.y + 25 &&
-          player.y + player.height > em.y
-        ) {
+        // Hitbox Collision Check with Player
+        const dist = Math.hypot(player.x + player.width / 2 - em.x, player.y + player.height / 2 - em.y);
+        if (dist < player.width / 2 + em.radius) {
           if (em.type === 'cringe') {
-            soundFx.playGameOver();
-            setGameState('GAMEOVER');
-            useAppStore.getState().submitGameScore('emoji-dodge', currentScore, currentScore > 200);
-            cancelAnimationFrame(animId);
-            canvas.removeEventListener('mousemove', handleMouseMove);
-            return;
-          } else {
+            if (hasShield) {
+              // Absorbed by shield
+              hasShield = false;
+              soundFx.playHit();
+              emojis.splice(i, 1);
+              continue;
+            } else {
+              window.removeEventListener('keydown', onKeyDown);
+              window.removeEventListener('keyup', onKeyUp);
+              canvas.removeEventListener('mousemove', onMouseMove);
+              canvas.removeEventListener('touchmove', onTouchMove);
+              onGameOver();
+              return;
+            }
+          } else if (em.type === 'dank') {
+            currentScore += 50;
+            localCombo += 1;
+            setCombo(localCombo);
             soundFx.playCoin();
-            currentScore += 250;
+
+            for (let p = 0; p < 8; p++) {
+              particles.push({
+                x: em.x,
+                y: em.y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                color: '#f59e0b',
+                life: 20,
+              });
+            }
+            emojis.splice(i, 1);
+            continue;
+          } else if (em.type === 'shield') {
+            hasShield = true;
+            shieldTimer = 300; // 5 seconds of shield
+            soundFx.playLevelUp();
             emojis.splice(i, 1);
             continue;
           }
         }
 
-        if (em.y > canvas.height + 30) {
+        // Survived / Dodged cringe emoji bonus
+        if (em.y > canvas.height + 20) {
+          if (em.type === 'cringe') {
+            currentScore += 5;
+          }
           emojis.splice(i, 1);
-          if (em.type === 'cringe') currentScore += 10;
         }
       }
 
-      currentScore += 1;
-      setScore(currentScore);
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
 
-      animId = requestAnimationFrame(loop);
+      setScore(currentScore);
+      gameLoopRef.current = requestAnimationFrame(loop);
     };
 
-    animId = requestAnimationFrame(loop);
+    gameLoopRef.current = requestAnimationFrame(loop);
 
     return () => {
-      cancelAnimationFrame(animId);
-      canvas.removeEventListener('mousemove', handleMouseMove);
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('touchmove', onTouchMove);
     };
-  }, [gameState]);
+  }, [status, highScore, user, submitGameScore]);
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto glass-panel p-4 rounded-2xl border-purple-800/40 text-center shadow-2xl">
-      <div className="flex justify-between items-center mb-3 text-xs font-black">
-        <span className="text-emerald-400">Catch: 🗿 👑 🔥 🚀</span>
-        <span className="text-cyan-400 text-lg">Gen-Z Score: {score}</span>
-        <span className="text-red-400">Avoid: 🤦‍♂️ 💩 🤡</span>
-      </div>
-
-      <div className="relative w-full aspect-[16/9] max-h-[420px] bg-slate-950 rounded-xl overflow-hidden border border-purple-900/60 shadow-inner flex items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={360}
-          className="w-full h-full object-contain cursor-crosshair"
-        />
-
-        {gameState === 'IDLE' && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-            <span className="text-5xl mb-2 animate-bounce">🗿</span>
-            <h2 className="text-2xl font-black text-white">Emoji Dodge: Gen-Z Survival</h2>
-            <p className="text-xs text-gray-300 max-w-md my-2">
-              Move your mouse to dodge cringe emojis and catch viral Gigachad Pepe emojis!
-            </p>
-            <button
-              onClick={startGame}
-              className="cyber-button px-8 py-3 rounded-full text-sm font-black text-white flex items-center gap-2 shadow-lg mt-2"
-            >
-              <Play className="w-5 h-5 fill-white" /> START REACTION
-            </button>
-          </div>
-        )}
-
-        {gameState === 'GAMEOVER' && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
-            <span className="text-4xl mb-2">🤡</span>
-            <h2 className="text-2xl font-black text-red-500">HIT BY CRINGE EMOJI!</h2>
-            <p className="text-sm font-bold text-gray-200 mt-1">Final Gen-Z Score: {score}</p>
-            <button
-              onClick={startGame}
-              className="cyber-button px-8 py-3 rounded-full text-sm font-black text-white flex items-center gap-2 shadow-lg mt-4"
-            >
-              <RotateCcw className="w-4 h-4" /> RETRY REACTION
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between items-center text-[11px] text-gray-400 mt-3 px-2">
-        <span>Controls: Move Mouse Left & Right across the Canvas</span>
-        <span>Reaction & Skill Test</span>
-      </div>
-    </div>
+    <GameLifecycleWrapper
+      gameTitle="Emoji Dodge / Brain Reflex"
+      gameId="emoji-dodge"
+      category="Skill Reflex"
+      instructions={[
+        'Move your Chad avatar left and right using your Mouse, Touch, or Arrow keys.',
+        'DODGE cringe emojis (💩, 🤡, 🤮, 💣) to stay alive!',
+        'COLLECT dank meme emojis (🗿, 👑, 🔥, 🚀) and blue shields (🛡️) for multipliers.',
+      ]}
+      controls={[
+        { key: 'MOUSE / TOUCH DRAG', action: 'Move Avatar' },
+        { key: '← / → / A / D', action: 'Move Left / Right' },
+        { key: 'ESC', action: 'Pause' },
+      ]}
+      status={status}
+      score={score}
+      highScore={highScore}
+      combo={combo}
+      resultData={resultData}
+      onStart={handleStartGame}
+      onPause={handlePause}
+      onResume={handleResume}
+      onRestart={handleRestart}
+    >
+      <canvas ref={canvasRef} className="w-full h-full object-contain cursor-ew-resize" />
+    </GameLifecycleWrapper>
   );
 };

@@ -3,256 +3,418 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { RotateCcw, Play } from 'lucide-react';
+import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
+import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
+import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import confetti from 'canvas-confetti';
+import { ChevronUp, ChevronDown, Zap } from 'lucide-react';
 
-export const CIDEscapeCanvas = () => {
+export const CIDEscapeCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateHighScore, addCoins, addXP, submitGameScore } = useAppStore();
+  const { user, submitGameScore } = useAppStore();
 
-  const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER'>('IDLE');
+  const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
-  const [cluesFound, setCluesFound] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [resultData, setResultData] = useState<GameSessionFinishResponse | null>(null);
 
-  const startGame = () => {
-    soundFx.playJump();
-    setGameState('PLAYING');
-    setScore(0);
-    setCluesFound(0);
-  };
+  const currentLaneRef = useRef<number>(1);
+  const triggerSmashRef = useRef<(() => void) | null>(null);
+  const gameLoopRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (gameState !== 'PLAYING') return;
+    const stored = user.stats.highScores?.['cid-escape'] || 0;
+    setHighScore(stored);
+  }, [user.stats.highScores]);
+
+  const handleStartGame = async () => {
+    await GameSessionManager.startSession('cid-escape', user);
+    setStatus('PLAYING');
+    setScore(0);
+    setCombo(0);
+    currentLaneRef.current = 1;
+    setResultData(null);
+  };
+
+  const handlePause = () => {
+    if (status === 'PLAYING') {
+      setStatus('PAUSED');
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    }
+  };
+
+  const handleResume = () => {
+    if (status === 'PAUSED') {
+      setStatus('PLAYING');
+    }
+  };
+
+  const handleRestart = () => {
+    if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+    handleStartGame();
+  };
+
+  const switchLane = (dir: 'up' | 'down') => {
+    if (status !== 'PLAYING') return;
+    if (dir === 'up' && currentLaneRef.current > 0) {
+      currentLaneRef.current -= 1;
+      soundFx.playClick();
+      GameSessionManager.recordAction();
+    } else if (dir === 'down' && currentLaneRef.current < 2) {
+      currentLaneRef.current += 1;
+      soundFx.playClick();
+      GameSessionManager.recordAction();
+    }
+  };
+
+  // Main Canvas Loop
+  useEffect(() => {
+    if (status !== 'PLAYING') return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animId: number;
-    let currentScore = 0;
-    let currentClues = 0;
+    canvas.width = 800;
+    canvas.height = 480;
 
-    const lanes = [90, 180, 270];
-    let currentLane = 1;
+    let currentScore = 0;
+    let localCombo = 0;
+    let speed = 6.0;
+    let frame = 0;
+    let screenShake = 0;
+
+    const lanes = [100, 220, 340];
 
     const player = {
-      x: 100,
-      y: lanes[currentLane],
-      width: 40,
-      height: 40
+      x: 120,
+      y: lanes[currentLaneRef.current],
+      targetY: lanes[currentLaneRef.current],
+      width: 48,
+      height: 48,
+      smashEnergy: 100,
     };
 
-    let dayaDoors: Array<{ x: number; lane: number; smashed: boolean }> = [];
-    let pradyumanLasers: Array<{ x: number; lane: number }> = [];
+    let dayaDoors: Array<{ x: number; lane: number; smashed: boolean; width: number; height: number }> = [];
+    let pradyumanLasers: Array<{ x: number; lane: number; width: number; height: number }> = [];
     let clues: Array<{ x: number; lane: number; collected: boolean }> = [];
-    let speed = 6;
-    let frame = 0;
+    let particles: Array<{ x: number; y: number; vx: number; vy: number; color: string; life: number }> = [];
+
+    const smash = () => {
+      if (player.smashEnergy >= 30) {
+        player.smashEnergy -= 30;
+        soundFx.playHit();
+        screenShake = 12;
+        GameSessionManager.recordAction();
+
+        // Break nearest door in same lane
+        dayaDoors.forEach((d) => {
+          if (d.lane === currentLaneRef.current && Math.abs(d.x - player.x) < 180) {
+            d.smashed = true;
+            currentScore += 100;
+            localCombo += 1;
+            setCombo(localCombo);
+            soundFx.playCorrect();
+
+            for (let p = 0; p < 12; p++) {
+              particles.push({
+                x: d.x,
+                y: lanes[d.lane] + 20,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                color: '#f59e0b',
+                life: 25,
+              });
+            }
+          }
+        });
+      }
+    };
+    triggerSmashRef.current = smash;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'ArrowUp' && currentLane > 0) {
-        currentLane--;
-        soundFx.playClick();
-      } else if (e.code === 'ArrowDown' && currentLane < lanes.length - 1) {
-        currentLane++;
-        soundFx.playClick();
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        switchLane('up');
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        e.preventDefault();
+        switchLane('down');
+      } else if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        smash();
+      } else if (e.code === 'Escape') {
+        handlePause();
       }
-      player.y = lanes[currentLane];
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
+    const onGameOver = async () => {
+      soundFx.playGameOver();
+      setStatus('GAMEOVER');
+
+      const res = await GameSessionManager.finishSession(currentScore, false, user, highScore);
+      setResultData(res);
+      await submitGameScore('cid-escape', currentScore, false);
+
+      if (currentScore > highScore) {
+        setHighScore(currentScore);
+        confetti({ particleCount: 50, spread: 60 });
+      }
+    };
+
     const loop = () => {
+      frame++;
+
+      // Smooth lane transition
+      player.targetY = lanes[currentLaneRef.current];
+      player.y += (player.targetY - player.y) * 0.25;
+
+      // Recharge smash energy slowly
+      if (player.smashEnergy < 100) player.smashEnergy += 0.15;
+
+      // Screen shake effect
+      ctx.save();
+      if (screenShake > 0) {
+        const sx = (Math.random() - 0.5) * screenShake;
+        const sy = (Math.random() - 0.5) * screenShake;
+        ctx.translate(sx, sy);
+        screenShake *= 0.9;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Background - Dark CID Mystery Room
-      ctx.fillStyle = '#090514';
+      // Background - Dark CID Mystery Bureau
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      bgGrad.addColorStop(0, '#090514');
+      bgGrad.addColorStop(0.5, '#130e29');
+      bgGrad.addColorStop(1, '#090514');
+      ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Lanes
-      ctx.strokeStyle = 'rgba(147, 51, 234, 0.3)';
-      ctx.setLineDash([15, 15]);
+      // Draw 3 High-Tech Cyber Lanes
       lanes.forEach((ly) => {
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.25)';
+        ctx.setLineDash([20, 15]);
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(0, ly + 25);
-        ctx.lineTo(canvas.width, ly + 25);
+        ctx.moveTo(0, ly + 24);
+        ctx.lineTo(canvas.width, ly + 24);
         ctx.stroke();
       });
       ctx.setLineDash([]);
 
-      // Spawning
-      frame++;
-      if (frame % 70 === 0) {
+      // Spawning Obstacles & Clues
+      if (frame % 65 === 0) {
         const lane = Math.floor(Math.random() * 3);
-        dayaDoors.push({ x: canvas.width + 30, lane, smashed: false });
+        dayaDoors.push({ x: canvas.width + 40, lane, smashed: false, width: 30, height: 55 });
       }
-      if (frame % 110 === 0) {
+      if (frame % 100 === 0) {
         const lane = Math.floor(Math.random() * 3);
-        pradyumanLasers.push({ x: canvas.width + 30, lane });
+        pradyumanLasers.push({ x: canvas.width + 40, lane, width: 45, height: 18 });
       }
-      if (frame % 50 === 0) {
+      if (frame % 45 === 0) {
         const lane = Math.floor(Math.random() * 3);
         clues.push({ x: canvas.width + 30, lane, collected: false });
       }
 
-      // Draw Player
+      // 1. Draw & Update Clues (Magnifying Glasses)
+      for (let i = clues.length - 1; i >= 0; i--) {
+        const c = clues[i];
+        c.x -= speed;
+        const cy = lanes[c.lane] + 24;
+
+        if (!c.collected) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(c.x, cy, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText('🔍', c.x - 5, cy + 3);
+
+          // Collision with player
+          if (c.lane === currentLaneRef.current && Math.abs(c.x - player.x) < 30) {
+            c.collected = true;
+            currentScore += 30;
+            localCombo += 1;
+            setCombo(localCombo);
+            soundFx.playCoin();
+
+            for (let p = 0; p < 6; p++) {
+              particles.push({
+                x: c.x,
+                y: cy,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                color: '#38bdf8',
+                life: 20,
+              });
+            }
+          }
+        }
+        if (c.x < -30) clues.splice(i, 1);
+      }
+
+      // 2. Draw & Update Daya Doors
+      for (let i = dayaDoors.length - 1; i >= 0; i--) {
+        const d = dayaDoors[i];
+        d.x -= speed;
+        const dy = lanes[d.lane];
+
+        if (!d.smashed) {
+          // Wooden Door Frame
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(d.x, dy - 5, d.width, d.height);
+          ctx.fillStyle = '#b45309';
+          ctx.fillRect(d.x + 3, dy - 2, d.width - 6, d.height - 6);
+          // Door handle
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(d.x + 6, dy + 20, 4, 4);
+
+          // Collision Check with un-smashed door
+          if (
+            d.lane === currentLaneRef.current &&
+            d.x < player.x + player.width &&
+            d.x + d.width > player.x
+          ) {
+            window.removeEventListener('keydown', handleKeyDown);
+            ctx.restore();
+            onGameOver();
+            return;
+          }
+        } else {
+          // Smashed debris
+          ctx.fillStyle = 'rgba(120, 53, 15, 0.4)';
+          ctx.fillRect(d.x, dy + 15, 20, 10);
+        }
+
+        if (d.x < -40) dayaDoors.splice(i, 1);
+      }
+
+      // 3. Draw & Update Red Lasers
+      for (let i = pradyumanLasers.length - 1; i >= 0; i--) {
+        const l = pradyumanLasers[i];
+        l.x -= speed * 1.2;
+        const ly = lanes[l.lane] + 16;
+
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(l.x, ly, l.width, l.height);
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillRect(l.x + 4, ly + 4, l.width - 8, l.height - 8);
+
+        // Laser collision
+        if (
+          l.lane === currentLaneRef.current &&
+          l.x < player.x + player.width &&
+          l.x + l.width > player.x
+        ) {
+          window.removeEventListener('keydown', handleKeyDown);
+          ctx.restore();
+          onGameOver();
+          return;
+        }
+
+        if (l.x < -50) pradyumanLasers.splice(i, 1);
+      }
+
+      // 4. Draw Player (Daya Cyber Detective)
       ctx.fillStyle = '#06b6d4';
       ctx.fillRect(player.x, player.y, player.width, player.height);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText('🕵️', player.x + 8, player.y + 28);
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('DAYA', player.x + 10, player.y + 28);
 
-      // Update & Draw Daya Doors (Smash Obstacle)
-      for (let i = dayaDoors.length - 1; i >= 0; i--) {
-        const door = dayaDoors[i];
-        door.x -= speed;
-        const dy = lanes[door.lane];
+      // Smash Energy Bar over player
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(player.x, player.y - 12, player.width, 6);
+      ctx.fillStyle = player.smashEnergy >= 30 ? '#10b981' : '#f59e0b';
+      ctx.fillRect(player.x, player.y - 12, (player.width * player.smashEnergy) / 100, 6);
 
-        ctx.fillStyle = '#b45309';
-        ctx.fillRect(door.x, dy, 30, 50);
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillText('🚪', door.x + 4, dy + 32);
-
-        // Collision
-        if (
-          player.x < door.x + 30 &&
-          player.x + player.width > door.x &&
-          player.y < dy + 50 &&
-          player.y + player.height > dy
-        ) {
-          soundFx.playGameOver();
-          setGameState('GAMEOVER');
-          updateHighScore('cid-escape', currentScore);
-          addCoins(currentClues * 10);
-          addXP(Math.floor(currentScore / 2));
-          cancelAnimationFrame(animId);
-          window.removeEventListener('keydown', handleKeyDown);
-          return;
-        }
-
-        if (door.x < -40) dayaDoors.splice(i, 1);
+      // 5. Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+        if (p.life <= 0) particles.splice(i, 1);
       }
 
-      // Update & Draw Pradyuman Lasers
-      for (let i = pradyumanLasers.length - 1; i >= 0; i--) {
-        const laser = pradyumanLasers[i];
-        laser.x -= speed * 1.2;
-        const ly = lanes[laser.lane] + 20;
-
-        ctx.fillStyle = '#ec4899';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#ec4899';
-        ctx.fillRect(laser.x, ly, 60, 10);
-        ctx.shadowBlur = 0;
-
-        if (
-          player.x < laser.x + 60 &&
-          player.x + player.width > laser.x &&
-          player.y < ly + 10 &&
-          player.y + player.height > ly
-        ) {
-          soundFx.playGameOver();
-          setGameState('GAMEOVER');
-          submitGameScore('cid-escape', currentScore, currentScore > 50);
-          if (currentClues > 0) addCoins(currentClues * 10);
-          cancelAnimationFrame(animId);
-          window.removeEventListener('keydown', handleKeyDown);
-          return;
-        }
-
-        if (laser.x < -70) pradyumanLasers.splice(i, 1);
-      }
-
-      // Update & Draw Clues
-      for (let i = clues.length - 1; i >= 0; i--) {
-        const cl = clues[i];
-        cl.x -= speed;
-        const cy = lanes[cl.lane] + 10;
-
-        if (!cl.collected) {
-          ctx.fillStyle = '#fbbf24';
-          ctx.fillText('🔍', cl.x, cy + 20);
-
-          if (
-            player.x < cl.x + 20 &&
-            player.x + player.width > cl.x &&
-            player.y < cy + 20 &&
-            player.y + player.height > cy
-          ) {
-            cl.collected = true;
-            currentClues += 1;
-            soundFx.playCoin();
-            setCluesFound(currentClues);
-          }
-        }
-
-        if (cl.x < -20) clues.splice(i, 1);
-      }
-
+      // Score update
       currentScore += 1;
-      setScore(currentScore);
       speed += 0.0008;
+      setScore(currentScore);
 
-      animId = requestAnimationFrame(loop);
+      ctx.restore();
+      gameLoopRef.current = requestAnimationFrame(loop);
     };
 
-    animId = requestAnimationFrame(loop);
+    gameLoopRef.current = requestAnimationFrame(loop);
 
     return () => {
-      cancelAnimationFrame(animId);
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameState]);
+  }, [status, highScore, user, submitGameScore]);
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto glass-panel p-4 rounded-2xl border-purple-800/40 text-center shadow-2xl">
-      <div className="flex justify-between items-center mb-3 text-xs font-black">
-        <span className="text-amber-400">🔍 Clues Collected: {cluesFound}</span>
-        <span className="text-cyan-400 text-lg">Score: {score}</span>
-        <span className="text-pink-400">🚪 ACP Warning: DAYA IS COMING!</span>
-      </div>
+    <GameLifecycleWrapper
+      gameTitle="CID Escape: Daya Darwaza Todo"
+      gameId="cid-escape"
+      category="Action Runner"
+      instructions={[
+        'Switch between 3 lanes to dodge deadly red security lasers.',
+        'Smash heavy doors by pressing SPACE / SMASH button when in front of them.',
+        'Collect blue CID magnifying glass clues for bonus score multipliers.',
+      ]}
+      controls={[
+        { key: '↑ / W / SWIPE UP', action: 'Move Up Lane' },
+        { key: '↓ / S / SWIPE DOWN', action: 'Move Down Lane' },
+        { key: 'SPACE / ENTER / SMASH', action: 'Daya Door Smash' },
+        { key: 'ESC', action: 'Pause' },
+      ]}
+      status={status}
+      score={score}
+      highScore={highScore}
+      combo={combo}
+      resultData={resultData}
+      onStart={handleStartGame}
+      onPause={handlePause}
+      onResume={handleResume}
+      onRestart={handleRestart}
+    >
+      <div className="relative w-full h-full flex items-center justify-center">
+        <canvas ref={canvasRef} className="w-full h-full object-contain" />
 
-      <div className="relative w-full aspect-[16/9] max-h-[420px] bg-slate-950 rounded-xl overflow-hidden border border-purple-900/60 shadow-inner flex items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={360}
-          className="w-full h-full object-contain"
-        />
-
-        {gameState === 'IDLE' && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-            <span className="text-5xl mb-2 animate-bounce">🚪</span>
-            <h2 className="text-2xl font-black text-white">CID Escape: Daya Tod Do Darwaza</h2>
-            <p className="text-xs text-gray-300 max-w-md my-2">
-              Dodge Daya’s door smashes and ACP Pradyuman’s lasers! Collect magnifying glass clues!
-            </p>
+        {/* On-Screen Mobile / Touch Controls */}
+        {status === 'PLAYING' && (
+          <div className="absolute right-4 bottom-4 flex flex-col items-center gap-2 z-20 sm:hidden">
             <button
-              onClick={startGame}
-              className="cyber-button px-8 py-3 rounded-full text-sm font-black text-white flex items-center gap-2 shadow-lg mt-2"
+              onClick={() => switchLane('up')}
+              className="w-12 h-12 rounded-xl bg-purple-600/80 active:bg-purple-500 text-white flex items-center justify-center shadow-lg backdrop-blur-sm"
             >
-              <Play className="w-5 h-5 fill-white" /> START ESCAPE
+              <ChevronUp className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => triggerSmashRef.current?.()}
+              className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-red-500 text-slate-950 font-black text-xs flex flex-col items-center justify-center shadow-xl border-2 border-yellow-300"
+            >
+              <Zap className="w-5 h-5 fill-current" />
+              SMASH
+            </button>
+            <button
+              onClick={() => switchLane('down')}
+              className="w-12 h-12 rounded-xl bg-purple-600/80 active:bg-purple-500 text-white flex items-center justify-center shadow-lg backdrop-blur-sm"
+            >
+              <ChevronDown className="w-6 h-6" />
             </button>
           </div>
         )}
-
-        {gameState === 'GAMEOVER' && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
-            <span className="text-4xl mb-2">🚨</span>
-            <h2 className="text-2xl font-black text-pink-500">ACP PRADYUMAN CAUGHT YOU!</h2>
-            <p className="text-sm font-bold text-gray-200 mt-1">Kuch Toh Gadbad Hai! Score: {score}</p>
-            <button
-              onClick={startGame}
-              className="cyber-button px-8 py-3 rounded-full text-sm font-black text-white flex items-center gap-2 shadow-lg mt-4"
-            >
-              <RotateCcw className="w-4 h-4" /> RETRY ESCAPE
-            </button>
-          </div>
-        )}
       </div>
-
-      <div className="flex justify-between items-center text-[11px] text-gray-400 mt-3 px-2">
-        <span>Controls: Use [Up Arrow] and [Down Arrow] to Switch Lanes</span>
-        <span>CID TV Meme Tribute</span>
-      </div>
-    </div>
+    </GameLifecycleWrapper>
   );
 };

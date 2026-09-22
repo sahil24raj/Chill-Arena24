@@ -6,40 +6,30 @@ import {
   Trophy,
   Globe,
   Users,
-  Calendar,
-  Crown,
   Flame,
   Gamepad2,
   RefreshCw,
-  Send,
   CheckCircle2,
   AlertCircle,
-  Play
+  Play,
+  ShieldCheck,
 } from 'lucide-react';
 import { soundFx } from '@/lib/audio';
-import { useAppStore } from '@/store/useAppStore';
-import {
-  fetchCloudLeaderboard,
-  subscribeToCloudLeaderboard,
-  saveScoreToCloudLeaderboard
-} from '@/lib/firebaseService';
+import { useAppStore, GAMES_CATALOG } from '@/store/useAppStore';
+import { subscribeToCloudLeaderboard } from '@/lib/firebaseService';
 import { LeaderboardEntry } from '@/types';
 
 export default function LeaderboardPage() {
   const { user } = useAppStore();
-  const [tab, setTab] = useState<'GLOBAL' | 'WEEKLY' | 'MONTHLY' | 'FRIENDS'>('GLOBAL');
+  const [selectedGameFilter, setSelectedGameFilter] = useState<string>('all');
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // Compute highest score of current user
   const highestUserScore = Math.max(0, ...Object.values(user.stats.highScores || {}));
 
   const loadData = useCallback(() => {
     setIsLoading(true);
-    setErrorMessage(null);
 
     const unsubscribe = subscribeToCloudLeaderboard((cloudEntries) => {
       setIsLoading(false);
@@ -62,50 +52,15 @@ export default function LeaderboardPage() {
     };
   }, [loadData]);
 
-  const handlePostMyScore = async () => {
-    if (highestUserScore <= 0) return;
-    soundFx.playClick();
-    setIsSubmitting(true);
-    setSubmitSuccess(false);
+  // Filter by game
+  const filteredData =
+    selectedGameFilter === 'all'
+      ? leaderboardData
+      : leaderboardData.filter((entry) => entry.gameId === selectedGameFilter);
 
-    try {
-      await saveScoreToCloudLeaderboard(
-        'overall',
-        'Top Arena Score',
-        highestUserScore,
-        user
-      );
-
-      // Local optimistic update
-      const updatedList = [
-        ...leaderboardData.filter((i) => i.username !== user.username),
-        {
-          rank: 1,
-          username: user.username,
-          avatar: user.avatar,
-          score: highestUserScore,
-          country: '🇮🇳 India',
-          badge: user.authType === 'google' ? '🌐 Google Verified' : user.authType === 'email' ? '🛡️ Verified Gamer' : '⚡ Challenger',
-          wins: user.stats.totalWins,
-          xp: user.xp
-        }
-      ].sort((a, b) => b.score - a.score);
-
-      setLeaderboardData(updatedList.map((e, idx) => ({ ...e, rank: idx + 1 })));
-      soundFx.playLevelUp();
-      setSubmitSuccess(true);
-      setTimeout(() => setSubmitSuccess(false), 3000);
-    } catch (e: any) {
-      console.error(e);
-      setErrorMessage('Failed to save score to cloud leaderboard. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const top1 = leaderboardData[0];
-  const top2 = leaderboardData[1];
-  const top3 = leaderboardData[2];
+  const top1 = filteredData[0];
+  const top2 = filteredData[1];
+  const top3 = filteredData[2];
 
   return (
     <div className="space-y-10 pb-16">
@@ -115,7 +70,7 @@ export default function LeaderboardPage() {
           <Trophy className="w-3.5 h-3.5 text-amber-400" />
           <span>PRODUCTION CLOUD ESPORTS ARENA STANDINGS</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white font-display uppercase tracking-tight">
+        <h1 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight">
           HALL OF FAME & RANKINGS
         </h1>
         <p className="text-xs sm:text-sm text-gray-400 font-sans leading-relaxed">
@@ -126,264 +81,206 @@ export default function LeaderboardPage() {
         <div className="flex items-center justify-center gap-2 pt-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/50 border border-emerald-500/40 text-[11px] font-mono text-emerald-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Live Firestore Database Connected</span>
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Live Server Anti-Cheat Verified Records</span>
           </div>
         </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
-        {[
-          { id: 'GLOBAL', label: '🌐 Global All-Time', icon: Globe },
-          { id: 'WEEKLY', label: '⚡ Weekly Cup', icon: Flame },
-          { id: 'MONTHLY', label: '📅 Monthly League', icon: Calendar },
-          { id: 'FRIENDS', label: '👥 Squad Standings', icon: Users }
-        ].map((t) => (
+      {/* Game Filter Switcher */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 max-w-5xl mx-auto scrollbar-thin">
+        <button
+          onClick={() => {
+            soundFx.playClick();
+            setSelectedGameFilter('all');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            selectedGameFilter === 'all'
+              ? 'bg-gradient-to-r from-[#00F0FF] to-blue-600 text-slate-950 shadow-lg shadow-cyan-500/20'
+              : 'bg-slate-900 border border-slate-800 text-gray-400 hover:text-white'
+          }`}
+        >
+          🌐 All Games Global
+        </button>
+
+        {GAMES_CATALOG.map((g) => (
           <button
-            key={t.id}
+            key={g.id}
             onClick={() => {
               soundFx.playClick();
-              setTab(t.id as any);
+              setSelectedGameFilter(g.id);
             }}
-            className={`px-5 py-2.5 rounded-xl text-xs font-bold font-display transition-all ${
-              tab === t.id
-                ? 'bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] text-slate-950 shadow-lg shadow-[#00F0FF]/20'
-                : 'bg-slate-900/80 border border-gray-800 text-gray-400 hover:text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedGameFilter === g.id
+                ? 'bg-gradient-to-r from-[#00F0FF] to-blue-600 text-slate-950 shadow-lg shadow-cyan-500/20'
+                : 'bg-slate-900 border border-slate-800 text-gray-400 hover:text-white'
             }`}
           >
-            {t.label}
+            <span>{g.thumbnail}</span>
+            <span>{g.title}</span>
           </button>
         ))}
       </div>
 
-      {/* Submit Current User Score Banner */}
-      <div className="max-w-4xl mx-auto p-4 sm:p-5 rounded-2xl glass-panel border border-[#00F0FF]/30 bg-[#0d121c] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+      {/* User Current Standing Info Card */}
+      <div className="max-w-4xl mx-auto p-4 sm:p-5 rounded-2xl border border-[#00F0FF]/30 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#00F0FF] to-[#ADFF2F] text-slate-950 flex items-center justify-center text-2xl font-bold shadow shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#00F0FF] to-blue-600 text-slate-950 flex items-center justify-center text-2xl font-bold shadow shrink-0">
             {user.avatar}
           </div>
           <div>
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-xs font-black text-white font-display">{user.displayName || user.username}</span>
+              <span className="text-sm font-black text-white">{user.displayName || user.username}</span>
               <span className="text-[10px] font-mono text-[#00F0FF] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800">
                 LVL {user.level}
               </span>
+              <span className="text-[10px] font-mono text-yellow-400 px-1.5 py-0.5 rounded bg-yellow-950 border border-yellow-800">
+                {user.rank || 'Bronze II'}
+              </span>
             </div>
-            <p className="text-[11px] text-gray-400">
-              Your Top High Score:{' '}
-              <strong className="text-[#ADFF2F] font-mono">
-                {highestUserScore > 0 ? `${highestUserScore.toLocaleString()} pts` : 'No score yet'}
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              Your Personal Best:{' '}
+              <strong className="text-[#00F0FF] font-mono">
+                {highestUserScore > 0 ? `${highestUserScore.toLocaleString()} pts` : 'No score recorded yet'}
               </strong>
             </p>
           </div>
         </div>
 
-        <button
-          disabled={isSubmitting || highestUserScore <= 0}
-          onClick={handlePostMyScore}
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] hover:brightness-110 text-slate-950 font-display text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-[#00F0FF]/20 hover:scale-105 transition-all disabled:opacity-50"
+        <Link
+          href="/games"
+          onClick={() => soundFx.playClick()}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20"
         >
-          {isSubmitting ? (
-            <>
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>SAVING TO FIRESTORE...</span>
-            </>
-          ) : submitSuccess ? (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-950" />
-              <span>POSTED TO LEADERBOARD!</span>
-            </>
-          ) : (
-            <>
-              <Send className="w-3.5 h-3.5" />
-              <span>POST HIGH SCORE TO CLOUD</span>
-            </>
-          )}
-        </button>
+          <Play className="w-4 h-4 fill-current" />
+          PLAY TO SET RECORD
+        </Link>
       </div>
 
-      {/* Error State */}
-      {errorMessage && (
-        <div className="max-w-4xl mx-auto p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
+      {/* Top 3 Podium Cards (Rendered if entries exist) */}
+      {filteredData.length >= 3 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-4 items-end">
+          {/* Rank 2 */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-center flex flex-col items-center order-2 sm:order-1 shadow-xl">
+            <span className="text-3xl mb-1">🥈</span>
+            <div className="text-3xl my-1">{top2.avatar}</div>
+            <div className="text-sm font-black text-white">{top2.username}</div>
+            <div className="text-[10px] text-gray-400 font-mono">{top2.gameTitle || 'Top Arena Match'}</div>
+            <div className="text-xl font-black text-gray-300 font-mono mt-2">{top2.score.toLocaleString()} pts</div>
           </div>
-          <button
-            onClick={() => loadData()}
-            className="px-3 py-1 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs font-bold font-mono"
-          >
-            Retry
-          </button>
+
+          {/* Rank 1 (Champion) */}
+          <div className="bg-gradient-to-b from-amber-500/20 to-slate-900 border-2 border-yellow-500/60 rounded-2xl p-6 text-center flex flex-col items-center order-1 sm:order-2 shadow-2xl shadow-yellow-500/10 scale-105">
+            <span className="text-4xl mb-1 animate-bounce">👑</span>
+            <div className="text-4xl my-1">{top1.avatar}</div>
+            <div className="text-base font-black text-white">{top1.username}</div>
+            <div className="text-xs text-yellow-400 font-mono font-bold">{top1.gameTitle || 'Top Arena Match'}</div>
+            <div className="text-2xl font-black text-yellow-400 font-mono mt-2">{top1.score.toLocaleString()} pts</div>
+            <span className="mt-2 text-[10px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-bold border border-yellow-500/30">
+              ARENA CHAMPION
+            </span>
+          </div>
+
+          {/* Rank 3 */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-center flex flex-col items-center order-3 shadow-xl">
+            <span className="text-3xl mb-1">🥉</span>
+            <div className="text-3xl my-1">{top3.avatar}</div>
+            <div className="text-sm font-black text-white">{top3.username}</div>
+            <div className="text-[10px] text-gray-400 font-mono">{top3.gameTitle || 'Top Arena Match'}</div>
+            <div className="text-xl font-black text-amber-500 font-mono mt-2">{top3.score.toLocaleString()} pts</div>
+          </div>
         </div>
       )}
 
-      {/* Loading Skeleton */}
-      {isLoading ? (
-        <div className="max-w-4xl mx-auto space-y-4 animate-pulse">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-44 rounded-3xl bg-slate-900/60 border border-gray-800" />
-            ))}
-          </div>
-          <div className="h-64 rounded-3xl bg-slate-900/40 border border-gray-800" />
+      {/* Full Leaderboard Table */}
+      <div className="max-w-4xl mx-auto rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden shadow-2xl">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-gray-400">
+          <span>ARENA PLAYERS ({filteredData.length})</span>
+          <span>SCORE & BADGE</span>
         </div>
-      ) : leaderboardData.length === 0 ? (
-        /* Real Empty State */
-        <div className="max-w-2xl mx-auto text-center py-16 px-6 rounded-3xl glass-panel border border-gray-800 bg-[#0c1017]/90 space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl mx-auto text-amber-400">
-            🏆
+
+        {isLoading ? (
+          <div className="p-12 text-center text-gray-400 font-mono text-xs flex flex-col items-center gap-3">
+            <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
+            <span>Fetching live verified rankings from Firestore...</span>
           </div>
-          <h3 className="text-xl font-black text-white font-display">No Leaderboard Scores Yet</h3>
-          <p className="text-xs text-gray-400 font-sans max-w-md mx-auto leading-relaxed">
-            Be the first player to complete a match, set a high score, and take the #1 crown on Chill Arena!
-          </p>
-          <div className="pt-2">
+        ) : filteredData.length === 0 ? (
+          /* Honest Empty State */
+          <div className="p-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-slate-800/80 text-3xl flex items-center justify-center mx-auto text-gray-400">
+              🏆
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">No scores recorded yet</h3>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                Be the first player to complete a match and claim the #1 Champion spot on the leaderboard!
+              </p>
+            </div>
             <Link
               href="/games"
               onClick={() => soundFx.playClick()}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl cyber-button font-display text-xs font-black text-slate-950 shadow-xl"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider"
             >
-              <Play className="w-4 h-4 fill-slate-950" />
-              <span>PLAY A GAME & SET RECORD</span>
+              <Play className="w-4 h-4 fill-current" />
+              PLAY A GAME NOW
             </Link>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* Top 3 Podium Visuals (Rendered only when real scores exist) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto items-end pt-6">
-            {/* Rank 2 (Silver) */}
-            {top2 ? (
-              <div className="glass-panel p-5 rounded-3xl border-gray-400/30 bg-[#0f131a] text-center space-y-3 shadow-xl">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto flex items-center justify-center text-3xl border-2 border-gray-400 shadow-md">
-                  {top2.avatar || '🎮'}
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-white block truncate font-display">{top2.username}</span>
-                  <span className="text-[10px] text-gray-400 font-mono">{top2.country || 'Global'}</span>
-                </div>
-                <span className="text-sm font-black text-[#00F0FF] font-mono block">
-                  {top2.score.toLocaleString()} pts
-                </span>
-                <div className="py-1 bg-gray-500/20 rounded-xl text-[10px] font-black text-gray-300 font-display">
-                  🥈 #2 SILVER
-                </div>
-              </div>
-            ) : (
-              <div className="hidden md:block p-5 rounded-3xl border border-dashed border-gray-800 bg-[#0a0d14] text-center text-xs text-gray-600 font-mono py-12">
-                #2 Spot Waiting
-              </div>
-            )}
-
-            {/* Rank 1 (Gold Champion) */}
-            {top1 && (
-              <div className="glass-panel p-6 rounded-3xl border-2 border-amber-500 bg-gradient-to-b from-[#1f160b] to-[#0d0a06] text-center space-y-3 transform -translate-y-4 shadow-2xl shadow-amber-500/20">
-                <Crown className="w-7 h-7 text-amber-400 mx-auto animate-bounce" />
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 mx-auto flex items-center justify-center text-3xl border-2 border-amber-300 shadow-lg shadow-amber-500/30">
-                  {top1.avatar || '👑'}
-                </div>
-                <div>
-                  <span className="text-sm font-black text-white block truncate font-display">{top1.username}</span>
-                  <span className="text-[10px] text-amber-300 font-mono">{top1.badge || '👑 Arena Champion'}</span>
-                </div>
-                <span className="text-base font-black text-amber-400 font-mono block">
-                  {top1.score.toLocaleString()} pts
-                </span>
-                <div className="py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-[11px] font-black text-slate-950 font-display">
-                  👑 #1 CHAMPION
-                </div>
-              </div>
-            )}
-
-            {/* Rank 3 (Bronze) */}
-            {top3 ? (
-              <div className="glass-panel p-5 rounded-3xl border-amber-800/40 bg-[#0f131a] text-center space-y-3 shadow-xl">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800 mx-auto flex items-center justify-center text-3xl border-2 border-amber-700 shadow-md">
-                  {top3.avatar || '🎮'}
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-white block truncate font-display">{top3.username}</span>
-                  <span className="text-[10px] text-gray-400 font-mono">{top3.country || 'Global'}</span>
-                </div>
-                <span className="text-sm font-black text-[#00F0FF] font-mono block">
-                  {top3.score.toLocaleString()} pts
-                </span>
-                <div className="py-1 bg-amber-800/30 rounded-xl text-[10px] font-black text-amber-500 font-display">
-                  🥉 #3 BRONZE
-                </div>
-              </div>
-            ) : (
-              <div className="hidden md:block p-5 rounded-3xl border border-dashed border-gray-800 bg-[#0a0d14] text-center text-xs text-gray-600 font-mono py-12">
-                #3 Spot Waiting
-              </div>
-            )}
-          </div>
-
-          {/* Leaderboard Table List */}
-          <div className="glass-panel rounded-3xl border-gray-800 overflow-hidden max-w-4xl mx-auto bg-[#0c1017]/90 shadow-2xl">
-            <div className="p-4 border-b border-gray-800 flex justify-between text-[11px] font-mono text-gray-500 uppercase px-6">
-              <span>RANK & GAMER</span>
-              <div className="flex gap-8">
-                <span className="hidden sm:inline">TOTAL WINS</span>
-                <span className="hidden md:inline">ARENA XP</span>
-                <span>TOTAL SCORE</span>
-              </div>
-            </div>
-
-            <div className="divide-y divide-gray-850">
-              {leaderboardData.map((row) => (
+        ) : (
+          <div className="divide-y divide-slate-800/60">
+            {filteredData.map((entry) => {
+              const isCurrentUser =
+                entry.username === user.username || entry.username === user.displayName;
+              return (
                 <div
-                  key={`${row.rank}_${row.username}`}
-                  className={`p-4 px-6 flex items-center justify-between hover:bg-slate-900/60 transition-colors ${
-                    row.username === user.username ? 'bg-[#00F0FF]/10 border-l-4 border-[#00F0FF]' : ''
+                  key={entry.rank}
+                  className={`px-6 py-3.5 flex items-center justify-between transition-colors ${
+                    isCurrentUser ? 'bg-cyan-500/10 border-l-4 border-l-cyan-400' : 'hover:bg-slate-800/40'
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <span
-                      className={`w-6 font-black text-center text-sm font-display ${
-                        row.rank === 1
-                          ? 'text-amber-400'
-                          : row.rank === 2
+                      className={`w-6 text-center font-mono font-bold text-sm ${
+                        entry.rank === 1
+                          ? 'text-yellow-400'
+                          : entry.rank === 2
                           ? 'text-gray-300'
-                          : row.rank === 3
-                          ? 'text-amber-600'
+                          : entry.rank === 3
+                          ? 'text-amber-500'
                           : 'text-gray-500'
                       }`}
                     >
-                      #{row.rank}
+                      #{entry.rank}
                     </span>
-
-                    <div className="w-9 h-9 rounded-xl bg-slate-900 border border-gray-800 flex items-center justify-center text-xl">
-                      {row.avatar || '🎮'}
-                    </div>
-
+                    <div className="text-2xl">{entry.avatar}</div>
                     <div>
-                      <span className="text-xs font-bold text-white block font-display flex items-center gap-1.5">
-                        <span>{row.username}</span>
-                        {row.username === user.username && (
-                          <span className="text-[9px] font-mono bg-[#00F0FF] text-slate-950 px-1.5 py-0.2 rounded font-bold">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-white">{entry.username}</span>
+                        {isCurrentUser && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/40">
                             YOU
                           </span>
                         )}
-                      </span>
-                      <span className="text-[10px] text-gray-500 font-mono">
-                        {row.country || 'Global'} {row.badge ? `• ${row.badge}` : ''}
-                      </span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 font-mono">
+                        {entry.gameTitle || 'Arena Game'}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-8 font-mono text-xs">
-                    <span className="hidden sm:inline text-gray-400">{row.wins || 0} wins</span>
-                    <span className="hidden md:inline text-purple-400">{row.xp || 0} XP</span>
-                    <span className="font-black text-[#00F0FF]">{row.score.toLocaleString()} pts</span>
+                  <div className="text-right">
+                    <div className="font-mono font-black text-sm text-[#00F0FF]">
+                      {entry.score.toLocaleString()} PTS
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-mono">
+                      {entry.badge || '⚡ Arena Competitor'}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

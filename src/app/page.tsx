@@ -53,14 +53,7 @@ export default function HomePage() {
     };
   }, []);
 
-  const trendingGames: Game[] = [
-    GAMES_CATALOG.find((g) => g.id === 'pen-flip')!,
-    GAMES_CATALOG.find((g) => g.id === 'modi-run')!,
-    GAMES_CATALOG.find((g) => g.id === 'spin-cricket')!,
-    GAMES_CATALOG.find((g) => g.id === 'cid-escape')!,
-    GAMES_CATALOG.find((g) => g.id === 'chai-tapri')!,
-    GAMES_CATALOG.find((g) => g.id === 'word-builder')!
-  ].filter(Boolean);
+  const trendingGames: Game[] = GAMES_CATALOG;
 
   const schoolVibes: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'school');
   const mindGames: Game[] = GAMES_CATALOG.filter((g) => g.categoryKey === 'mind');

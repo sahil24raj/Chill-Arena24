@@ -15,7 +15,7 @@ import {
   Zap
 } from 'lucide-react';
 
-const FEATURED_GAMES_IDS = ['pen-flip', 'modi-run', 'spin-cricket', 'cid-escape', 'chai-tapri'];
+const FEATURED_GAMES_IDS = ['word-builder', 'tic-tac-toe', 'spin-cricket', 'pen-flip', 'brain-pot'];
 
 export const HeroTrendingCarousel: React.FC = () => {
   const { openMultiplayerModal } = useAppStore();

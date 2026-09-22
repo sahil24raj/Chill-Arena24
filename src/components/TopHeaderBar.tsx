@@ -26,13 +26,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-interface TopHeaderBarProps {
-  onToggleLeftSidebar?: () => void;
-}
-
-export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
-  onToggleLeftSidebar
-}) => {
+export const TopHeaderBar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isMuted, toggleMute, openSpinModal, openMultiplayerModal, logout } = useAppStore();
@@ -63,7 +57,7 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
   return (
     <>
       <header className="w-full bg-[#080B14]/95 backdrop-blur-xl border-b border-[#1A2238] px-3 sm:px-6 lg:px-8 py-2.5 sticky top-0 z-30 flex items-center justify-between gap-3 lg:gap-6">
-        {/* Left: Mobile Menu Toggle + Quick Nav Links */}
+        {/* Left: Brand Logo + Mobile Menu Toggle + Quick Nav Links */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -72,6 +66,27 @@ export const TopHeaderBar: React.FC<TopHeaderBarProps> = ({
           >
             {mobileMenuOpen ? <X className="w-4 h-4 text-[#00F0FF]" /> : <Menu className="w-4 h-4" />}
           </button>
+
+          {/* Brand Logo & Name */}
+          <Link
+            href="/"
+            onClick={() => soundFx.playClick()}
+            className="flex items-center gap-2.5 group shrink-0"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00F0FF] to-[#ADFF2F] p-0.5 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.35)] group-hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-[#080B14] rounded-[10px] flex items-center justify-center text-lg">
+                🕹️
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-sm tracking-wider text-white group-hover:text-[#00F0FF] transition-colors leading-none">
+                CHILL<span className="text-[#00F0FF]">ARENA</span>
+              </span>
+              <span className="text-[9px] font-mono text-slate-400 tracking-widest uppercase leading-tight">
+                ESPORTS
+              </span>
+            </div>
+          </Link>
 
           {/* Core Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1 bg-[#101524] p-1 rounded-xl border border-white/5">

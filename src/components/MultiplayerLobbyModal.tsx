@@ -57,7 +57,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
     handleStartMatch();
   };
 
-  const chosenGame = GAMES_CATALOG.find((g) => g.id === selectedGameId) || GAMES_CATALOG[6];
+  const chosenGame = GAMES_CATALOG.find((g) => g.id === selectedGameId) || GAMES_CATALOG[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LeftSidebar } from '@/components/LeftSidebar';
+import React, { useEffect } from 'react';
 import { TopHeaderBar } from '@/components/TopHeaderBar';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
@@ -14,7 +13,6 @@ interface AppDashboardLayoutProps {
 }
 
 export function AppDashboardLayout({ children }: AppDashboardLayoutProps) {
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
   const initAuthListener = useAppStore((state) => state.initAuthListener);
 
   useEffect(() => {
@@ -25,30 +23,19 @@ export function AppDashboardLayout({ children }: AppDashboardLayoutProps) {
   }, [initAuthListener]);
 
   return (
-    <div className="h-screen w-screen bg-[#05070E] text-gray-100 flex flex-row overflow-hidden font-sans selection:bg-[#00F0FF] selection:text-slate-950">
+    <div className="min-h-screen w-full bg-[#05070E] text-gray-100 flex flex-col font-sans selection:bg-[#00F0FF] selection:text-slate-950 relative overflow-x-hidden">
       <BackgroundParticles />
 
-      {/* 1. Left Sidebar: Fixed in place on the left, does not scroll with main content */}
-      <LeftSidebar
-        isCollapsed={leftCollapsed}
-        onToggleCollapse={() => setLeftCollapsed((prev) => !prev)}
-      />
+      {/* Pinned Top Navigation Bar */}
+      <TopHeaderBar />
 
-      {/* 2. Right Viewport: Pinned Top Header + Smooth Scrollable Main Content */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 relative">
-        {/* Pinned Top Navigation Bar */}
-        <TopHeaderBar
-          onToggleLeftSidebar={() => setLeftCollapsed((prev) => !prev)}
-        />
-
-        {/* Independently Scrollable Gaming Content Area */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 py-6 scroll-smooth">
-          <div className="max-w-[1540px] mx-auto space-y-12 pb-12">
-            {children}
-            <Footer />
-          </div>
-        </main>
-      </div>
+      {/* Main Full-Width Content Area */}
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-[1540px] mx-auto space-y-12 pb-12">
+          {children}
+          <Footer />
+        </div>
+      </main>
 
       {/* Global Modals */}
       <AuthModal />

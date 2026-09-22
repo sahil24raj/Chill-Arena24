@@ -3,362 +3,260 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { RotateCcw, Play, Users, Bot, Zap, Sparkles, Award } from 'lucide-react';
+import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
+import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
+import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
 import confetti from 'canvas-confetti';
-
-interface SpinCricketProps {
-  mode?: 'local' | 'ai' | 'solo';
-}
+import { Disc, Play, Sparkles } from 'lucide-react';
 
 type ShotOutcome = '1' | '2' | '3' | '4' | '6' | 'OUT' | 'DOT';
 
-const SPINNER_SLICES: { label: ShotOutcome; name: string; color: string; bg: string }[] = [
-  { label: '6', name: 'MAXIMUM SIXER! 🚀', color: '#ADFF2F', bg: 'from-lime-600 to-emerald-700' },
-  { label: '1', name: 'SINGLE RUN (1)', color: '#38bdf8', bg: 'from-blue-600 to-cyan-700' },
-  { label: 'OUT', name: 'WICKET! OUT! 🔴', color: '#ef4444', bg: 'from-red-600 to-rose-800' },
-  { label: '4', name: 'BOUNDARY FOUR! 🏏', color: '#00F0FF', bg: 'from-cyan-600 to-teal-700' },
-  { label: '2', name: 'DOUBLE (2)', color: '#a855f7', bg: 'from-purple-600 to-indigo-700' },
-  { label: 'DOT', name: 'DOT BALL (0)', color: '#94a3b8', bg: 'from-slate-600 to-gray-700' },
-  { label: '3', name: 'TRIPLE RUNS (3)', color: '#f59e0b', bg: 'from-amber-600 to-orange-700' },
-  { label: '6', name: 'MONSTER SIX! 💥', color: '#ADFF2F', bg: 'from-lime-600 to-emerald-700' }
+const WHEEL_SLICES: { label: ShotOutcome; text: string; color: string }[] = [
+  { label: '6', text: '6 RUNS', color: '#10b981' },
+  { label: '1', text: '1 RUN', color: '#0284c7' },
+  { label: 'OUT', text: 'WICKET!', color: '#ef4444' },
+  { label: '4', text: '4 RUNS', color: '#06b6d4' },
+  { label: '2', text: '2 RUNS', color: '#8b5cf6' },
+  { label: 'DOT', text: '0 DOT', color: '#64748b' },
+  { label: '3', text: '3 RUNS', color: '#f59e0b' },
+  { label: '6', text: '6 RUNS', color: '#10b981' },
 ];
 
-export const SpinCricketCanvas: React.FC<SpinCricketProps> = ({ mode: initialMode = 'local' }) => {
-  const { user, addCoins, addXP, updateHighScore, recordGameWin, submitGameScore } = useAppStore();
+export const SpinCricketCanvas: React.FC = () => {
+  const { user, submitGameScore } = useAppStore();
 
-  const [gameMode, setGameMode] = useState<'local' | 'ai' | 'solo'>(initialMode);
-  const [currentInnings, setCurrentInnings] = useState<1 | 2>(1);
-  const [innings1Score, setInnings1Score] = useState({ runs: 0, wickets: 0, balls: 0 });
-  const [innings2Score, setInnings2Score] = useState({ runs: 0, wickets: 0, balls: 0 });
-  
+  const [status, setStatus] = useState<GameStatus>('MENU');
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [wickets, setWickets] = useState(0);
+  const [ballsBowled, setBallsBowled] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [wheelAngle, setWheelAngle] = useState(0);
-  const [lastShot, setLastShot] = useState<ShotOutcome | null>(null);
-  const [roastComment, setRoastComment] = useState('Spin the notebook cricket wheel to open your innings!');
-  const [matchWinner, setMatchWinner] = useState<string | null>(null);
-  const [shotAnimation, setShotAnimation] = useState<string | null>(null);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [commentary, setCommentary] = useState('Spin the wheel to face the next delivery!');
+  const [lastShot, setLastShot] = useState<string | null>(null);
+  const [resultData, setResultData] = useState<GameSessionFinishResponse | null>(null);
 
-  const MAX_BALLS = 6; // 1 Over shootout
-  const MAX_WICKETS = 2;
+  const MAX_BALLS = 12; // 2 Overs match
+  const MAX_WICKETS = 3;
 
-  // AI Spin automation
   useEffect(() => {
-    if (gameMode === 'ai' && currentInnings === 2 && !matchWinner && !isSpinning) {
-      const timer = setTimeout(() => {
-        handleSpinClick();
-        setTimeout(() => handleStopClick(), 900);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentInnings, gameMode, matchWinner, isSpinning]);
+    const stored = user.stats.highScores?.['spin-cricket'] || 0;
+    setHighScore(stored);
+  }, [user.stats.highScores]);
 
-  const handleSpinClick = () => {
-    if (isSpinning || matchWinner) return;
+  const handleStartGame = async () => {
+    await GameSessionManager.startSession('spin-cricket', user);
+    setStatus('PLAYING');
+    setScore(0);
+    setCombo(0);
+    setWickets(0);
+    setBallsBowled(0);
+    setWheelRotation(0);
+    setLastShot(null);
+    setCommentary('Over 1.1: Step up to the crease and spin the wheel!');
+    setResultData(null);
+  };
+
+  const handlePause = () => {
+    if (status === 'PLAYING') {
+      setStatus('PAUSED');
+    }
+  };
+
+  const handleResume = () => {
+    if (status === 'PAUSED') {
+      setStatus('PLAYING');
+    }
+  };
+
+  const handleRestart = () => {
+    handleStartGame();
+  };
+
+  // Spin Wheel Action
+  const spinWheel = () => {
+    if (isSpinning || status !== 'PLAYING' || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS) return;
+
     setIsSpinning(true);
     soundFx.playSpin();
-    setShotAnimation(null);
-  };
+    GameSessionManager.recordAction();
 
-  // Continuous wheel rotation while spinning
-  useEffect(() => {
-    if (!isSpinning) return;
-    const interval = setInterval(() => {
-      setWheelAngle((prev) => (prev + 35) % 360);
-      soundFx.playClick();
-    }, 45);
-    return () => clearInterval(interval);
-  }, [isSpinning]);
+    // Pick random slice
+    const sliceIndex = Math.floor(Math.random() * WHEEL_SLICES.length);
+    const sliceDeg = 360 / WHEEL_SLICES.length;
+    // Calculate rotation to align selected slice at the top pointer
+    const targetAngle = 360 * 5 + sliceIndex * sliceDeg + sliceDeg / 2;
+    setWheelRotation((prev) => prev + targetAngle);
 
-  const handleStopClick = () => {
-    if (!isSpinning) return;
-    setIsSpinning(false);
+    setTimeout(async () => {
+      setIsSpinning(false);
+      const outcome = WHEEL_SLICES[sliceIndex];
+      setLastShot(outcome.text);
 
-    // Pick random outcome slice
-    const randomIndex = Math.floor(Math.random() * SPINNER_SLICES.length);
-    const sliceAngle = randomIndex * (360 / SPINNER_SLICES.length);
-    const finalAngle = 360 * 2 + sliceAngle;
-    setWheelAngle(finalAngle);
+      let newRuns = 0;
+      let newWickets = wickets;
+      let newCombo = combo;
 
-    const outcome = SPINNER_SLICES[randomIndex].label;
-    setLastShot(outcome);
-
-    setTimeout(() => {
-      processShotOutcome(outcome);
-    }, 500);
-  };
-
-  const processShotOutcome = (outcome: ShotOutcome) => {
-    let runsAdded = 0;
-    let wicketAdded = 0;
-
-    if (outcome === '6') {
-      runsAdded = 6;
-      soundFx.playLevelUp();
-      setShotAnimation('🏏 MASSIVE SIX! OUT OF THE STADIUM! 🚀');
-      setRoastComment('Crowd goes wild! That landed in aunty ki balcony 😂');
-      confetti({ particleCount: 50, spread: 60 });
-    } else if (outcome === '4') {
-      runsAdded = 4;
-      soundFx.playCoin();
-      setShotAnimation('🏏 BOUNDARY FOUR! CRACKING SHOT! 🔥');
-      setRoastComment('Pierced through extra cover! Beautiful timing!');
-    } else if (outcome === '1' || outcome === '2' || outcome === '3') {
-      runsAdded = Number(outcome);
-      soundFx.playHit();
-      setShotAnimation(`🏏 ${runsAdded} RUNS TAKEN!`);
-      setRoastComment('Good running between the classroom desks!');
-    } else if (outcome === 'OUT') {
-      wicketAdded = 1;
-      soundFx.playGameOver();
-      setShotAnimation('🔴 WICKET! TIMBER DISTURBED! 💥');
-      setRoastComment('Clean bowled! Middle stump uprooted 💀');
-    } else {
-      soundFx.playClick();
-      setShotAnimation('⚪ DOT BALL! Great bowling!');
-      setRoastComment('Beaten outside off stump! Dot ball.');
-    }
-
-    if (currentInnings === 1) {
-      const nextRuns = innings1Score.runs + runsAdded;
-      const nextWickets = innings1Score.wickets + wicketAdded;
-      const nextBalls = innings1Score.balls + 1;
-      const nextState = { runs: nextRuns, wickets: nextWickets, balls: nextBalls };
-      setInnings1Score(nextState);
-
-      if (nextWickets >= MAX_WICKETS || nextBalls >= MAX_BALLS) {
-        soundFx.playLevelUp();
-        setCurrentInnings(2);
-        setRoastComment(`Innings 1 complete! Target for P2: ${nextRuns + 1} runs in 6 balls!`);
+      if (outcome.label === '6') {
+        newRuns = 6;
+        newCombo += 1;
+        soundFx.playCorrect();
+        soundFx.playVictory();
+        setCommentary('🚀 MASSIVE SIX! Out of the stadium into the parking lot!');
+        confetti({ particleCount: 40, spread: 60 });
+      } else if (outcome.label === '4') {
+        newRuns = 4;
+        newCombo += 1;
+        soundFx.playCorrect();
+        soundFx.playCoin();
+        setCommentary('⚡ BOUNDARY FOUR! Pierced the cover fielders!');
+      } else if (outcome.label === '3') {
+        newRuns = 3;
+        soundFx.playCoin();
+        setCommentary('🏃 Triple runs taken! Excellent running between the wickets!');
+      } else if (outcome.label === '2') {
+        newRuns = 2;
+        soundFx.playCoin();
+        setCommentary('Double runs pushed into the deep gap.');
+      } else if (outcome.label === '1') {
+        newRuns = 1;
+        soundFx.playClick();
+        setCommentary('Single rotated to the non-striker end.');
+      } else if (outcome.label === 'OUT') {
+        newWickets += 1;
+        newCombo = 0;
+        soundFx.playWrong();
+        setCommentary('🔴 WICKET! Clean bowled by a vicious inswinger!');
+      } else {
+        newCombo = 0;
+        soundFx.playHit();
+        setCommentary('Dot ball! Solid defense pushed back to the bowler.');
       }
-    } else {
-      const nextRuns = innings2Score.runs + runsAdded;
-      const nextWickets = innings2Score.wickets + wicketAdded;
-      const nextBalls = innings2Score.balls + 1;
-      const nextState = { runs: nextRuns, wickets: nextWickets, balls: nextBalls };
-      setInnings2Score(nextState);
 
-      // Check Chase condition
-      if (nextRuns > innings1Score.runs) {
-        handleMatchEnd('Player 2 / Chaser Won!');
-      } else if (nextWickets >= MAX_WICKETS || nextBalls >= MAX_BALLS) {
-        if (nextRuns === innings1Score.runs) {
-          handleMatchEnd('Super Over Tie!');
-        } else {
-          handleMatchEnd(`${user.username} (P1) Won by Defending!`);
+      setCombo(newCombo);
+      setWickets(newWickets);
+      const currentScore = score + newRuns;
+      setScore(currentScore);
+
+      const nextBalls = ballsBowled + 1;
+      setBallsBowled(nextBalls);
+
+      // Check Match Finish
+      if (newWickets >= MAX_WICKETS || nextBalls >= MAX_BALLS) {
+        soundFx.playGameOver();
+        setStatus(currentScore >= 24 ? 'VICTORY' : 'GAMEOVER');
+
+        const res = await GameSessionManager.finishSession(currentScore, currentScore >= 24, user, highScore);
+        setResultData(res);
+        await submitGameScore('spin-cricket', currentScore, currentScore >= 24);
+
+        if (currentScore > highScore) {
+          setHighScore(currentScore);
+          confetti({ particleCount: 60, spread: 70 });
         }
       }
-    }
-  };
-
-  const handleMatchEnd = (resultText: string) => {
-    setMatchWinner(resultText);
-    soundFx.playLevelUp();
-    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-
-    const isP1Win = resultText.includes('P1') || resultText.includes(user.username);
-    submitGameScore('spin-cricket', innings1Score.runs, isP1Win);
-    if (isP1Win) {
-      addCoins(300);
-    }
-  };
-
-  const resetGame = () => {
-    soundFx.playClick();
-    setCurrentInnings(1);
-    setInnings1Score({ runs: 0, wickets: 0, balls: 0 });
-    setInnings2Score({ runs: 0, wickets: 0, balls: 0 });
-    setIsSpinning(false);
-    setLastShot(null);
-    setMatchWinner(null);
-    setShotAnimation(null);
-    setRoastComment('New 1-Over match started! Spin the cricket wheel.');
+    }, 1800);
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl glass-panel border-[#00F0FF]/20 bg-[#0d1117]/90">
-        <div className="flex items-center gap-2 font-display">
-          <span className="text-2xl">🏏</span>
+    <GameLifecycleWrapper
+      gameTitle="Book / Spin Cricket League"
+      gameId="spin-cricket"
+      category="Strategy Cricket"
+      instructions={[
+        'Face a 2-over (12 balls) chase with 3 wickets in hand.',
+        'Click the SPIN WHEEL button or press SPACE to deliver each ball.',
+        'Score 24+ runs to secure victory for your team!',
+      ]}
+      controls={[
+        { key: 'SPACE / ENTER / CLICK', action: 'Spin Wheel' },
+        { key: 'ESC', action: 'Pause' },
+      ]}
+      status={status}
+      score={score}
+      highScore={highScore}
+      combo={combo}
+      resultData={resultData}
+      onStart={handleStartGame}
+      onPause={handlePause}
+      onResume={handleResume}
+      onRestart={handleRestart}
+    >
+      <div className="w-full h-full flex flex-col items-center justify-between p-6 select-none">
+        {/* Match Scoreboard Header */}
+        <div className="grid grid-cols-3 gap-3 w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-center text-xs font-mono">
           <div>
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              SPIN CRICKET (BOOK CRICKET) <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-[#00F0FF] border border-cyan-500/30">1 OVER SHOOTOUT</span>
-            </h2>
-            <p className="text-[11px] text-gray-400 font-sans">Spin the wheel and hit STOP for 4s, 6s and Wickets!</p>
+            <div className="text-[10px] text-gray-400">TOTAL RUNS</div>
+            <div className="text-xl font-black text-[#00F0FF]">{score}</div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {[
-            { id: 'local', label: '👥 Pass & Play 1v1', icon: Users },
-            { id: 'ai', label: '🤖 vs Smart AI', icon: Bot },
-            { id: 'solo', label: '🎯 Solo Practice', icon: Zap }
-          ].map((m) => (
-            <button
-              key={m.id}
-              onClick={() => {
-                soundFx.playClick();
-                setGameMode(m.id as any);
-                resetGame();
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-display transition-all ${
-                gameMode === m.id
-                  ? 'bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] text-slate-950 shadow-md shadow-[#00F0FF]/20'
-                  : 'bg-slate-900 border border-gray-800 text-gray-400 hover:text-white'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-
-          <button
-            onClick={resetGame}
-            className="p-2 rounded-lg bg-slate-900 border border-gray-800 text-gray-400 hover:text-white hover:border-[#00F0FF]/40 transition-colors"
-            title="Restart Match"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Scoreboard HUD */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Innings 1 (P1 Batting) */}
-        <div className={`p-4 rounded-2xl glass-panel border ${
-          currentInnings === 1 && !matchWinner
-            ? 'border-[#00F0FF] bg-[#00F0FF]/10'
-            : 'border-gray-800 bg-[#0d1117]/80'
-        }`}>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-xs font-bold text-white block">{user.username} (Innings 1)</span>
-              <span className="text-[10px] text-cyan-300 font-mono">
-                Overs: {(innings1Score.balls / 6).toFixed(1)} / 1.0 • Wickets: {innings1Score.wickets}/2
-              </span>
+          <div>
+            <div className="text-[10px] text-gray-400">WICKETS</div>
+            <div className="text-xl font-black text-red-400">
+              {wickets} / {MAX_WICKETS}
             </div>
-            <div className="text-right">
-              <span className="text-3xl font-black text-[#00F0FF] font-display">
-                {innings1Score.runs}/{innings1Score.wickets}
-              </span>
+          </div>
+          <div>
+            <div className="text-[10px] text-gray-400">BALLS</div>
+            <div className="text-xl font-black text-yellow-400">
+              {ballsBowled} / {MAX_BALLS}
             </div>
           </div>
         </div>
 
-        {/* Innings 2 (P2 Chasing) */}
-        <div className={`p-4 rounded-2xl glass-panel border ${
-          currentInnings === 2 && !matchWinner
-            ? 'border-pink-500 bg-pink-500/10'
-            : 'border-gray-800 bg-[#0d1117]/80'
-        }`}>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-xs font-bold text-white block">
-                {gameMode === 'ai' ? 'Bot_Chad (Innings 2)' : 'Player 2 (Innings 2)'}
-              </span>
-              <span className="text-[10px] text-pink-400 font-mono">
-                Target: {innings1Score.runs + 1} Runs ({MAX_BALLS - innings2Score.balls} balls left)
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="text-3xl font-black text-pink-400 font-display">
-                {innings2Score.runs}/{innings2Score.wickets}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Dynamic Spinning Cricket Wheel */}
+        <div className="relative w-52 h-52 flex items-center justify-center my-2">
+          {/* Top Pointer Needle */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-x-8 border-x-transparent border-t-[18px] border-t-red-500 drop-shadow-lg" />
 
-      {/* Wheel Spinner Canvas Arena */}
-      <div className="relative w-full h-84 rounded-3xl overflow-hidden border border-cyan-900/40 shadow-2xl bg-gradient-to-b from-[#09182b] via-[#0b121e] to-[#06090e] flex flex-col items-center justify-between p-6">
-        {/* Shot Big Celebration Overlay */}
-        {shotAnimation && (
-          <div className="absolute top-4 z-20 px-6 py-2 rounded-full bg-[#00F0FF]/20 border border-[#00F0FF] text-white font-display text-sm font-black animate-bounce shadow-lg shadow-[#00F0FF]/30 backdrop-blur-md">
-            {shotAnimation}
-          </div>
-        )}
-
-        {/* Spinner Wheel Center Stage */}
-        <div className="relative my-auto flex items-center justify-center">
-          {/* Top Indicator Arrow */}
-          <div className="absolute -top-5 z-20 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[22px] border-t-yellow-400 drop-shadow-[0_4px_8px_rgba(234,179,8,0.8)]" />
-
-          {/* Rotating Wheel Container */}
+          {/* Rotating Wheel */}
           <div
-            className="w-52 h-52 rounded-full border-4 border-cyan-400 shadow-2xl relative overflow-hidden transition-transform duration-500 ease-out bg-slate-950 flex items-center justify-center"
-            style={{ transform: `rotate(${wheelAngle}deg)` }}
+            style={{
+              transform: `rotate(${wheelRotation}deg)`,
+              transition: isSpinning ? 'transform 1.8s cubic-bezier(0.15, 0.9, 0.2, 1)' : 'none',
+            }}
+            className="w-full h-full rounded-full border-4 border-slate-800 shadow-2xl relative overflow-hidden bg-slate-900"
           >
-            {/* Wheel Slices */}
-            {SPINNER_SLICES.map((slice, idx) => {
-              const angle = idx * (360 / SPINNER_SLICES.length);
+            {WHEEL_SLICES.map((s, i) => {
+              const deg = (360 / WHEEL_SLICES.length) * i;
               return (
                 <div
-                  key={idx}
-                  className="absolute w-full h-full flex justify-center pt-2"
-                  style={{ transform: `rotate(${angle}deg)` }}
+                  key={i}
+                  style={{
+                    transform: `rotate(${deg}deg)`,
+                    backgroundColor: s.color,
+                  }}
+                  className="absolute top-0 left-1/2 w-24 h-28 -ml-12 origin-bottom flex items-start justify-center pt-2 text-slate-950 font-black text-xs shadow-inner opacity-90"
                 >
-                  <span
-                    className="font-display font-black text-sm drop-shadow"
-                    style={{ color: slice.color }}
-                  >
-                    {slice.label}
-                  </span>
+                  <span className="transform -rotate-90 text-[10px]">{s.text}</span>
                 </div>
               );
             })}
-
-            {/* Inner Hub Center Circle */}
-            <div className="w-16 h-16 rounded-full bg-slate-900 border-2 border-cyan-400 flex items-center justify-center z-10 shadow-inner">
-              <span className="text-xl">🏏</span>
+            {/* Center Hub */}
+            <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center text-xl shadow-xl z-10">
+              🏏
             </div>
           </div>
         </div>
 
-        {/* Dynamic Commentary Banner */}
-        <div className="relative z-10 text-center bg-black/70 border border-cyan-500/30 p-2.5 rounded-xl backdrop-blur-md w-full max-w-lg">
-          <p className="text-xs font-mono font-bold text-cyan-300">{roastComment}</p>
-        </div>
-      </div>
+        {/* Commentary & Spin Action Button */}
+        <div className="w-full max-w-md flex flex-col gap-2 items-center">
+          <div className="w-full bg-slate-900/80 border border-slate-800 px-4 py-2 rounded-xl text-xs font-mono text-cyan-300 text-center">
+            📢 {commentary}
+          </div>
 
-      {/* Match Result Banner */}
-      {matchWinner && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-cyan-950/90 to-purple-950/90 border-2 border-[#00F0FF] text-center space-y-4 shadow-2xl animate-fadeIn">
-          <h3 className="text-2xl font-black text-white font-display uppercase tracking-wide">
-            🏆 {matchWinner}
-          </h3>
-          <p className="text-xs text-gray-300 font-mono">
-            Innings 1: {innings1Score.runs} runs vs Innings 2: {innings2Score.runs} runs
-          </p>
-          <button
-            onClick={resetGame}
-            className="cyber-button px-6 py-2.5 rounded-xl font-display text-xs font-black text-slate-950 shadow-lg"
-          >
-            PLAY NEXT MATCH 🏏
-          </button>
-        </div>
-      )}
-
-      {/* Spinner Interactive Action Buttons */}
-      {!matchWinner && (
-        <div className="p-5 rounded-2xl glass-panel border-gray-800 bg-[#0e1218]/90 flex justify-center gap-4">
-          {!isSpinning ? (
+          {status === 'PLAYING' && (
             <button
-              onClick={handleSpinClick}
-              disabled={gameMode === 'ai' && currentInnings === 2}
-              className="px-12 py-4 rounded-xl font-display text-sm font-black cyber-button text-slate-950 shadow-xl flex items-center gap-2 hover:scale-105 transition-transform"
+              onClick={spinWheel}
+              disabled={isSpinning || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xl border-2 border-cyan-300 cursor-pointer disabled:opacity-40"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>SPIN CRICKET WHEEL 🔄</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleStopClick}
-              className="px-12 py-4 rounded-xl font-display text-sm font-black bg-red-600 hover:bg-red-500 text-white shadow-xl shadow-red-500/30 flex items-center gap-2 animate-pulse"
-            >
-              <span>HIT STOP! 🛑</span>
+              <Disc className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
+              {isSpinning ? 'BOWLER DELIVERING BALL...' : 'SPIN WHEEL / FACE BALL'}
             </button>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </GameLifecycleWrapper>
   );
 };
