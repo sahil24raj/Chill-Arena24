@@ -297,6 +297,8 @@ export const EmojiDodgeCanvas: React.FC = () => {
     };
   }, [status, highScore, user, submitGameScore]);
 
+  const moveRef = useRef<((delta: number) => void) | null>(null);
+
   return (
     <GameLifecycleWrapper
       gameTitle="Emoji Dodge / Brain Reflex"
@@ -322,7 +324,46 @@ export const EmojiDodgeCanvas: React.FC = () => {
       onResume={handleResume}
       onRestart={handleRestart}
     >
-      <canvas ref={canvasRef} className="w-full h-full object-contain cursor-ew-resize" />
+      <div className="relative w-full h-full flex items-center justify-center">
+        <canvas ref={canvasRef} className="w-full h-full object-contain cursor-ew-resize" />
+        {status === 'PLAYING' && (
+          <div className="absolute inset-x-4 bottom-4 flex justify-between pointer-events-none sm:hidden">
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const ev = new KeyboardEvent('keydown', { code: 'ArrowLeft' });
+                  window.dispatchEvent(ev);
+                }
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const ev = new KeyboardEvent('keyup', { code: 'ArrowLeft' });
+                window.dispatchEvent(ev);
+              }}
+              className="pointer-events-auto px-6 py-4 rounded-2xl bg-cyan-600/80 text-white font-black text-lg shadow-xl backdrop-blur-md active:bg-cyan-500"
+            >
+              ◀ LEFT
+            </button>
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                const ev = new KeyboardEvent('keydown', { code: 'ArrowRight' });
+                window.dispatchEvent(ev);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                const ev = new KeyboardEvent('keyup', { code: 'ArrowRight' });
+                window.dispatchEvent(ev);
+              }}
+              className="pointer-events-auto px-6 py-4 rounded-2xl bg-cyan-600/80 text-white font-black text-lg shadow-xl backdrop-blur-md active:bg-cyan-500"
+            >
+              RIGHT ▶
+            </button>
+          </div>
+        )}
+      </div>
     </GameLifecycleWrapper>
   );
 };

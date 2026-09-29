@@ -18,6 +18,7 @@ export const ModiRunCanvas: React.FC = () => {
   const [combo, setCombo] = useState(0);
   const [resultData, setResultData] = useState<GameSessionFinishResponse | null>(null);
 
+  const jumpRef = useRef<(() => void) | null>(null);
   const gameLoopRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -99,6 +100,7 @@ export const ModiRunCanvas: React.FC = () => {
         GameSessionManager.recordAction();
       }
     };
+    jumpRef.current = jump;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
@@ -367,7 +369,19 @@ export const ModiRunCanvas: React.FC = () => {
       onResume={handleResume}
       onRestart={handleRestart}
     >
-      <canvas ref={canvasRef} className="w-full h-full object-contain cursor-pointer" />
+      <div className="relative w-full h-full flex items-center justify-center">
+        <canvas ref={canvasRef} className="w-full h-full object-contain cursor-pointer" />
+        {status === 'PLAYING' && (
+          <div className="absolute right-4 bottom-4 z-20">
+            <button
+              onClick={() => jumpRef.current?.()}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 active:scale-95 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-2xl border-2 border-yellow-200 transition-transform"
+            >
+              <span>JUMP 🚀</span>
+            </button>
+          </div>
+        )}
+      </div>
     </GameLifecycleWrapper>
   );
 };

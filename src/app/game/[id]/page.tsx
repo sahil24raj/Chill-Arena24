@@ -112,6 +112,20 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         return <PenFlipCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
+      case 'eraser-throw':
+        return <EraserThrowCanvas />;
+      case 'modi-run':
+        return <ModiRunCanvas />;
+      case 'cid-escape':
+        return <CIDEscapeCanvas />;
+      case 'chai-tapri':
+        return <ChaiTapriCanvas />;
+      case 'gully-cricket':
+        return <GullyCricketCanvas />;
+      case 'emoji-dodge':
+        return <EmojiDodgeCanvas />;
+      case 'meme-clicker':
+        return <MemeClickerCanvas />;
       default:
         return <WordBuilderCanvas />;
     }

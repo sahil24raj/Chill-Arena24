@@ -1,12 +1,14 @@
 export type GameCategory =
   | '🔥 Trending Meme'
+  | '☕ Desi Meme Vibes'
   | '🏫 School Vibes'
   | '🧠 Mind Games'
   | '⚡ Quick Duels'
   | '😂 Meme Games'
   | '🏃 Endless Runner'
   | '🎯 Skill Games'
-  | '🏏 Sports';
+  | '🏏 Sports'
+  | (string & {});
 
 export type CategoryKey = 'meme' | 'school' | 'mind' | 'duels' | 'all';
 
@@ -25,7 +27,7 @@ export interface GameItem {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   duration: string;
   multiplayer: boolean;
-  multiplayerModes: ('local' | 'online' | 'ai')[];
+  multiplayerModes?: ('local' | 'online' | 'ai')[];
   isTrending?: boolean;
   isNew?: boolean;
   isPopular?: boolean;
