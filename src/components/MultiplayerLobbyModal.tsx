@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useAppStore, GAMES_CATALOG } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
-import { X, Users, Copy, Check, Play, Bot, Sparkles, Shield, ArrowRight } from 'lucide-react';
+import { X, Users, Copy, Check, Play, Bot, Sparkles, Shield, ArrowRight, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createRoomOnServer } from '@/lib/multiplayer/realtimeService';
+import { normalizeRoomCode } from '@/lib/multiplayer/roomCodeGenerator';
 
 export const MultiplayerLobbyModal: React.FC = () => {
   const router = useRouter();
@@ -12,49 +14,70 @@ export const MultiplayerLobbyModal: React.FC = () => {
     activeMultiplayerModal,
     closeMultiplayerModal,
     selectedMultiplayerGame,
-    user,
-    createRoom,
-    joinRoom,
-    activeRoom
+    user
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'create' | 'join' | 'quick'>('create');
   const [roomCodeInput, setRoomCodeInput] = useState('');
+  const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<string>(
     selectedMultiplayerGame?.id || 'pen-flip'
   );
-  const [gameMode, setGameMode] = useState<'local' | 'online' | 'ai'>('local');
+  const [gameMode, setGameMode] = useState<'local' | 'online' | 'ai'>('online');
 
   if (!activeMultiplayerModal) return null;
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = async () => {
     soundFx.playClick();
-    const room = createRoom(selectedGameId, gameMode);
-  };
 
-  const handleCopyLink = () => {
-    soundFx.playCoin();
-    const code = activeRoom ? activeRoom.code : '#A82KD';
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(`${window.location.origin}/game/${selectedGameId}?room=${code.replace('#', '')}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    if (gameMode === 'local' || gameMode === 'ai') {
+      soundFx.playLevelUp();
+      closeMultiplayerModal();
+      router.push(`/game/${selectedGameId}?mode=${gameMode}`);
+      return;
     }
-  };
 
-  const handleStartMatch = () => {
-    soundFx.playLevelUp();
-    closeMultiplayerModal();
-    router.push(`/game/${selectedGameId}`);
+    setIsCreating(true);
+    try {
+      const res = await createRoomOnServer(selectedGameId, user);
+      if (res.success && res.data) {
+        setCreatedRoomCode(res.data.roomCode);
+        soundFx.playLevelUp();
+        closeMultiplayerModal();
+        router.push(`/play/room/${res.data.roomCode}`);
+      } else {
+        alert(res.error || 'Failed to create room. Please try again.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error creating multiplayer room.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomCodeInput.trim()) return;
+    const cleanCode = normalizeRoomCode(roomCodeInput);
+    if (!cleanCode) return;
     soundFx.playClick();
-    joinRoom(roomCodeInput);
-    handleStartMatch();
+    closeMultiplayerModal();
+    router.push(`/play/room/${cleanCode}`);
+  };
+
+  const handleQuickMatch = async () => {
+    soundFx.playClick();
+    setIsCreating(true);
+    try {
+      const res = await createRoomOnServer(selectedGameId, user);
+      if (res.success && res.data) {
+        closeMultiplayerModal();
+        router.push(`/play/room/${res.data.roomCode}`);
+      }
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const chosenGame = GAMES_CATALOG.find((g) => g.id === selectedGameId) || GAMES_CATALOG[0];
@@ -71,7 +94,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-black text-white font-display">MULTIPLAYER ARENA LOBBY</h2>
-              <p className="text-[11px] text-gray-400 font-sans">Challenge friends with Room Code or Pass & Play</p>
+              <p className="text-[11px] text-gray-400 font-sans">Challenge friends with Room Code or Shareable Link</p>
             </div>
           </div>
 
@@ -80,7 +103,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
               soundFx.playClick();
               closeMultiplayerModal();
             }}
-            className="p-2 rounded-xl bg-slate-900 border border-gray-800 text-gray-400 hover:text-white"
+            className="p-2 rounded-xl bg-slate-900 border border-gray-800 text-gray-400 hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,7 +122,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
                 soundFx.playClick();
                 setActiveTab(t.id as any);
               }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold font-display transition-all ${
+              className={`flex-1 py-2 rounded-lg text-xs font-bold font-display transition-all cursor-pointer ${
                 activeTab === t.id
                   ? 'bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] text-slate-950 shadow'
                   : 'text-gray-400 hover:text-white'
@@ -122,7 +145,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
                   soundFx.playClick();
                   setSelectedGameId(e.target.value);
                 }}
-                className="w-full bg-slate-950 border border-gray-800 rounded-xl p-3 text-xs text-white font-bold font-display focus:border-[#00F0FF] focus:outline-none"
+                className="w-full bg-slate-950 border border-gray-800 rounded-xl p-3 text-xs text-white font-bold font-display focus:border-[#00F0FF] focus:outline-none cursor-pointer"
               >
                 {GAMES_CATALOG.filter((g) => g.multiplayer).map((g) => (
                   <option key={g.id} value={g.id}>
@@ -137,8 +160,8 @@ export const MultiplayerLobbyModal: React.FC = () => {
               <label className="text-[11px] font-mono text-gray-400">PLAY MODE</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'local', label: '👥 Pass & Play' },
                   { id: 'online', label: '🌐 Online Room' },
+                  { id: 'local', label: '👥 Pass & Play' },
                   { id: 'ai', label: '🤖 vs Smart AI' }
                 ].map((m) => (
                   <button
@@ -147,7 +170,7 @@ export const MultiplayerLobbyModal: React.FC = () => {
                       soundFx.playClick();
                       setGameMode(m.id as any);
                     }}
-                    className={`py-2 rounded-xl text-xs font-bold font-display border transition-all ${
+                    className={`py-2 rounded-xl text-xs font-bold font-display border transition-all cursor-pointer ${
                       gameMode === m.id
                         ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-[#00F0FF]'
                         : 'bg-slate-950 border-gray-800 text-gray-400'
@@ -159,58 +182,20 @@ export const MultiplayerLobbyModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Generated Room Slot HUD */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-gray-800 space-y-3">
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-gray-400">ROOM CODE:</span>
-                <span className="text-lg font-black text-[#ADFF2F] font-mono">
-                  {activeRoom ? activeRoom.code : '#A82KD'}
-                </span>
-              </div>
-
-              {/* Player 1 & Player 2 Slot Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-[#00F0FF]/30 flex items-center gap-2">
-                  <span className="text-xl">{user.avatar}</span>
-                  <div>
-                    <span className="text-xs font-bold text-white block truncate">{user.username}</span>
-                    <span className="text-[9px] text-[#ADFF2F] font-mono font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#ADFF2F]" /> HOST (READY)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-dashed border-gray-800 flex items-center gap-2">
-                  <span className="text-xl">{gameMode === 'ai' ? '🤖' : gameMode === 'local' ? '🕹️' : '⚪'}</span>
-                  <div>
-                    <span className="text-xs font-bold text-gray-300 block truncate">
-                      {gameMode === 'ai' ? 'Bot_Chad' : gameMode === 'local' ? 'Player 2 (Local)' : 'Waiting...'}
-                    </span>
-                    <span className="text-[9px] text-pink-400 font-mono font-bold">
-                      {gameMode === 'online' ? 'Invite friend link' : 'READY TO PLAY'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Copy Invite Link */}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleCopyLink}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-900 border border-gray-800 hover:border-[#00F0FF] text-xs font-bold text-gray-300 hover:text-white flex items-center justify-center gap-1.5"
-                >
-                  {copied ? <Check className="w-4 h-4 text-[#ADFF2F]" /> : <Copy className="w-4 h-4 text-[#00F0FF]" />}
-                  <span>{copied ? 'LINK COPIED!' : 'COPY INVITE LINK'}</span>
-                </button>
-              </div>
-            </div>
-
+            {/* Create Button */}
             <button
-              onClick={handleStartMatch}
-              className="w-full py-4 rounded-xl cyber-button font-display text-sm font-black text-slate-950 flex items-center justify-center gap-2 shadow-xl shadow-[#00F0FF]/25"
+              onClick={handleCreateRoom}
+              disabled={isCreating}
+              className="w-full py-4 rounded-xl cyber-button font-display text-sm font-black text-slate-950 flex items-center justify-center gap-2 shadow-xl shadow-[#00F0FF]/25 cursor-pointer"
             >
               <Play className="w-4 h-4 fill-slate-950" />
-              <span>START MATCH: {chosenGame.title.split(':')[0]}</span>
+              <span>
+                {isCreating
+                  ? 'GENERATING ROOM...'
+                  : gameMode === 'online'
+                  ? 'CREATE & LAUNCH ROOM LOBBY 🚀'
+                  : `START ${chosenGame.title.split(':')[0]}`}
+              </span>
             </button>
           </div>
         )}
@@ -219,10 +204,10 @@ export const MultiplayerLobbyModal: React.FC = () => {
         {activeTab === 'join' && (
           <form onSubmit={handleJoinSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-[11px] font-mono text-gray-400">ENTER 5-DIGIT ROOM CODE</label>
+              <label className="text-[11px] font-mono text-gray-400">ENTER 6-CHARACTER ROOM CODE (e.g. X7K92P)</label>
               <input
                 type="text"
-                placeholder="#A82KD"
+                placeholder="X7K92P"
                 value={roomCodeInput}
                 onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
                 className="w-full bg-slate-950 border border-gray-800 rounded-xl p-4 text-center text-2xl font-mono font-black text-[#00F0FF] placeholder-gray-700 tracking-widest uppercase focus:border-[#00F0FF] focus:outline-none"
@@ -232,9 +217,9 @@ export const MultiplayerLobbyModal: React.FC = () => {
             <button
               type="submit"
               disabled={!roomCodeInput.trim()}
-              className="w-full py-4 rounded-xl cyber-button font-display text-sm font-black text-slate-950 flex items-center justify-center gap-2 shadow-xl"
+              className="w-full py-4 rounded-xl cyber-button font-display text-sm font-black text-slate-950 flex items-center justify-center gap-2 shadow-xl cursor-pointer"
             >
-              <span>ENTER ROOM & START PLAYING</span>
+              <span>ENTER ROOM & JOIN OPPONENT</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -247,16 +232,17 @@ export const MultiplayerLobbyModal: React.FC = () => {
               ⚡
             </div>
             <div>
-              <h3 className="text-base font-black text-white font-display">INSTANT RANDOM MATCHMAKING</h3>
+              <h3 className="text-base font-black text-white font-display">INSTANT ONLINE MATCHMAKING</h3>
               <p className="text-xs text-gray-400 mt-1">
-                Finding an online player for {chosenGame.title.split(':')[0]}...
+                Creating room and opening lobby for {chosenGame.title.split(':')[0]}...
               </p>
             </div>
             <button
-              onClick={handleStartMatch}
-              className="cyber-button px-8 py-3 rounded-xl font-display text-xs font-black text-slate-950 shadow-lg"
+              onClick={handleQuickMatch}
+              disabled={isCreating}
+              className="cyber-button px-8 py-3 rounded-xl font-display text-xs font-black text-slate-950 shadow-lg cursor-pointer"
             >
-              LAUNCH INSTANT MATCH
+              {isCreating ? 'CONNECTING...' : 'LAUNCH INSTANT ROOM'}
             </button>
           </div>
         )}
