@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { ChorSipahiGame } from '@/components/games/chor-sipahi/ChorSipahiGame';
-import { ArrowLeft, Swords, Sparkles, Scroll } from 'lucide-react';
+import { ArrowLeft, Swords, Loader2 } from 'lucide-react';
 import { soundFx } from '@/lib/audio';
 
 export default function ChorSipahiDedicatedPage() {
@@ -26,8 +26,19 @@ export default function ChorSipahiDedicatedPage() {
         </div>
       </div>
 
-      {/* Chor Sipahi Interactive Experience */}
-      <ChorSipahiGame />
+      {/* Chor Sipahi Interactive Experience inside Suspense boundary */}
+      <Suspense
+        fallback={
+          <div className="w-full min-h-[400px] flex flex-col items-center justify-center gap-3 text-[#00F0FF]">
+            <Loader2 className="w-8 h-8 animate-spin" />
+            <span className="font-mono text-xs tracking-widest uppercase">
+              Loading Chor Sipahi Court...
+            </span>
+          </div>
+        }
+      >
+        <ChorSipahiGame />
+      </Suspense>
     </div>
   );
 }

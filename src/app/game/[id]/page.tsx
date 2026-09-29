@@ -97,7 +97,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
   const renderGameCanvas = () => {
     switch (game.id) {
       case 'chor-sipahi':
-        return <ChorSipahiGame />;
+        return (
+          <React.Suspense fallback={<div className="p-8 text-center text-xs font-mono text-[#00F0FF]">Loading Chor Sipahi...</div>}>
+            <ChorSipahiGame />
+          </React.Suspense>
+        );
       case 'word-builder':
         return <WordBuilderCanvas />;
       case 'tic-tac-toe':
