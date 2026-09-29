@@ -8,11 +8,11 @@ export async function POST(
   try {
     const { roomCode } = await params;
     const body = await req.json();
-    const { payload } = body;
+    const payload = body.payload || body;
 
     if (!payload || !payload.playerId || !payload.actionType) {
       return NextResponse.json(
-        { success: false, error: 'Invalid action payload' },
+        { success: false, error: 'Invalid action payload: playerId and actionType are required' },
         { status: 400 }
       );
     }

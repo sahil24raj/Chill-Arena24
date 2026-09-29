@@ -1,6 +1,6 @@
 /**
  * Chill Arena - Real-time Authoritative Multiplayer Service
- * Powered by Firebase Firestore realtime listeners, atomic transactions, and GameAdapters.
+ * Powered by Firebase Firestore realtime listeners, atomic transactions, REST fallbacks, and GameAdapters.
  */
 
 import {
@@ -36,7 +36,39 @@ const ROOM_EXPIRATION_MS = 2 * 60 * 60 * 1000; // 2 hours
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 mins
 const DISCONNECT_GRACE_PERIOD_MS = 30 * 1000; // 30 sec reconnection window
 
-// In-memory fallback store for offline / local simulation when Firebase is unreachable
+/**
+ * Deeply cleans an object so that all undefined values become null,
+ * which prevents Firestore from throwing "Unsupported field value: undefined".
+ */
+export function cleanForFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return null as any;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => cleanForFirestore(item)) as any;
+  }
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanForFirestore(value);
+      } else {
+        cleaned[key] = null;
+      }
+    }
+    return cleaned as any;
+  }
+  return obj;
+}
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs = 2000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('FIRESTORE_TIMEOUT')), timeoutMs))
+  ]);
+};
+
+// In-memory store for instant client/server sync and local fallback
 const memoryRooms: Map<string, MultiplayerRoomState> = new Map();
 const memoryListeners: Map<string, Set<(room: MultiplayerRoomState) => void>> = new Map();
 
@@ -63,18 +95,18 @@ export const createRoomOnServer = async (
     let roomCode = generateRoomCode(6);
     const now = Date.now();
 
-    // Check collision in Firestore
+    // Check collision in Firestore (with timeout guard)
     if (db) {
       try {
         let attempts = 0;
-        while (attempts < 5) {
-          const checkDoc = await getDoc(doc(db, 'rooms', roomCode));
+        while (attempts < 3) {
+          const checkDoc = await withTimeout(getDoc(doc(db, 'rooms', roomCode)), 1500);
           if (!checkDoc.exists()) break;
           roomCode = generateRoomCode(6);
           attempts++;
         }
       } catch (e) {
-        console.warn('Firestore room check notice (continuing):', e);
+        console.warn('Firestore room check note:', e);
       }
     }
 
@@ -127,19 +159,19 @@ export const createRoomOnServer = async (
       expiresAt: now + ROOM_EXPIRATION_MS
     };
 
+    const cleanedRoom = cleanForFirestore(newRoom);
+
     if (db) {
       try {
-        await setDoc(doc(db, 'rooms', roomCode), newRoom);
+        await withTimeout(setDoc(doc(db, 'rooms', roomCode), cleanedRoom), 2000);
       } catch (err) {
-        console.warn('Firestore setDoc failed, saving to memory fallback:', err);
-        memoryRooms.set(roomCode, newRoom);
+        console.warn('Firestore setDoc failed, saving to memory:', err);
       }
-    } else {
-      memoryRooms.set(roomCode, newRoom);
     }
 
-    notifyMemoryListeners(newRoom);
-    return { success: true, data: newRoom };
+    memoryRooms.set(roomCode, cleanedRoom);
+    notifyMemoryListeners(cleanedRoom);
+    return { success: true, data: cleanedRoom };
   } catch (error: any) {
     console.error('Failed to create room:', error);
     return {
@@ -167,7 +199,7 @@ export const getRoomByCode = async (
 
     if (db) {
       try {
-        const snap = await getDoc(doc(db, 'rooms', code));
+        const snap = await withTimeout(getDoc(doc(db, 'rooms', code)), 2000);
         if (snap.exists()) {
           room = snap.data() as MultiplayerRoomState;
         }
@@ -238,7 +270,7 @@ export const joinRoomOnServer = async (
           let updatedPlayers = [...current.players];
 
           if (existingPlayerIndex >= 0) {
-            // Player reconnecting
+            // Player reconnecting / refresh
             updatedPlayers[existingPlayerIndex] = {
               ...updatedPlayers[existingPlayerIndex],
               connectionStatus: 'CONNECTED',
@@ -280,10 +312,12 @@ export const joinRoomOnServer = async (
             updatedAt: now
           };
 
-          transaction.set(roomRef, updatedRoom);
-          return updatedRoom;
+          const cleaned = cleanForFirestore(updatedRoom);
+          transaction.set(roomRef, cleaned);
+          return cleaned;
         });
 
+        memoryRooms.set(code, result);
         notifyMemoryListeners(result);
         return { success: true, data: result };
       } catch (txErr: any) {
@@ -340,9 +374,10 @@ export const joinRoomOnServer = async (
       updatedAt: now
     };
 
-    memoryRooms.set(code, updatedMemoryRoom);
-    notifyMemoryListeners(updatedMemoryRoom);
-    return { success: true, data: updatedMemoryRoom };
+    const cleaned = cleanForFirestore(updatedMemoryRoom);
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to join room.', code: 'INTERNAL_ERROR' };
   }
@@ -391,27 +426,20 @@ export const startMatchOnServer = async (
       updatedAt: now
     };
 
+    const cleaned = cleanForFirestore(updatedRoom);
+
     const db = getFirebaseDb();
     if (db) {
       try {
-        await updateDoc(doc(db, 'rooms', code), {
-          status: 'PLAYING',
-          countdown: 0,
-          gameState: initialGameState,
-          currentTurnPlayerId: room.players[0]?.id || null,
-          winnerPlayerId: null,
-          winnerUsername: null,
-          stateVersion: room.stateVersion + 1,
-          updatedAt: now
-        });
+        await setDoc(doc(db, 'rooms', code), cleaned);
       } catch (err) {
-        console.warn('Firestore updateDoc start failed:', err);
+        console.warn('Firestore setDoc start failed:', err);
       }
     }
 
-    memoryRooms.set(code, updatedRoom);
-    notifyMemoryListeners(updatedRoom);
-    return { success: true, data: updatedRoom };
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to start match.', code: 'INTERNAL_ERROR' };
   }
@@ -463,41 +491,35 @@ export const submitPlayerActionOnServer = async (
     const updatedRoom: MultiplayerRoomState = {
       ...room,
       gameState: result.nextState,
-      currentTurnPlayerId: result.nextTurn,
-      winnerPlayerId: result.winnerId,
-      winnerUsername: result.winnerUsername || (result.winnerId ? room.players.find((p) => p.id === result.winnerId)?.username : null),
+      currentTurnPlayerId: result.nextTurn || null,
+      winnerPlayerId: result.winnerId || null,
+      winnerUsername: result.winnerUsername || (result.winnerId ? room.players.find((p) => p.id === result.winnerId)?.username : null) || null,
       status: result.isFinished ? 'FINISHED' : 'PLAYING',
       stateVersion: room.stateVersion + 1,
       updatedAt: now
     };
 
+    const cleaned = cleanForFirestore(updatedRoom);
+
     const db = getFirebaseDb();
     if (db) {
       try {
-        await updateDoc(doc(db, 'rooms', code), {
-          gameState: result.nextState,
-          currentTurnPlayerId: result.nextTurn,
-          winnerPlayerId: result.winnerId,
-          winnerUsername: updatedRoom.winnerUsername,
-          status: result.isFinished ? 'FINISHED' : 'PLAYING',
-          stateVersion: room.stateVersion + 1,
-          updatedAt: now
-        });
+        await setDoc(doc(db, 'rooms', code), cleaned);
       } catch (err) {
-        console.warn('Firestore action update failed:', err);
+        console.warn('Firestore action setDoc failed:', err);
       }
     }
 
-    memoryRooms.set(code, updatedRoom);
-    notifyMemoryListeners(updatedRoom);
-    return { success: true, data: updatedRoom };
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
   } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to submit move.', code: 'INTERNAL_ERROR' };
+    return { success: false, error: error.message || 'Action execution error.', code: 'INTERNAL_ERROR' };
   }
 };
 
 /**
- * Leaves a multiplayer room, with automatic host reassignment.
+ * Removes a player from a room or handles host reassignment / room closure.
  */
 export const leaveRoomOnServer = async (
   rawCode: string,
@@ -506,36 +528,34 @@ export const leaveRoomOnServer = async (
   try {
     const code = normalizeRoomCode(rawCode);
     const getRes = await getRoomByCode(code);
-    if (!getRes.success || !getRes.data) return { success: true, data: null };
+    if (!getRes.success || !getRes.data) {
+      return { success: true, data: null };
+    }
 
     const room = getRes.data;
     const remainingPlayers = room.players.filter((p) => p.id !== playerId);
     const now = Date.now();
 
     if (remainingPlayers.length === 0) {
-      // Room closed
+      // Last player left - cancel room
       const db = getFirebaseDb();
       if (db) {
         try {
           await deleteDoc(doc(db, 'rooms', code));
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
       memoryRooms.delete(code);
       return { success: true, data: null };
     }
 
+    // If host left, transfer host role
     let newHostId = room.hostId;
     let newHostUsername = room.hostUsername;
-
-    if (room.hostId === playerId) {
-      // Host reassignment to next connected player
-      const nextHost = remainingPlayers[0];
-      nextHost.isHost = true;
-      nextHost.role = 'host';
-      newHostId = nextHost.id;
-      newHostUsername = nextHost.username;
+    if (room.hostId === playerId && remainingPlayers.length > 0) {
+      remainingPlayers[0].isHost = true;
+      remainingPlayers[0].role = 'host';
+      newHostId = remainingPlayers[0].id;
+      newHostUsername = remainingPlayers[0].username;
     }
 
     const updatedRoom: MultiplayerRoomState = {
@@ -543,31 +563,32 @@ export const leaveRoomOnServer = async (
       players: remainingPlayers,
       hostId: newHostId,
       hostUsername: newHostUsername,
-      status: room.status === 'PLAYING' ? 'FINISHED' : remainingPlayers.length >= room.minPlayers ? 'READY' : 'WAITING',
-      winnerPlayerId: room.status === 'PLAYING' ? remainingPlayers[0].id : room.winnerPlayerId,
+      status: remainingPlayers.length < room.minPlayers && room.status === 'READY' ? 'WAITING' : room.status,
       stateVersion: room.stateVersion + 1,
       updatedAt: now
     };
 
+    const cleaned = cleanForFirestore(updatedRoom);
+
     const db = getFirebaseDb();
     if (db) {
       try {
-        await setDoc(doc(db, 'rooms', code), updatedRoom);
+        await setDoc(doc(db, 'rooms', code), cleaned);
       } catch (err) {
         console.warn('Firestore leave update failed:', err);
       }
     }
 
-    memoryRooms.set(code, updatedRoom);
-    notifyMemoryListeners(updatedRoom);
-    return { success: true, data: updatedRoom };
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
   } catch (error: any) {
     return { success: false, error: error.message || 'Error leaving room.' };
   }
 };
 
 /**
- * Subscribes to real-time room updates via Firestore onSnapshot with fallback.
+ * Subscribes to real-time room updates via Firestore onSnapshot + HTTP polling fallback.
  */
 export const subscribeToRoomUpdates = (
   rawCode: string,
@@ -589,6 +610,7 @@ export const subscribeToRoomUpdates = (
   if (cached) onUpdate(cached);
 
   let unsubscribeFirestore: (() => void) | null = null;
+  let pollingInterval: NodeJS.Timeout | null = null;
 
   if (db) {
     try {
@@ -600,28 +622,37 @@ export const subscribeToRoomUpdates = (
             const data = snapshot.data() as MultiplayerRoomState;
             memoryRooms.set(code, data);
             onUpdate(data);
-          } else {
-            // Room was deleted
-            const memoryVal = memoryRooms.get(code);
-            if (memoryVal) {
-              onUpdate(memoryVal);
-            }
           }
         },
         (error) => {
-          console.warn('Firestore onSnapshot warning (using realtime fallback):', error);
+          console.warn('Firestore onSnapshot warning (activating polling fallback):', error);
           if (onError) onError(error);
         }
       );
     } catch (err) {
-      console.warn('Firestore onSnapshot initialization notice:', err);
+      console.warn('Firestore onSnapshot init note:', err);
     }
   }
+
+  // Backup HTTP polling to guarantee real-time synchronization
+  pollingInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/rooms/${code}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          memoryRooms.set(code, json.data);
+          onUpdate(json.data);
+        }
+      }
+    } catch {}
+  }, 2500);
 
   return () => {
     setRef.delete(onUpdate);
     if (setRef.size === 0) memoryListeners.delete(code);
     if (unsubscribeFirestore) unsubscribeFirestore();
+    if (pollingInterval) clearInterval(pollingInterval);
   };
 };
 
@@ -653,7 +684,7 @@ export const sendPlayerHeartbeat = async (rawCode: string, playerId: string): Pr
           data.players[pIdx].lastSeenAt = now;
           data.players[pIdx].connectionStatus = 'CONNECTED';
           await updateDoc(roomRef, {
-            players: data.players,
+            players: cleanForFirestore(data.players),
             updatedAt: now
           });
         }

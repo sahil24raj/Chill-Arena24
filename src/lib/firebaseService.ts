@@ -793,20 +793,22 @@ export const saveScoreToCloudLeaderboard = async (
 };
 
 /**
- * Fetch Top Scores from Firestore Leaderboard
+ * Fetch Top Scores from Firestore Leaderboard with optional gameId filtering
  */
-export const fetchCloudLeaderboard = async (limitCount = 20): Promise<LeaderboardEntry[]> => {
+export const fetchCloudLeaderboard = async (
+  limitCount = 200,
+  gameId?: string
+): Promise<LeaderboardEntry[]> => {
   const db = getFirebaseDb();
   if (!isFirebaseConfigured() || !db) {
     return [];
   }
 
   try {
-    const q = query(
-      collection(db, 'leaderboards'),
-      orderBy('score', 'desc'),
-      limit(limitCount)
-    );
+    const leaderboardsRef = collection(db, 'leaderboards');
+    const q = gameId && gameId !== 'all'
+      ? query(leaderboardsRef, where('gameId', '==', gameId), orderBy('score', 'desc'), limit(limitCount))
+      : query(leaderboardsRef, orderBy('score', 'desc'), limit(limitCount));
 
     const snapshot = await getDocs(q);
     const entries: LeaderboardEntry[] = [];
@@ -821,8 +823,8 @@ export const fetchCloudLeaderboard = async (limitCount = 20): Promise<Leaderboar
         gameId: data.gameId,
         gameTitle: data.gameTitle,
         country: data.country || '🇮🇳 Global',
-        wins: data.wins || 0,
-        xp: data.xp || 0,
+        wins: Number(data.wins) || 0,
+        xp: Number(data.xp) || 0,
         badge: data.badge || (idx === 0 ? '👑 Leader' : idx < 3 ? '🥈 Champion' : '🔥 Veteran')
       });
     });
@@ -835,11 +837,132 @@ export const fetchCloudLeaderboard = async (limitCount = 20): Promise<Leaderboar
 };
 
 /**
+ * Fetches all players from both 'leaderboards' and 'users' collections,
+ * creating an exhaustive, unified, and deterministically ranked leaderboard.
+ */
+export const fetchAllCloudLeaderboard = async (
+  selectedGameId = 'all'
+): Promise<LeaderboardEntry[]> => {
+  const db = getFirebaseDb();
+  if (!isFirebaseConfigured() || !db) {
+    return [];
+  }
+
+  try {
+    const entriesMap = new Map<string, LeaderboardEntry>();
+
+    // 1. Fetch scores from leaderboards collection
+    try {
+      const leaderboardsRef = collection(db, 'leaderboards');
+      const lSnap = await getDocs(query(leaderboardsRef, limit(500)));
+      lSnap.docs.forEach((d) => {
+        const data = d.data();
+        if (selectedGameId !== 'all' && data.gameId !== selectedGameId) return;
+
+        const key = `${data.userId || data.username}_${data.gameId || 'all'}`;
+        entriesMap.set(key, {
+          rank: 0,
+          username: data.username || 'Anonymous',
+          avatar: data.avatar || '🚀',
+          score: Number(data.score) || 0,
+          gameId: data.gameId,
+          gameTitle: data.gameTitle,
+          country: data.country || '🇮🇳 Global',
+          wins: Number(data.wins) || 0,
+          xp: Number(data.xp) || 0,
+          badge: data.badge || '🔥 Arena Competitor'
+        });
+      });
+    } catch (e) {
+      console.warn('Leaderboard collection query note:', e);
+    }
+
+    // 2. Fetch users from users collection to ensure ALL registered users appear
+    try {
+      const usersRef = collection(db, 'users');
+      const uSnap = await getDocs(query(usersRef, limit(500)));
+      uSnap.docs.forEach((d) => {
+        const uData = d.data();
+        const uname = uData.displayName || uData.username || 'Gamer';
+        const userId = d.id;
+
+        if (selectedGameId === 'all') {
+          const userKey = `${userId}_all`;
+          const existing = entriesMap.get(userKey);
+          const totalScore = Number(uData.stats?.totalScore) || Number(uData.xp) || 0;
+          const totalWins = Number(uData.stats?.totalWins) || 0;
+
+          if (!existing) {
+            entriesMap.set(userKey, {
+              rank: 0,
+              username: uname,
+              avatar: uData.avatar || '🚀',
+              score: totalScore,
+              gameId: 'all',
+              gameTitle: 'Overall Arena Career',
+              country: uData.country || '🇮🇳 Global',
+              wins: totalWins,
+              xp: Number(uData.xp) || 0,
+              badge: totalWins >= 10 ? '👑 Master' : totalWins >= 3 ? '🥈 Champion' : '⚡ Contender'
+            });
+          }
+        } else {
+          // Check if user has a score for this specific game
+          const gameScore = uData.stats?.highScores?.[selectedGameId];
+          if (gameScore !== undefined && gameScore > 0) {
+            const userGameKey = `${userId}_${selectedGameId}`;
+            if (!entriesMap.has(userGameKey)) {
+              entriesMap.set(userGameKey, {
+                rank: 0,
+                username: uname,
+                avatar: uData.avatar || '🚀',
+                score: Number(gameScore),
+                gameId: selectedGameId,
+                gameTitle: selectedGameId,
+                country: uData.country || '🇮🇳 Global',
+                wins: Number(uData.stats?.totalWins) || 0,
+                xp: Number(uData.xp) || 0,
+                badge: '⚡ Verified Player'
+              });
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Users collection query note:', e);
+    }
+
+    // 3. Sort deterministically: Score DESC -> Wins DESC -> XP DESC -> Username ASC
+    const combined = Array.from(entriesMap.values()).sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const bWins = Number(b.wins) || 0;
+      const aWins = Number(a.wins) || 0;
+      if (bWins !== aWins) return bWins - aWins;
+      const bXp = Number(b.xp) || 0;
+      const aXp = Number(a.xp) || 0;
+      if (bXp !== aXp) return bXp - aXp;
+      return a.username.localeCompare(b.username);
+    });
+
+    // 4. Assign deterministic ranks
+    return combined.map((entry, idx) => ({
+      ...entry,
+      rank: idx + 1,
+      badge: idx === 0 ? '👑 Grand Champion' : idx < 3 ? '🥈 Podium Master' : idx < 10 ? '🔥 Top 10 Elite' : '⚡ Arena Competitor'
+    }));
+  } catch (err) {
+    console.error('Error in fetchAllCloudLeaderboard:', err);
+    return [];
+  }
+};
+
+/**
  * Listen for live Leaderboard changes in Real-time
  */
 export const subscribeToCloudLeaderboard = (
   callback: (entries: LeaderboardEntry[]) => void,
-  limitCount = 15
+  limitCount = 200,
+  gameId?: string
 ) => {
   const db = getFirebaseDb();
   if (!isFirebaseConfigured() || !db) {
@@ -847,11 +970,10 @@ export const subscribeToCloudLeaderboard = (
   }
 
   try {
-    const q = query(
-      collection(db, 'leaderboards'),
-      orderBy('score', 'desc'),
-      limit(limitCount)
-    );
+    const leaderboardsRef = collection(db, 'leaderboards');
+    const q = gameId && gameId !== 'all'
+      ? query(leaderboardsRef, where('gameId', '==', gameId), orderBy('score', 'desc'), limit(limitCount))
+      : query(leaderboardsRef, orderBy('score', 'desc'), limit(limitCount));
 
     return onSnapshot(
       q,
@@ -867,8 +989,8 @@ export const subscribeToCloudLeaderboard = (
             gameId: data.gameId,
             gameTitle: data.gameTitle,
             country: data.country || '🇮🇳 Global',
-            wins: data.wins || 0,
-            xp: data.xp || 0,
+            wins: Number(data.wins) || 0,
+            xp: Number(data.xp) || 0,
             badge: data.badge || (idx === 0 ? '👑 Leader' : idx < 3 ? '🥈 Champion' : '🔥 Veteran')
           });
         });

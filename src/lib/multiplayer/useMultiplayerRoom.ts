@@ -70,7 +70,24 @@ export function useMultiplayerRoom({
 
       try {
         if (autoJoin) {
-          const joinRes = await joinRoomOnServer(normalizedCode, user);
+          let joinRes = await joinRoomOnServer(normalizedCode, user);
+          if (!joinRes.success) {
+            // REST API fallback
+            try {
+              const res = await fetch(`/api/rooms/${normalizedCode}/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user })
+              });
+              if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.data) {
+                  joinRes = json;
+                }
+              }
+            } catch {}
+          }
+
           if (isMounted) {
             if (joinRes.success && joinRes.data) {
               setRoom(joinRes.data);
@@ -80,7 +97,19 @@ export function useMultiplayerRoom({
             }
           }
         } else {
-          const getRes = await getRoomByCode(normalizedCode);
+          let getRes = await getRoomByCode(normalizedCode);
+          if (!getRes.success) {
+            try {
+              const res = await fetch(`/api/rooms/${normalizedCode}`);
+              if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.data) {
+                  getRes = json;
+                }
+              }
+            } catch {}
+          }
+
           if (isMounted) {
             if (getRes.success && getRes.data) {
               setRoom(getRes.data);

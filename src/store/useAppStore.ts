@@ -21,9 +21,23 @@ import {
 export type Game = GameItem;
 export type { GameItem };
 
+export const getOrCreateDeviceId = (): string => {
+  if (typeof window === 'undefined') return 'usr_guest_srv';
+  try {
+    let id = localStorage.getItem('chill_arena_device_user_id');
+    if (!id || id === 'usr_guest') {
+      id = `usr_${Math.random().toString(36).substring(2, 8)}_${Date.now().toString(36)}`;
+      localStorage.setItem('chill_arena_device_user_id', id);
+    }
+    return id;
+  } catch {
+    return `usr_${Math.random().toString(36).substring(2, 8)}`;
+  }
+};
+
 const INITIAL_USER: UserProfile = {
-  id: 'usr_guest',
-  username: 'Gamer',
+  id: typeof window !== 'undefined' ? getOrCreateDeviceId() : 'usr_guest',
+  username: typeof window !== 'undefined' ? `Gamer_${getOrCreateDeviceId().slice(-4).toUpperCase()}` : 'Gamer',
   avatar: '🚀',
   authType: 'guest',
   xp: 0,
@@ -1044,7 +1058,17 @@ export const useAppStore = create<AppState>()(
       }
     }),
     {
-      name: 'memeverse-v2-storage'
+      name: 'memeverse-v2-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state && (!state.user.id || state.user.id === 'usr_guest') && !state.user.uid) {
+          const deviceId = getOrCreateDeviceId();
+          state.user.id = deviceId;
+          if (state.user.username === 'Gamer') {
+            state.user.username = `Gamer_${deviceId.slice(-4).toUpperCase()}`;
+          }
+        }
+      }
     }
   )
 );
+
