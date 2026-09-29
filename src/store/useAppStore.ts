@@ -243,6 +243,37 @@ export const GAMES_CATALOG: GameItem[] = [
       'Correct answer = Base Points + Speed Bonus',
       'Wrong answer breaks combo streak!'
     ]
+  },
+  {
+    id: 'chor-sipahi',
+    title: 'Chor Sipahi (Raja Mantri) 👑🥷',
+    slug: 'chor-sipahi',
+    tagline: '4-Player Indian Party Game! Raja orders, Mantri hides, Sipahi investigates, Chor bluffs!',
+    description: 'The iconic 4-player childhood parlor game of chits, deduction and psychological bluffs! Roles: Raja (1000 pts), Mantri (800 pts), Sipahi (500 pts), and Chor (0 pts). The Sipahi must interrogate the suspects and catch the hidden Chor!',
+    category: '🏫 School Vibes',
+    categoryKey: 'school',
+    thumbnail: '🥷',
+    bannerImage: '/games/chor-sipahi.jpg',
+    playCount: 245000,
+    rating: 4.98,
+    difficulty: 'Easy',
+    duration: '2-4 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    isPopular: true,
+    isFeatured: true,
+    controls: ['Click to Reveal Role', 'Real-Time Chat & Roasts', 'Select Suspect Card & Confirm Arrest'],
+    tags: ['4-Player', 'Social Deduction', 'School Vibes', 'Party Game', 'Raja Mantri'],
+    rules: [
+      '👑 Raja (1000 pts): Publicly known king who commands the court.',
+      '🧠 Mantri (800 pts): Secret minister who must act natural to avoid wrongful arrest.',
+      '👮 Sipahi (500 pts): The royal cop whose mission is to find and arrest the Chor.',
+      '🥷 Chor (0 pts): Master thief trying to deceive the Sipahi and escape!',
+      'Sipahi inspects the 3 suspect players and submits a final guess.',
+      'All 4 chits are revealed at the end of the round with cumulative leaderboard scores.'
+    ]
   }
 ];
 

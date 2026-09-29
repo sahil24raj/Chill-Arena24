@@ -20,6 +20,7 @@ import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { TicTacToeCanvas } from '@/components/games/TicTacToeCanvas';
 import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
+import { ChorSipahiGame } from '@/components/games/chor-sipahi/ChorSipahiGame';
 
 import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
 import {
@@ -95,6 +96,8 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const renderGameCanvas = () => {
     switch (game.id) {
+      case 'chor-sipahi':
+        return <ChorSipahiGame />;
       case 'word-builder':
         return <WordBuilderCanvas />;
       case 'tic-tac-toe':
