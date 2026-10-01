@@ -1,4 +1,4 @@
-export type WordDifficulty = 'easy' | 'easy+' | 'medium' | 'medium+' | 'hard' | 'expert';
+export type WordDifficulty = 'Starter' | 'Moderate' | 'Challenging' | 'Tough' | 'Hard' | 'Elite';
 
 export interface WordLevelData {
   level: number;
@@ -6,437 +6,432 @@ export interface WordLevelData {
   meaning: string;
   difficulty: WordDifficulty;
   category: string;
-  acceptedAnswers?: string[];
+  acceptedAnswers: string[];
 }
 
-// 50 Handcrafted, High-Quality English Word Levels with verified dictionary definitions
+// 50 Handcrafted Moderate-to-Elite Difficulty Word Levels with verified definitions and anagrams
 export const WORD_BUILDER_LEVELS: WordLevelData[] = [
   // ==========================================
-  // LEVEL 1–5: EASY (3 Letters)
+  // LEVEL 1–5: WARM-UP / MODERATE (4 Letters)
   // ==========================================
   {
     level: 1,
-    word: 'DOG',
-    meaning: 'A domesticated carnivorous mammal commonly kept as a loyal pet.',
-    difficulty: 'easy',
-    category: 'Animals',
-    acceptedAnswers: ['DOG', 'GOD']
+    word: 'LION',
+    meaning: 'A large, powerful carnivorous feline predator known as the king of beasts.',
+    difficulty: 'Starter',
+    category: 'Wild Kingdom',
+    acceptedAnswers: ['LION', 'LOIN']
   },
   {
     level: 2,
-    word: 'CAT',
-    meaning: 'A small domesticated feline mammal with soft fur and sharp claws.',
-    difficulty: 'easy',
-    category: 'Animals',
-    acceptedAnswers: ['CAT', 'ACT']
+    word: 'CAMP',
+    meaning: 'A place with tents or temporary shelters used for outdoor recreational stay.',
+    difficulty: 'Starter',
+    category: 'Outdoor & Travel',
+    acceptedAnswers: ['CAMP']
   },
   {
     level: 3,
-    word: 'SUN',
-    meaning: 'The luminous star around which the Earth orbits, providing light and heat.',
-    difficulty: 'easy',
-    category: 'Nature',
-    acceptedAnswers: ['SUN', 'NUS']
-  },
-  {
-    level: 4,
-    word: 'PEN',
-    meaning: 'An instrument used for writing or drawing with ink.',
-    difficulty: 'easy',
-    category: 'Everyday Objects',
-    acceptedAnswers: ['PEN']
-  },
-  {
-    level: 5,
-    word: 'ART',
-    meaning: 'The expression or application of human creative skill and imagination.',
-    difficulty: 'easy',
-    category: 'Culture',
-    acceptedAnswers: ['ART', 'RAT', 'TAR']
-  },
-
-  // ==========================================
-  // LEVEL 6–10: EASY+ (4 Letters)
-  // ==========================================
-  {
-    level: 6,
-    word: 'CAKE',
-    meaning: 'A sweet baked food made from flour, sugar, eggs, and butter.',
-    difficulty: 'easy+',
-    category: 'Food',
-    acceptedAnswers: ['CAKE']
-  },
-  {
-    level: 7,
-    word: 'STOP',
-    meaning: 'To cease movement, progress, or operation.',
-    difficulty: 'easy+',
-    category: 'Action',
-    acceptedAnswers: ['STOP', 'POST', 'SPOT', 'TOPS', 'POTS']
-  },
-  {
-    level: 8,
-    word: 'PALE',
-    meaning: 'Light in color or shade; having relatively little color.',
-    difficulty: 'easy+',
-    category: 'Colors & Senses',
-    acceptedAnswers: ['PALE', 'LEAP', 'PLEA', 'PEAL']
-  },
-  {
-    level: 9,
     word: 'BIRD',
-    meaning: 'A warm-blooded feathered vertebrate with wings that can usually fly.',
-    difficulty: 'easy+',
-    category: 'Animals',
+    meaning: 'A warm-blooded feathered vertebrate with wings capable of flight.',
+    difficulty: 'Starter',
+    category: 'Nature',
     acceptedAnswers: ['BIRD', 'DRIP']
   },
   {
-    level: 10,
-    word: 'STAR',
-    meaning: 'A celestial body of hot gas that radiates energy in the night sky.',
-    difficulty: 'easy+',
-    category: 'Space',
-    acceptedAnswers: ['STAR', 'RATS', 'ARTS', 'TARS']
+    level: 4,
+    word: 'GOLD',
+    meaning: 'A precious yellow metallic element valued worldwide for rarity and jewelry.',
+    difficulty: 'Starter',
+    category: 'Treasures',
+    acceptedAnswers: ['GOLD']
+  },
+  {
+    level: 5,
+    word: 'WIND',
+    meaning: 'The natural perceptible movement of air flowing along the Earth\'s surface.',
+    difficulty: 'Starter',
+    category: 'Atmosphere',
+    acceptedAnswers: ['WIND']
   },
 
   // ==========================================
-  // LEVEL 11–20: MEDIUM (5 Letters)
+  // LEVEL 6–15: MODERATE+ / CHALLENGING (5 Letters)
   // ==========================================
   {
+    level: 6,
+    word: 'GHOST',
+    meaning: 'An apparition of a deceased person believed to haunt living places.',
+    difficulty: 'Moderate',
+    category: 'Mystic Lore',
+    acceptedAnswers: ['GHOST']
+  },
+  {
+    level: 7,
+    word: 'FLAME',
+    meaning: 'A hot glowing body of ignited gas produced by combustion or fire.',
+    difficulty: 'Moderate',
+    category: 'Elements',
+    acceptedAnswers: ['FLAME']
+  },
+  {
+    level: 8,
+    word: 'SWORD',
+    meaning: 'A bladed melee weapon intended for slashing or thrusting combat.',
+    difficulty: 'Moderate',
+    category: 'Medieval Warfare',
+    acceptedAnswers: ['SWORD', 'WORDS']
+  },
+  {
+    level: 9,
+    word: 'MAGIC',
+    meaning: 'The power of apparently influencing events by using mysterious or supernatural forces.',
+    difficulty: 'Moderate',
+    category: 'Arcane Arts',
+    acceptedAnswers: ['MAGIC']
+  },
+  {
+    level: 10,
+    word: 'BRAIN',
+    meaning: 'The organ of soft nervous tissue in the skull, coordinating intellect and sensation.',
+    difficulty: 'Moderate',
+    category: 'Biology',
+    acceptedAnswers: ['BRAIN', 'BARIN']
+  },
+  {
     level: 11,
-    word: 'APPLE',
-    meaning: 'The round edible fruit of a tree, typically red, green, or yellow.',
-    difficulty: 'medium',
-    category: 'Food',
-    acceptedAnswers: ['APPLE']
-  },
-  {
-    level: 12,
-    word: 'TABLE',
-    meaning: 'A piece of furniture with a flat top supported by legs.',
-    difficulty: 'medium',
-    category: 'Furniture',
-    acceptedAnswers: ['TABLE', 'BLEAT']
-  },
-  {
-    level: 13,
-    word: 'RIVER',
-    meaning: 'A large, natural stream of water flowing continuously toward the sea.',
-    difficulty: 'medium',
-    category: 'Geography',
-    acceptedAnswers: ['RIVER']
-  },
-  {
-    level: 14,
-    word: 'STONE',
-    meaning: 'Hard, solid non-metallic mineral matter that forms rocks.',
-    difficulty: 'medium',
-    category: 'Earth',
-    acceptedAnswers: ['STONE', 'TONES', 'NOTES', 'ONSET']
-  },
-  {
-    level: 15,
-    word: 'HEART',
-    meaning: 'A muscular organ that pumps blood through the body; center of emotions.',
-    difficulty: 'medium',
-    category: 'Anatomy',
-    acceptedAnswers: ['HEART', 'EARTH', 'HATER']
-  },
-  {
-    level: 16,
-    word: 'WATER',
-    meaning: 'A transparent odorless liquid vital for all known forms of life.',
-    difficulty: 'medium',
-    category: 'Nature',
-    acceptedAnswers: ['WATER']
-  },
-  {
-    level: 17,
-    word: 'SMILE',
-    meaning: 'A pleased or friendly facial expression with the corners of mouth turned up.',
-    difficulty: 'medium',
-    category: 'Emotions',
-    acceptedAnswers: ['SMILE', 'SLIME', 'MILES', 'LIMES']
-  },
-  {
-    level: 18,
-    word: 'DREAM',
-    meaning: 'A series of thoughts, visions, and sensations occurring during sleep.',
-    difficulty: 'medium',
-    category: 'Mind',
-    acceptedAnswers: ['DREAM', 'ARMED']
-  },
-  {
-    level: 19,
     word: 'TIGER',
-    meaning: 'A magnificent large apex feline predator with an orange and black striped coat.',
-    difficulty: 'medium',
-    category: 'Animals',
+    meaning: 'A magnificent apex predator feline with vibrant orange fur and black stripes.',
+    difficulty: 'Moderate',
+    category: 'Wild Predators',
     acceptedAnswers: ['TIGER']
   },
   {
-    level: 20,
-    word: 'CLOUD',
-    meaning: 'A visible mass of condensed water droplets floating high in the sky.',
-    difficulty: 'medium',
+    level: 12,
+    word: 'STORM',
+    meaning: 'A violent atmospheric disturbance accompanied by fierce winds, rain, or thunder.',
+    difficulty: 'Moderate',
     category: 'Weather',
-    acceptedAnswers: ['CLOUD']
+    acceptedAnswers: ['STORM']
+  },
+  {
+    level: 13,
+    word: 'VIPER',
+    meaning: 'A venomous snake having large hinged fangs capable of delivering deep punctures.',
+    difficulty: 'Moderate',
+    category: 'Reptiles',
+    acceptedAnswers: ['VIPER']
+  },
+  {
+    level: 14,
+    word: 'CROWN',
+    meaning: 'A circular ornamental headdress worn by a monarch as a symbol of authority.',
+    difficulty: 'Moderate',
+    category: 'Royalty',
+    acceptedAnswers: ['CROWN']
+  },
+  {
+    level: 15,
+    word: 'OCEAN',
+    meaning: 'A very large expanse of continuous salt water covering most of the Earth.',
+    difficulty: 'Moderate',
+    category: 'Geography',
+    acceptedAnswers: ['OCEAN', 'CANOE']
   },
 
   // ==========================================
-  // LEVEL 21–30: MEDIUM+ (6 Letters)
+  // LEVEL 16–25: TOUGH (6 Letters)
   // ==========================================
   {
-    level: 21,
+    level: 16,
+    word: 'DRAGON',
+    meaning: 'A legendary mythical monster resembling a giant reptile breathing fire.',
+    difficulty: 'Tough',
+    category: 'Mythology',
+    acceptedAnswers: ['DRAGON']
+  },
+  {
+    level: 17,
+    word: 'KNIGHT',
+    meaning: 'A medieval warrior of noble birth serving a monarch clad in steel armor.',
+    difficulty: 'Tough',
+    category: 'Medieval Honor',
+    acceptedAnswers: ['KNIGHT']
+  },
+  {
+    level: 18,
     word: 'PLANET',
-    meaning: 'A large celestial body in space orbiting around a central star.',
-    difficulty: 'medium+',
-    category: 'Cosmos',
+    meaning: 'A celestial body orbiting a star, large enough for gravity to shape into a sphere.',
+    difficulty: 'Tough',
+    category: 'Astronomy',
     acceptedAnswers: ['PLANET']
   },
   {
-    level: 22,
-    word: 'MARKET',
-    meaning: 'A public place or arena where buyers and sellers trade goods and services.',
-    difficulty: 'medium+',
-    category: 'Commerce',
-    acceptedAnswers: ['MARKET']
+    level: 19,
+    word: 'WIZARD',
+    meaning: 'A wise person skilled in magical or mystical arts and ancient enchantments.',
+    difficulty: 'Tough',
+    category: 'Fantasy',
+    acceptedAnswers: ['WIZARD']
   },
   {
-    level: 23,
-    word: 'BRIGHT',
-    meaning: 'Giving off or reflecting plenty of light; radiant and intelligent.',
-    difficulty: 'medium+',
-    category: 'Qualities',
-    acceptedAnswers: ['BRIGHT']
+    level: 20,
+    word: 'SHADOW',
+    meaning: 'A dark area or shape produced by a body coming between rays of light and a surface.',
+    difficulty: 'Tough',
+    category: 'Optics & Mystery',
+    acceptedAnswers: ['SHADOW']
   },
   {
-    level: 24,
-    word: 'FRIEND',
-    meaning: 'A person with whom one has a strong mutual bond of affection and trust.',
-    difficulty: 'medium+',
-    category: 'Relationships',
-    acceptedAnswers: ['FRIEND']
-  },
-  {
-    level: 25,
-    word: 'SILVER',
-    meaning: 'A precious lustrous grayish-white metallic chemical element.',
-    difficulty: 'medium+',
-    category: 'Elements',
-    acceptedAnswers: ['SILVER', 'SLIVER']
-  },
-  {
-    level: 26,
-    word: 'GARDEN',
-    meaning: 'A cultivated plot of land used for growing flowers, herbs, or vegetables.',
-    difficulty: 'medium+',
-    category: 'Nature',
-    acceptedAnswers: ['GARDEN', 'DANGER', 'GANDER']
-  },
-  {
-    level: 27,
+    level: 21,
     word: 'CASTLE',
-    meaning: 'A grand fortified stronghold built in the Middle Ages by royalty.',
-    difficulty: 'medium+',
+    meaning: 'A fortified medieval residence with defensive walls, moats, and battlements.',
+    difficulty: 'Tough',
     category: 'Architecture',
     acceptedAnswers: ['CASTLE']
   },
   {
+    level: 22,
+    word: 'BREEZE',
+    meaning: 'A gentle, refreshing and invigorating natural current of wind.',
+    difficulty: 'Tough',
+    category: 'Atmosphere',
+    acceptedAnswers: ['BREEZE']
+  },
+  {
+    level: 23,
+    word: 'SILVER',
+    meaning: 'A precious, highly conductive lustrous white metallic element.',
+    difficulty: 'Tough',
+    category: 'Metals',
+    acceptedAnswers: ['SILVER', 'SLIVER']
+  },
+  {
+    level: 24,
+    word: 'FOREST',
+    meaning: 'A large dense biome dominated by lush trees, canopies, and diverse wildlife.',
+    difficulty: 'Tough',
+    category: 'Ecosystems',
+    acceptedAnswers: ['FOREST', 'FOSTER', 'SOFTER']
+  },
+  {
+    level: 25,
+    word: 'FALCON',
+    meaning: 'A fast bird of prey with long pointed wings and exceptional hunting vision.',
+    difficulty: 'Tough',
+    category: 'Raptors',
+    acceptedAnswers: ['FALCON']
+  },
+
+  // ==========================================
+  // LEVEL 26–38: HARD (7 Letters)
+  // ==========================================
+  {
+    level: 26,
+    word: 'PHANTOM',
+    meaning: 'A ghost or elusive apparition perceived only by illusion or hallucination.',
+    difficulty: 'Hard',
+    category: 'Paranormal',
+    acceptedAnswers: ['PHANTOM']
+  },
+  {
+    level: 27,
+    word: 'MYSTERY',
+    meaning: 'Something difficult or impossible to understand, explain, or decipher.',
+    difficulty: 'Hard',
+    category: 'Enigma',
+    acceptedAnswers: ['MYSTERY']
+  },
+  {
     level: 28,
-    word: 'SILENT',
-    meaning: 'Completely devoid of noise or sound; tranquil and peaceful.',
-    difficulty: 'medium+',
-    category: 'Sound',
-    acceptedAnswers: ['SILENT', 'LISTEN', 'TINSEL']
+    word: 'THUNDER',
+    meaning: 'The loud rumbling or crashing noise heard after lightning expands heated air.',
+    difficulty: 'Hard',
+    category: 'Forces of Nature',
+    acceptedAnswers: ['THUNDER']
   },
   {
     level: 29,
-    word: 'STREAM',
-    meaning: 'A steady natural flow of fresh water, smaller than a river.',
-    difficulty: 'medium+',
-    category: 'Nature',
-    acceptedAnswers: ['STREAM', 'MASTER', 'TAMERS']
+    word: 'WARRIOR',
+    meaning: 'A brave or experienced fighter engaged in warfare or martial contest.',
+    difficulty: 'Hard',
+    category: 'Combat Arts',
+    acceptedAnswers: ['WARRIOR']
   },
   {
     level: 30,
-    word: 'FOREST',
-    meaning: 'A vast dense area populated predominantly by trees and diverse wildlife.',
-    difficulty: 'medium+',
-    category: 'Biome',
-    acceptedAnswers: ['FOREST', 'FOSTER', 'SOFTER']
+    word: 'MONSTER',
+    meaning: 'An imaginary creature that is typically large, ugly, and frightening.',
+    difficulty: 'Hard',
+    category: 'Mythos',
+    acceptedAnswers: ['MONSTER']
   },
-
-  // ==========================================
-  // LEVEL 31–40: HARD (7 Letters)
-  // ==========================================
   {
     level: 31,
-    word: 'TEACHER',
-    meaning: 'A dedicated person whose occupation is guiding and educating students.',
-    difficulty: 'hard',
-    category: 'Professions',
-    acceptedAnswers: ['TEACHER']
+    word: 'KINGDOM',
+    meaning: 'A country, state, or sovereign realm governed by a monarch.',
+    difficulty: 'Hard',
+    category: 'Sovereignty',
+    acceptedAnswers: ['KINGDOM']
   },
   {
     level: 32,
-    word: 'COUNTRY',
-    meaning: 'A distinct nation with its own government and geographical territory.',
-    difficulty: 'hard',
-    category: 'Geography',
-    acceptedAnswers: ['COUNTRY']
-  },
-  {
-    level: 33,
-    word: 'PICTURE',
-    meaning: 'A visual design, painting, photograph, or illustration of something.',
-    difficulty: 'hard',
-    category: 'Art & Media',
-    acceptedAnswers: ['PICTURE']
-  },
-  {
-    level: 34,
-    word: 'FREEDOM',
-    meaning: 'The fundamental right or state of being free from coercion or imprisonment.',
-    difficulty: 'hard',
-    category: 'Philosophy',
-    acceptedAnswers: ['FREEDOM']
-  },
-  {
-    level: 35,
     word: 'JOURNEY',
-    meaning: 'The act of traveling from one destination to another over time.',
-    difficulty: 'hard',
-    category: 'Travel',
+    meaning: 'An act of traveling from one destination to another, especially over long distances.',
+    difficulty: 'Hard',
+    category: 'Adventure',
     acceptedAnswers: ['JOURNEY']
   },
   {
-    level: 36,
+    level: 33,
     word: 'VICTORY',
-    meaning: 'Success or triumph achieved through defeating a rival or overcoming adversity.',
-    difficulty: 'hard',
-    category: 'Achievement',
+    meaning: 'An act of defeating an enemy, rival, or opponent in competition or battle.',
+    difficulty: 'Hard',
+    category: 'Triumph',
     acceptedAnswers: ['VICTORY']
   },
   {
-    level: 37,
+    level: 34,
+    word: 'CAPTAIN',
+    meaning: 'The person in command of a ship, aircraft, expedition, or athletic team.',
+    difficulty: 'Hard',
+    category: 'Leadership',
+    acceptedAnswers: ['CAPTAIN']
+  },
+  {
+    level: 35,
     word: 'DIAMOND',
-    meaning: 'A rare and extremely hard mineral composed of crystallized pure carbon.',
-    difficulty: 'hard',
-    category: 'Gems',
+    meaning: 'An extremely hard precious stone composed of crystal clear carbon.',
+    difficulty: 'Hard',
+    category: 'Minerals',
     acceptedAnswers: ['DIAMOND']
   },
   {
+    level: 36,
+    word: 'GLACIER',
+    meaning: 'A slowly moving mass of dense ice formed by the accumulation of snow over centuries.',
+    difficulty: 'Hard',
+    category: 'Geology',
+    acceptedAnswers: ['GLACIER']
+  },
+  {
+    level: 37,
+    word: 'COMPASS',
+    meaning: 'An instrument containing a magnetized needle showing the magnetic north direction.',
+    difficulty: 'Hard',
+    category: 'Navigation',
+    acceptedAnswers: ['COMPASS']
+  },
+  {
     level: 38,
-    word: 'MORNING',
-    meaning: 'The early phase of the day starting from dawn until solar noon.',
-    difficulty: 'hard',
-    category: 'Time',
-    acceptedAnswers: ['MORNING']
-  },
-  {
-    level: 39,
-    word: 'COURAGE',
-    meaning: 'The moral or physical strength to face fear, danger, or severe difficulty.',
-    difficulty: 'hard',
-    category: 'Virtues',
-    acceptedAnswers: ['COURAGE']
-  },
-  {
-    level: 40,
-    word: 'KINGDOM',
-    meaning: 'A sovereign realm or territory ruled by a monarch.',
-    difficulty: 'hard',
-    category: 'History & Sovereignty',
-    acceptedAnswers: ['KINGDOM']
+    word: 'VOLCANO',
+    meaning: 'A mountain or hill having a crater through which lava and rock fragments erupt.',
+    difficulty: 'Hard',
+    category: 'Earth Sciences',
+    acceptedAnswers: ['VOLCANO']
   },
 
   // ==========================================
-  // LEVEL 41–50: EXPERT (8+ Letters)
+  // LEVEL 39–50: ELITE (8+ Letters)
   // ==========================================
   {
+    level: 39,
+    word: 'BLIZZARD',
+    meaning: 'A severe, blinding snowstorm with high winds and extreme freezing temperatures.',
+    difficulty: 'Elite',
+    category: 'Extreme Weather',
+    acceptedAnswers: ['BLIZZARD']
+  },
+  {
+    level: 40,
+    word: 'CHALLENGE',
+    meaning: 'A demanding call or task that severely tests someone\'s abilities or resources.',
+    difficulty: 'Elite',
+    category: 'Esports & Mind',
+    acceptedAnswers: ['CHALLENGE']
+  },
+  {
     level: 41,
-    word: 'COMPUTER',
-    meaning: 'A high-speed electronic calculating device for processing and storing data.',
-    difficulty: 'expert',
-    category: 'Technology',
-    acceptedAnswers: ['COMPUTER']
+    word: 'CHAMPION',
+    meaning: 'A person who has surpassed all rivals in a sporting contest or competition.',
+    difficulty: 'Elite',
+    category: 'Victory',
+    acceptedAnswers: ['CHAMPION']
   },
   {
     level: 42,
-    word: 'LANGUAGE',
-    meaning: 'A structured system of vocal and written symbols used for communication.',
-    difficulty: 'expert',
-    category: 'Linguistics',
-    acceptedAnswers: ['LANGUAGE']
+    word: 'ASTRONOMY',
+    meaning: 'The branch of science dealing with celestial objects, space, and the universe.',
+    difficulty: 'Elite',
+    category: 'Cosmic Science',
+    acceptedAnswers: ['ASTRONOMY']
   },
   {
     level: 43,
-    word: 'KNOWLEDGE',
-    meaning: 'Facts, principles, and understanding gained through study or experience.',
-    difficulty: 'expert',
-    category: 'Wisdom',
-    acceptedAnswers: ['KNOWLEDGE']
+    word: 'TREASURE',
+    meaning: 'A quantity of precious metals, gems, or valuable artifacts stored or hidden.',
+    difficulty: 'Elite',
+    category: 'Valuables',
+    acceptedAnswers: ['TREASURE']
   },
   {
     level: 44,
     word: 'ADVENTURE',
-    meaning: 'An exciting and daring endeavor, often accompanied by unexpected discovery.',
-    difficulty: 'expert',
+    meaning: 'An exciting and hazardous undertaking requiring courage and curiosity.',
+    difficulty: 'Elite',
     category: 'Exploration',
     acceptedAnswers: ['ADVENTURE']
   },
   {
     level: 45,
-    word: 'CHALLENGE',
-    meaning: 'A demanding test of ability, endurance, or character requiring great effort.',
-    difficulty: 'expert',
-    category: 'Esports & Mind',
-    acceptedAnswers: ['CHALLENGE']
+    word: 'LIGHTNING',
+    meaning: 'A powerful sudden electrostatic discharge occurring during a thunderstorm.',
+    difficulty: 'Elite',
+    category: 'Electrodynamics',
+    acceptedAnswers: ['LIGHTNING']
   },
   {
     level: 46,
-    word: 'BEAUTIFUL',
-    meaning: 'Possessing qualities that delight the aesthetic senses and touch the heart.',
-    difficulty: 'expert',
-    category: 'Aesthetics',
-    acceptedAnswers: ['BEAUTIFUL']
+    word: 'GUARDIAN',
+    meaning: 'A defender, protector, or keeper who guards something precious or sacred.',
+    difficulty: 'Elite',
+    category: 'Sentinels',
+    acceptedAnswers: ['GUARDIAN']
   },
   {
     level: 47,
-    word: 'DISCOVERY',
-    meaning: 'The revelation or finding of something previously unnoticed or concealed.',
-    difficulty: 'expert',
-    category: 'Science',
-    acceptedAnswers: ['DISCOVERY']
+    word: 'LABYRINTH',
+    meaning: 'A complex, intricate combination of paths or passages in which it is difficult to navigate.',
+    difficulty: 'Elite',
+    category: 'Ancient Mazes',
+    acceptedAnswers: ['LABYRINTH']
   },
   {
     level: 48,
-    word: 'UNIVERSE',
-    meaning: 'All existing physical matter, energy, galaxies, and spacetime combined.',
-    difficulty: 'expert',
-    category: 'Cosmology',
-    acceptedAnswers: ['UNIVERSE']
+    word: 'NIGHTMARE',
+    meaning: 'A terrifying dream that evokes extreme fright, anxiety, and dread.',
+    difficulty: 'Elite',
+    category: 'Psychology',
+    acceptedAnswers: ['NIGHTMARE']
   },
   {
     level: 49,
-    word: 'CELEBRATE',
-    meaning: 'To honor and commemorate a triumph or happy occasion with festivities.',
-    difficulty: 'expert',
-    category: 'Joy & Triumph',
-    acceptedAnswers: ['CELEBRATE']
+    word: 'DISCOVERY',
+    meaning: 'The act or process of finding or learning something previously unseen or unknown.',
+    difficulty: 'Elite',
+    category: 'Innovation',
+    acceptedAnswers: ['DISCOVERY']
   },
   {
     level: 50,
-    word: 'BRILLIANT',
-    meaning: 'Shining with supreme brilliance, radiant intellect, and outstanding mastery.',
-    difficulty: 'expert',
-    category: 'Mastery',
-    acceptedAnswers: ['BRILLIANT']
+    word: 'EXCALIBUR',
+    meaning: 'The legendary mystical sword of King Arthur, attributed with supernatural sovereignty.',
+    difficulty: 'Elite',
+    category: 'Mythic Legends',
+    acceptedAnswers: ['EXCALIBUR']
   }
 ];
 
-// Helper: Get data for a level (1-50 with loop wrap if extended)
 export function getLevelData(levelNumber: number): WordLevelData {
   const safeIndex = Math.max(0, (levelNumber - 1) % WORD_BUILDER_LEVELS.length);
   return {
@@ -445,16 +440,14 @@ export function getLevelData(levelNumber: number): WordLevelData {
   };
 }
 
-// Helper: Scramble a word's letters guaranteeing it is NOT identical to the word
 export function scrambleWord(word: string): string[] {
   const letters = word.toUpperCase().split('');
   if (letters.length <= 1) return letters;
 
   let scrambled = [...letters];
   let attempts = 0;
-  const maxAttempts = 30;
+  const maxAttempts = 50;
 
-  // Keep shuffling until the joined scrambled word is different from the original word
   while (attempts < maxAttempts) {
     for (let i = scrambled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -467,7 +460,7 @@ export function scrambleWord(word: string): string[] {
     attempts++;
   }
 
-  // Fallback transposition if random permutation matched by chance
+  // Fallback transposition
   if (scrambled.join('') === word.toUpperCase()) {
     [scrambled[0], scrambled[scrambled.length - 1]] = [scrambled[scrambled.length - 1], scrambled[0]];
   }
@@ -475,36 +468,31 @@ export function scrambleWord(word: string): string[] {
   return scrambled;
 }
 
-// XP reward calculation by level range
 export function calculateLevelXP(level: number): number {
-  if (level <= 10) return 10;
-  if (level <= 20) return 20;
-  if (level <= 30) return 30;
-  if (level <= 40) return 40;
-  return 50;
+  if (level <= 5) return 15;
+  if (level <= 15) return 25;
+  if (level <= 25) return 35;
+  if (level <= 38) return 50;
+  return 75;
 }
 
-// Suggested timer countdown based on difficulty
 export function getTimerForDifficulty(diff: WordDifficulty): number {
   switch (diff) {
-    case 'easy':
+    case 'Starter':
+      return 35;
+    case 'Moderate':
       return 30;
-    case 'easy+':
-      return 30;
-    case 'medium':
+    case 'Tough':
       return 25;
-    case 'medium+':
-      return 25;
-    case 'hard':
+    case 'Hard':
       return 20;
-    case 'expert':
-      return 15;
+    case 'Elite':
+      return 18;
     default:
       return 25;
   }
 }
 
-// Validate word submission
 export function validateWordAnswer(
   rawInput: string,
   levelData: WordLevelData
@@ -512,18 +500,18 @@ export function validateWordAnswer(
   const clean = rawInput.trim().toUpperCase().replace(/[^A-Z]/g, '');
 
   if (!clean) {
-    return { isValid: false, isAccepted: false, reason: 'Input cannot be empty.' };
+    return { isValid: false, isAccepted: false, reason: 'Please construct a word before submitting!' };
   }
 
   if (clean.length !== levelData.word.length) {
     return {
       isValid: false,
       isAccepted: false,
-      reason: `Answer must be exactly ${levelData.word.length} letters long.`
+      reason: `Answer must use all ${levelData.word.length} letters.`
     };
   }
 
-  // Frequency check
+  // Multiset check
   const letterCounts: Record<string, number> = {};
   for (const char of levelData.word.toUpperCase()) {
     letterCounts[char] = (letterCounts[char] || 0) + 1;
@@ -539,24 +527,23 @@ export function validateWordAnswer(
       return {
         isValid: false,
         isAccepted: false,
-        reason: `Letter "${char}" does not match the scrambled tiles.`
+        reason: `Letter "${char}" does not match the available tiles.`
       };
     }
   }
 
-  // Check if matches intended word or acceptable alternate anagram
   const accepted = (levelData.acceptedAnswers || [levelData.word]).map((w) => w.toUpperCase());
   const isAccepted = accepted.includes(clean) || clean === levelData.word.toUpperCase();
 
   return {
     isValid: true,
     isAccepted,
-    reason: isAccepted ? undefined : `"${clean}" is not the target word.`
+    reason: isAccepted ? undefined : `"${clean}" is not the target solution for this puzzle.`
   };
 }
 
 // =========================================================================
-// Legacy Types & Exports for Multiplayer Compatibility and Existing Modules
+// Legacy Types & Exports for Multiplayer Compatibility
 // =========================================================================
 
 export interface WordPuzzleLevel {
@@ -576,7 +563,7 @@ export const PUZZLE_LEVELS: WordPuzzleLevel[] = WORD_BUILDER_LEVELS.slice(0, 10)
   rootWord: lvl.word,
   letters: lvl.word.split(''),
   theme: lvl.category,
-  difficulty: lvl.level <= 5 ? 'Easy' : lvl.level <= 10 ? 'Medium' : 'Hard',
+  difficulty: lvl.level <= 5 ? 'Easy' : lvl.level <= 15 ? 'Medium' : 'Hard',
   targetWords: [lvl.word, ...(lvl.acceptedAnswers || [])],
   allSolutions: {
     [lvl.word.length]: [
