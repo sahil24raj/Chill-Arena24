@@ -5,6 +5,7 @@ import { MultiplayerRoomState } from '@/types/multiplayer';
 import { TicTacToeState } from '@/lib/multiplayer/adapters/TicTacToeAdapter';
 import { soundFx } from '@/lib/audio';
 import { Sparkles, Trophy, RotateCcw } from 'lucide-react';
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
 
 interface MultiplayerTicTacToeProps {
   room: MultiplayerRoomState<TicTacToeState>;
@@ -19,6 +20,7 @@ export const MultiplayerTicTacToe: React.FC<MultiplayerTicTacToeProps> = ({
   isMyTurn,
   submitAction
 }) => {
+  const { isFullscreen } = useGameViewport();
   const gameState = room.gameState;
   const board = gameState?.board || Array(9).fill(null);
   const mySymbol = gameState?.symbolMap?.[currentUserId] || 'X';
@@ -38,7 +40,7 @@ export const MultiplayerTicTacToe: React.FC<MultiplayerTicTacToeProps> = ({
   const winningLine = gameState?.winningLine || [];
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className={`w-full ${isFullscreen ? 'max-w-2xl' : 'max-w-xl'} mx-auto space-y-6 transition-all`}>
       {/* Player Score & Turn HUD */}
       <div className="grid grid-cols-2 gap-4">
         {/* Player 1 Card */}
@@ -138,8 +140,10 @@ export const MultiplayerTicTacToe: React.FC<MultiplayerTicTacToeProps> = ({
       </div>
 
       {/* 3x3 Interactive Grid */}
-      <div className="p-6 rounded-3xl glass-panel border-2 border-[#00F0FF]/30 bg-[#0c1017] shadow-2xl">
-        <div className="grid grid-cols-3 gap-3 aspect-square max-w-sm mx-auto">
+      <div className={`p-4 sm:p-6 rounded-3xl glass-panel border-2 border-[#00F0FF]/30 bg-[#0c1017] shadow-2xl transition-all`}>
+        <div className={`grid grid-cols-3 gap-2.5 sm:gap-3.5 aspect-square ${
+          isFullscreen ? 'w-[min(55vmin,460px)] h-[min(55vmin,460px)]' : 'w-[min(70vmin,380px)] h-[min(70vmin,380px)]'
+        } mx-auto transition-all`}>
           {board.map((cell, idx) => {
             const isWinningCell = winningLine.includes(idx);
             return (
@@ -147,7 +151,9 @@ export const MultiplayerTicTacToe: React.FC<MultiplayerTicTacToeProps> = ({
                 key={idx}
                 onClick={() => handleCellClick(idx)}
                 disabled={!isMyTurn || cell !== null}
-                className={`rounded-2xl border flex items-center justify-center text-4xl sm:text-5xl font-black transition-all cursor-pointer select-none ${
+                className={`rounded-2xl border flex items-center justify-center ${
+                  isFullscreen ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'
+                } font-black transition-all cursor-pointer select-none ${
                   isWinningCell
                     ? 'bg-yellow-500/25 border-yellow-400 text-yellow-300 shadow-xl shadow-yellow-500/30 scale-105'
                     : cell === 'X'

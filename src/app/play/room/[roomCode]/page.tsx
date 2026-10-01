@@ -30,6 +30,7 @@ import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
+import { GameFullscreenShell } from '@/components/game-shell/GameFullscreenShell';
 
 export default function PlayRoomPage({
   params
@@ -158,8 +159,14 @@ export default function PlayRoomPage({
           </div>
         </div>
 
-        {/* Embedded Game Canvas */}
-        {renderPlayingGame()}
+        {/* Embedded Game Canvas with Fullscreen Experience */}
+        <GameFullscreenShell
+          gameId={room.gameId}
+          gameTitle={room.gameTitle}
+          category={game?.category || 'Multiplayer Duel'}
+        >
+          {renderPlayingGame()}
+        </GameFullscreenShell>
       </div>
     );
   }

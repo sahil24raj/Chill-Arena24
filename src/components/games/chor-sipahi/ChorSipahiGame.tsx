@@ -24,6 +24,7 @@ import { DiscussionPhase } from './DiscussionPhase';
 import { SipahiGuess } from './SipahiGuess';
 import { ResultReveal } from './ResultReveal';
 import { soundFx } from '@/lib/audio';
+import { GameFullscreenShell } from '@/components/game-shell/GameFullscreenShell';
 
 export const ChorSipahiGame: React.FC = () => {
   const router = useRouter();
@@ -318,63 +319,70 @@ export const ChorSipahiGame: React.FC = () => {
   const sipahiPlayer = gameState.players.find((p) => p.id === gameState.activeSipahiId) || gameState.players[0];
 
   return (
-    <div className="w-full min-h-[600px] flex flex-col justify-center">
-      {clientSafeState.phase === 'lobby' && (
-        <GameLobby
-          roomCode={clientSafeState.roomCode}
-          players={clientSafeState.players}
-          currentPlayer={currentPlayer}
-          onAddBot={handleAddBot}
-          onToggleReady={handleToggleReady}
-          onStartGame={handleStartGame}
-          onLeaveRoom={handleLeaveRoom}
-        />
-      )}
+    <GameFullscreenShell
+      gameId="chor-sipahi"
+      gameTitle="Chor Sipahi: Royal Court"
+      category="Social Deduction"
+      score={currentPlayer.totalScore}
+    >
+      <div className="w-full min-h-[560px] h-full flex flex-col justify-center overflow-y-auto p-2 sm:p-4">
+        {clientSafeState.phase === 'lobby' && (
+          <GameLobby
+            roomCode={clientSafeState.roomCode}
+            players={clientSafeState.players}
+            currentPlayer={currentPlayer}
+            onAddBot={handleAddBot}
+            onToggleReady={handleToggleReady}
+            onStartGame={handleStartGame}
+            onLeaveRoom={handleLeaveRoom}
+          />
+        )}
 
-      {clientSafeState.phase === 'role_reveal' && (
-        <RoleReveal
-          currentPlayer={currentPlayer}
-          rajaPlayer={rajaPlayer}
-          onContinue={() => {
-            soundFx.playClick();
-            setGameState((prev) => ({ ...prev, phase: 'discussion' }));
-          }}
-        />
-      )}
+        {clientSafeState.phase === 'role_reveal' && (
+          <RoleReveal
+            currentPlayer={currentPlayer}
+            rajaPlayer={rajaPlayer}
+            onContinue={() => {
+              soundFx.playClick();
+              setGameState((prev) => ({ ...prev, phase: 'discussion' }));
+            }}
+          />
+        )}
 
-      {clientSafeState.phase === 'discussion' && (
-        <DiscussionPhase
-          players={clientSafeState.players}
-          currentPlayer={currentPlayer}
-          rajaPlayer={rajaPlayer}
-          chatMessages={clientSafeState.chatMessages}
-          onSendMessage={handleSendMessage}
-          onProceedToGuess={() => {
-            soundFx.playClick();
-            setGameState((prev) => ({ ...prev, phase: 'sipahi_guess' }));
-          }}
-        />
-      )}
+        {clientSafeState.phase === 'discussion' && (
+          <DiscussionPhase
+            players={clientSafeState.players}
+            currentPlayer={currentPlayer}
+            rajaPlayer={rajaPlayer}
+            chatMessages={clientSafeState.chatMessages}
+            onSendMessage={handleSendMessage}
+            onProceedToGuess={() => {
+              soundFx.playClick();
+              setGameState((prev) => ({ ...prev, phase: 'sipahi_guess' }));
+            }}
+          />
+        )}
 
-      {clientSafeState.phase === 'sipahi_guess' && (
-        <SipahiGuess
-          players={clientSafeState.players}
-          currentPlayer={currentPlayer}
-          sipahiPlayer={sipahiPlayer}
-          rajaPlayer={rajaPlayer}
-          onSubmitGuess={handleSubmitGuess}
-        />
-      )}
+        {clientSafeState.phase === 'sipahi_guess' && (
+          <SipahiGuess
+            players={clientSafeState.players}
+            currentPlayer={currentPlayer}
+            sipahiPlayer={sipahiPlayer}
+            rajaPlayer={rajaPlayer}
+            onSubmitGuess={handleSubmitGuess}
+          />
+        )}
 
-      {clientSafeState.phase === 'result_reveal' && gameState.lastRoundResult && (
-        <ResultReveal
-          players={gameState.players}
-          lastResult={gameState.lastRoundResult}
-          currentPlayer={currentPlayer}
-          onNextRound={handleNextRound}
-          onLeaveRoom={handleLeaveRoom}
-        />
-      )}
-    </div>
+        {clientSafeState.phase === 'result_reveal' && gameState.lastRoundResult && (
+          <ResultReveal
+            players={gameState.players}
+            lastResult={gameState.lastRoundResult}
+            currentPlayer={currentPlayer}
+            onNextRound={handleNextRound}
+            onLeaveRoom={handleLeaveRoom}
+          />
+        )}
+      </div>
+    </GameFullscreenShell>
   );
 };

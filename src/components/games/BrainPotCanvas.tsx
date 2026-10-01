@@ -6,6 +6,7 @@ import { soundFx } from '@/lib/audio';
 import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
 import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
 import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
 import confetti from 'canvas-confetti';
 import { Brain, HelpCircle, Zap } from 'lucide-react';
 
@@ -69,6 +70,7 @@ const PUZZLE_BANK: PuzzleQuestion[] = [
 
 export const BrainPotCanvas: React.FC = () => {
   const { user, submitGameScore } = useAppStore();
+  const { isFullscreen } = useGameViewport();
 
   const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
@@ -218,29 +220,29 @@ export const BrainPotCanvas: React.FC = () => {
       onResume={handleResume}
       onRestart={handleRestart}
     >
-      <div className="w-full h-full flex flex-col items-center justify-between p-6 select-none">
+      <div className="w-full h-full flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-y-auto">
         {/* Top Progress & Time Bar */}
-        <div className="flex items-center justify-between w-full max-w-md px-4 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-xs font-mono">
-          <span className="text-cyan-300">
+        <div className={`flex items-center justify-between w-full ${isFullscreen ? 'max-w-2xl px-6 py-3 text-sm' : 'max-w-md px-4 py-2 text-xs'} bg-slate-900/90 border border-slate-800 rounded-2xl font-mono shadow-lg transition-all`}>
+          <span className="text-cyan-300 font-bold">
             QUESTION {questionIndex + 1} / {TOTAL_QUESTIONS}
           </span>
           <span
-            className={`font-bold ${timeLeft <= 3 ? 'text-red-400 animate-ping' : 'text-yellow-400'}`}
+            className={`font-black ${timeLeft <= 3 ? 'text-red-400 animate-ping' : 'text-yellow-400'}`}
           >
             ⏳ {timeLeft}s LEFT
           </span>
         </div>
 
         {/* Question Card */}
-        <div className="w-full max-w-lg bg-slate-900/80 border-2 border-indigo-500/40 rounded-2xl p-6 text-center shadow-xl my-auto">
-          <div className="w-12 h-12 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center mx-auto mb-3">
-            <Brain className="w-6 h-6" />
+        <div className={`w-full ${isFullscreen ? 'max-w-2xl p-8 sm:p-10 my-4' : 'max-w-lg p-6 my-auto'} bg-slate-900/80 border-2 border-indigo-500/40 rounded-3xl text-center shadow-2xl transition-all backdrop-blur-md`}>
+          <div className={`${isFullscreen ? 'w-16 h-16 mb-4' : 'w-12 h-12 mb-3'} rounded-2xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center mx-auto shadow-inner`}>
+            <Brain className={`${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`} />
           </div>
-          <h3 className="text-lg sm:text-xl font-black text-white leading-snug">{currentQ.prompt}</h3>
+          <h3 className={`${isFullscreen ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl'} font-black text-white leading-snug`}>{currentQ.prompt}</h3>
         </div>
 
         {/* 4 Answer Options */}
-        <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+        <div className={`grid grid-cols-2 gap-3 sm:gap-4 w-full ${isFullscreen ? 'max-w-2xl' : 'max-w-lg'} transition-all`}>
           {currentQ.options.map((opt, i) => {
             const isSelected = selectedOption === opt;
             const isCorrect = opt === currentQ.correctAnswer;
@@ -248,9 +250,9 @@ export const BrainPotCanvas: React.FC = () => {
 
             if (selectedOption !== null) {
               if (isCorrect) {
-                btnStyle = 'bg-emerald-500/20 border-emerald-400 text-emerald-300';
+                btnStyle = 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-emerald-500/30 shadow-lg';
               } else if (isSelected) {
-                btnStyle = 'bg-rose-500/20 border-rose-400 text-rose-300';
+                btnStyle = 'bg-rose-500/20 border-rose-400 text-rose-300 shadow-rose-500/30 shadow-lg';
               } else {
                 btnStyle = 'bg-slate-900/40 border-slate-800 text-gray-600 opacity-40';
               }
@@ -261,7 +263,7 @@ export const BrainPotCanvas: React.FC = () => {
                 key={i}
                 onClick={() => handleOptionSelect(opt)}
                 disabled={selectedOption !== null}
-                className={`py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center transition-all border-2 shadow-lg cursor-pointer ${btnStyle}`}
+                className={`${isFullscreen ? 'py-5 px-6 text-lg sm:text-xl' : 'py-3.5 px-4 text-sm'} rounded-2xl font-bold flex items-center justify-center transition-all border-2 shadow-lg cursor-pointer ${btnStyle}`}
               >
                 {opt}
               </button>

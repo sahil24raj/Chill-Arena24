@@ -246,7 +246,7 @@ export const TicTacToeCanvas: React.FC = () => {
         </div>
 
         {/* 3x3 Tic Tac Toe Grid */}
-        <div className="grid grid-cols-3 gap-3 w-64 h-64 my-auto">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-4 w-[min(80vw,300px)] h-[min(80vw,300px)] sm:w-[360px] sm:h-[360px] md:w-[min(55vmin,460px)] md:h-[min(55vmin,460px)] my-auto transition-all duration-300">
           {board.map((cell, idx) => {
             const isWinningCell = winningLine?.includes(idx);
             return (
@@ -254,7 +254,7 @@ export const TicTacToeCanvas: React.FC = () => {
                 key={idx}
                 onClick={() => handleCellClick(idx)}
                 disabled={cell !== null || !isPlayerTurn || winningLine !== null}
-                className={`rounded-2xl font-black text-4xl flex items-center justify-center transition-all border-2 shadow-xl cursor-pointer ${
+                className={`rounded-2xl font-black text-3xl sm:text-5xl md:text-6xl flex items-center justify-center transition-all border-2 shadow-xl cursor-pointer ${
                   isWinningCell
                     ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 scale-105 shadow-emerald-500/50'
                     : cell === 'X'
@@ -271,7 +271,7 @@ export const TicTacToeCanvas: React.FC = () => {
         </div>
 
         {/* Bottom Turn Status */}
-        <div className="text-xs font-mono text-gray-400">
+        <div className="text-xs font-mono text-cyan-300 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-800 shadow-md">
           {isPlayerTurn ? '👉 YOUR TURN (Place X)' : '🤖 AI BOT IS THINKING...'}
         </div>
       </div>

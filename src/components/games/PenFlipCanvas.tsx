@@ -6,11 +6,13 @@ import { soundFx } from '@/lib/audio';
 import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
 import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
 import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
 import confetti from 'canvas-confetti';
 import { Zap, Bot, User } from 'lucide-react';
 
 export const PenFlipCanvas: React.FC = () => {
   const { user, submitGameScore } = useAppStore();
+  const { isFullscreen } = useGameViewport();
 
   const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
@@ -220,18 +222,18 @@ export const PenFlipCanvas: React.FC = () => {
       onResume={handleResume}
       onRestart={handleRestart}
     >
-      <div className="w-full h-full flex flex-col items-center justify-between p-6 select-none">
+      <div className="w-full h-full flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-y-auto">
         {/* Top Round indicator */}
-        <div className="flex items-center justify-between w-full max-w-lg px-4 py-2 bg-slate-900/80 rounded-xl border border-slate-800 text-xs font-mono text-cyan-300">
-          <span>FLIPS LEFT: {roundsLeft} / 5</span>
-          <span>{roastComment}</span>
+        <div className={`flex items-center justify-between w-full ${isFullscreen ? 'max-w-2xl px-6 py-3 text-sm' : 'max-w-lg px-4 py-2 text-xs'} bg-slate-900/80 rounded-2xl border border-slate-800 font-mono text-cyan-300 transition-all shadow-lg`}>
+          <span className="font-bold">FLIPS LEFT: {roundsLeft} / 5</span>
+          <span className="text-gray-300 font-medium">{roastComment}</span>
         </div>
 
         {/* Classroom Desk with 3D Flipping Reynolds Pen */}
-        <div className="relative w-full max-w-lg h-52 flex items-center justify-center">
+        <div className={`relative w-full ${isFullscreen ? 'max-w-2xl h-72 sm:h-80' : 'max-w-lg h-52'} flex items-center justify-center transition-all`}>
           {/* Wooden Bench Surface */}
-          <div className="absolute bottom-6 inset-x-8 h-10 bg-amber-900/80 border-t-4 border-amber-700 rounded-lg shadow-2xl flex items-center justify-center">
-            <span className="text-[10px] text-amber-500/40 font-mono tracking-widest">
+          <div className={`absolute bottom-6 inset-x-4 sm:inset-x-8 ${isFullscreen ? 'h-14 border-t-[6px]' : 'h-10 border-t-4'} bg-amber-900/80 border-amber-700 rounded-xl shadow-2xl flex items-center justify-center transition-all`}>
+            <span className={`${isFullscreen ? 'text-xs tracking-[0.25em]' : 'text-[10px] tracking-widest'} text-amber-500/50 font-mono font-bold`}>
               CLASSROOM DESK • FLIP ZONE
             </span>
           </div>
@@ -239,10 +241,10 @@ export const PenFlipCanvas: React.FC = () => {
           {/* Reynolds Ballpoint Pen */}
           <div
             style={{
-              transform: `translateY(-${flipHeight}px) rotate(${flipRotation}deg)`,
+              transform: `translateY(-${isFlipping && isFullscreen ? flipHeight * 1.3 : flipHeight}px) rotate(${flipRotation}deg)`,
               transition: isFlipping ? 'transform 0.85s cubic-bezier(0.2, 0.8, 0.3, 1.2)' : 'none',
             }}
-            className="relative w-7 h-36 flex flex-col items-center shadow-2xl cursor-pointer"
+            className={`relative ${isFullscreen ? 'w-8 h-42 scale-115' : 'w-7 h-36'} flex flex-col items-center shadow-2xl cursor-pointer transition-transform`}
           >
             {/* White/Blue Cap */}
             <div className="w-6 h-10 bg-blue-600 rounded-t-full border border-blue-400 relative">
@@ -259,11 +261,11 @@ export const PenFlipCanvas: React.FC = () => {
         </div>
 
         {/* Bottom Charging Bar & Mobile Controls */}
-        <div className="w-full max-w-md flex flex-col gap-3 items-center">
+        <div className={`w-full ${isFullscreen ? 'max-w-xl' : 'max-w-md'} flex flex-col gap-3 items-center transition-all`}>
           {/* Power Bar */}
-          <div className="w-full bg-slate-900 h-6 rounded-xl border border-slate-800 overflow-hidden relative shadow-inner">
+          <div className={`w-full bg-slate-900 ${isFullscreen ? 'h-8' : 'h-6'} rounded-2xl border border-slate-800 overflow-hidden relative shadow-inner transition-all`}>
             {/* Sweet spot indicator (68% to 78%) */}
-            <div className="absolute left-[68%] w-[12%] h-full bg-emerald-500/30 border-x-2 border-emerald-400 flex items-center justify-center text-[9px] text-emerald-300 font-bold">
+            <div className="absolute left-[68%] w-[12%] h-full bg-emerald-500/30 border-x-2 border-emerald-400 flex items-center justify-center text-[10px] text-emerald-300 font-bold">
               TIP
             </div>
             {/* Active meter */}
@@ -285,7 +287,7 @@ export const PenFlipCanvas: React.FC = () => {
               onTouchStart={startCharging}
               onTouchEnd={releaseFlip}
               disabled={isFlipping || roundsLeft <= 0}
-              className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl border-2 transition-all cursor-pointer ${
+              className={`w-full ${isFullscreen ? 'py-4 text-sm' : 'py-3.5 text-xs'} rounded-2xl font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl border-2 transition-all cursor-pointer ${
                 isCharging
                   ? 'bg-emerald-500 text-slate-950 border-emerald-300 scale-95'
                   : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 border-cyan-300 hover:scale-[1.02]'

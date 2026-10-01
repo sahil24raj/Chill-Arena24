@@ -33,12 +33,15 @@ import {
   validateWordAnswer
 } from '@/lib/word-builder/wordDatabase';
 
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
+
 const TOTAL_LEVELS = 50;
 
 type LevelResultState = 'PLAYING' | 'CORRECT' | 'WRONG' | 'TIMEOUT';
 
 export const WordBuilderCanvas: React.FC = () => {
   const { user, submitGameScore } = useAppStore();
+  const { isFullscreen } = useGameViewport();
 
   const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
@@ -395,7 +398,9 @@ export const WordBuilderCanvas: React.FC = () => {
       onRestart={handleRestart}
     >
       <div
-        className={`w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 select-none relative overflow-y-auto max-w-2xl mx-auto transition-all duration-300 ${
+        className={`w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 select-none relative overflow-y-auto ${
+          isFullscreen ? 'max-w-4xl' : 'max-w-2xl'
+        } mx-auto transition-all duration-300 ${
           screenGlitch ? 'brightness-125 saturate-150' : ''
         }`}
       >
@@ -506,7 +511,9 @@ export const WordBuilderCanvas: React.FC = () => {
           )}
 
           {/* 🔤 SCRAMBLED LETTER TILES */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 py-1 max-w-xl w-full">
+          <div className={`flex flex-wrap items-center justify-center py-1 w-full ${
+            isFullscreen ? 'max-w-3xl gap-3 sm:gap-4' : 'max-w-xl gap-2 sm:gap-3'
+          }`}>
             {scrambledTiles.map((letter, index) => {
               const isUsed = selectedIndices.includes(index);
               return (
@@ -514,7 +521,11 @@ export const WordBuilderCanvas: React.FC = () => {
                   key={`${currentLevelNumber}-${index}`}
                   onClick={() => handleTileClick(index)}
                   disabled={isUsed || resultState !== 'PLAYING'}
-                  className={`w-12 h-14 sm:w-16 sm:h-18 rounded-2xl font-black text-2xl sm:text-3xl flex items-center justify-center transition-all duration-150 border-2 shadow-xl cursor-pointer select-none ${
+                  className={`${
+                    isFullscreen
+                      ? 'w-14 h-16 sm:w-20 sm:h-22 text-2xl sm:text-4xl'
+                      : 'w-12 h-14 sm:w-16 sm:h-18 text-2xl sm:text-3xl'
+                  } rounded-2xl font-black flex items-center justify-center transition-all duration-150 border-2 shadow-xl cursor-pointer select-none ${
                     isUsed
                       ? 'bg-slate-900/30 border-slate-800/40 text-gray-600 opacity-25 scale-90'
                       : 'bg-gradient-to-b from-slate-800 to-slate-900 border-cyan-400/80 text-white hover:border-[#00F0FF] hover:scale-105 active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
@@ -532,7 +543,9 @@ export const WordBuilderCanvas: React.FC = () => {
 
           {/* 📝 USER ANSWER INPUT PREVIEW */}
           <div
-            className={`w-full max-w-md h-14 sm:h-16 bg-slate-900/90 border-2 rounded-2xl flex items-center justify-center tracking-[0.3em] text-2xl sm:text-3xl font-black transition-all shadow-xl px-4 ${
+            className={`w-full ${
+              isFullscreen ? 'max-w-2xl h-16 sm:h-20 text-3xl sm:text-4xl' : 'max-w-md h-14 sm:h-16 text-2xl sm:text-3xl'
+            } bg-slate-900/90 border-2 rounded-2xl flex items-center justify-center tracking-[0.3em] font-black transition-all shadow-xl px-4 ${
               shakeInput
                 ? 'border-rose-500/90 bg-rose-950/50 text-rose-300 animate-bounce shadow-[0_0_25px_rgba(244,63,94,0.4)]'
                 : resultState === 'CORRECT'
@@ -572,7 +585,9 @@ export const WordBuilderCanvas: React.FC = () => {
           
           {/* ✅ CORRECT ANSWER CELEBRATION REACTION */}
           {resultState === 'CORRECT' && (
-            <div className="w-full max-w-md bg-gradient-to-b from-emerald-950/90 to-slate-950/95 border-2 border-emerald-500/80 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-[0_0_40px_rgba(16,185,129,0.35)] backdrop-blur-md animate-in zoom-in-95 duration-300">
+            <div className={`w-full ${
+              isFullscreen ? 'max-w-2xl' : 'max-w-md'
+            } bg-gradient-to-b from-emerald-950/90 to-slate-950/95 border-2 border-emerald-500/80 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-[0_0_40px_rgba(16,185,129,0.35)] backdrop-blur-md animate-in zoom-in-95 duration-300`}>
               
               {/* Header */}
               <div className="flex items-center justify-between border-b border-emerald-500/30 pb-2.5">

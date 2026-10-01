@@ -6,6 +6,7 @@ import { soundFx } from '@/lib/audio';
 import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
 import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
 import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
 import confetti from 'canvas-confetti';
 import { TrendingUp, Zap, Bot, Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -19,6 +20,7 @@ interface FloatingText {
 
 export const MemeClickerCanvas: React.FC = () => {
   const { user, submitGameScore } = useAppStore();
+  const { isFullscreen } = useGameViewport();
 
   const [status, setStatus] = useState<GameStatus>('MENU');
   const [score, setScore] = useState(0);
@@ -199,17 +201,17 @@ export const MemeClickerCanvas: React.FC = () => {
       onResume={handleResume}
       onRestart={handleRestart}
     >
-      <div className="w-full h-full p-4 flex flex-col justify-between overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center h-full">
+      <div className={`w-full h-full p-4 sm:p-6 flex flex-col justify-between overflow-y-auto ${isFullscreen ? 'max-w-4xl mx-auto' : ''}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center h-full">
           {/* Main Click Target */}
-          <div className="flex flex-col items-center justify-center p-6 bg-slate-900/60 rounded-2xl border border-slate-800 relative">
+          <div className="flex flex-col items-center justify-center p-6 bg-slate-900/60 rounded-3xl border border-slate-800 relative shadow-xl backdrop-blur-md">
             <button
               onClick={handleClick}
-              className="relative w-40 h-40 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-300 p-1.5 shadow-2xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-transform cursor-pointer select-none"
+              className={`relative ${isFullscreen ? 'w-52 h-52 sm:w-60 sm:h-60' : 'w-40 h-40'} rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-300 p-2 shadow-2xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none`}
             >
-              <div className="w-full h-full bg-slate-950 rounded-full flex flex-col items-center justify-center text-5xl">
+              <div className="w-full h-full bg-slate-950 rounded-full flex flex-col items-center justify-center text-5xl sm:text-6xl">
                 🚀
-                <span className="text-[10px] font-black text-amber-300 mt-1 uppercase">FARM VIEWS</span>
+                <span className="text-[10px] sm:text-xs font-black text-amber-300 mt-1 uppercase tracking-wider">FARM VIEWS</span>
               </div>
             </button>
 

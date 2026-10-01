@@ -6,6 +6,7 @@ import { soundFx } from '@/lib/audio';
 import { GameLifecycleWrapper } from '@/lib/game-engine/GameLifecycleWrapper';
 import { GameSessionManager } from '@/lib/game-engine/GameSessionManager';
 import { GameStatus, GameSessionFinishResponse } from '@/lib/game-engine/types';
+import { useGameViewport } from '@/lib/game-engine/useGameViewport';
 import confetti from 'canvas-confetti';
 import {
   Sparkles,
@@ -156,6 +157,392 @@ export const CRICKET_DISC_SLICES: CricketDiscSlice[] = [
     textColor: '#ffffff'
   }
 ];
+
+interface SpinCricketPlayAreaProps {
+  score: number;
+  wickets: number;
+  completedOvers: number;
+  remainingBallsInOver: number;
+  oversFormatted: string;
+  ballsBowled: number;
+  MAX_BALLS: number;
+  TARGET_SCORE: number;
+  MAX_WICKETS: number;
+  wheelRotation: number;
+  isSpinning: boolean;
+  spinWheel: () => void;
+  status: GameStatus;
+  lastShot: {
+    label: string;
+    sublabel: string;
+    runs: number;
+    isWicket: boolean;
+    isExtra: boolean;
+  } | null;
+  commentary: string;
+  thisOverHistory: Array<{
+    label: string;
+    runs: number;
+    isWicket: boolean;
+    isExtra: boolean;
+  }>;
+}
+
+const SpinCricketPlayArea: React.FC<SpinCricketPlayAreaProps> = ({
+  score,
+  wickets,
+  completedOvers,
+  remainingBallsInOver,
+  oversFormatted,
+  ballsBowled,
+  MAX_BALLS,
+  TARGET_SCORE,
+  MAX_WICKETS,
+  wheelRotation,
+  isSpinning,
+  spinWheel,
+  status,
+  lastShot,
+  commentary,
+  thisOverHistory,
+}) => {
+  const { isFullscreen, availableWidth, availableHeight, orientation } = useGameViewport();
+
+  // Wide/compact landscape detection (e.g. mobile landscape or short height)
+  const isCompactHeight = availableHeight < 620;
+  const isWideLandscape = orientation === 'landscape' && availableWidth >= 720 && isCompactHeight;
+
+  // Compute responsive wheel size that maximizes screen usage while guaranteeing NO clipping
+  const reservedHeight = isCompactHeight ? 130 : isFullscreen ? 230 : 190;
+  const maxWheelByHeight = Math.max(200, availableHeight - reservedHeight);
+  const maxWheelByWidth = Math.max(200, isWideLandscape ? availableWidth * 0.45 : availableWidth - 36);
+
+  const wheelSize = isFullscreen
+    ? Math.min(560, maxWheelByHeight, maxWheelByWidth)
+    : Math.min(400, maxWheelByHeight, maxWheelByWidth);
+
+  const centerButtonSize = Math.round(wheelSize * 0.28);
+
+  return (
+    <div
+      className={`w-full h-full flex flex-col justify-between p-2 sm:p-4 select-none relative overflow-hidden transition-all duration-300 ${
+        isFullscreen ? 'max-w-5xl' : 'max-w-2xl'
+      } mx-auto`}
+    >
+      {/* 1. CRICKET STADIUM SCOREBOARD HUD */}
+      <div className="w-full shrink-0">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md text-center font-mono">
+          {/* Runs & Wickets */}
+          <div className="flex flex-col items-center justify-center border-r border-slate-800/80 pr-1">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">SCORE</span>
+            <span className="text-base sm:text-2xl font-black text-[#00F0FF] tracking-tight">
+              {score} <span className="text-xs text-red-400">/{wickets}</span>
+            </span>
+          </div>
+
+          {/* Overs */}
+          <div className="flex flex-col items-center justify-center border-r border-slate-800/80 px-1">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">OVERS</span>
+            <span className="text-sm sm:text-xl font-black text-amber-300">
+              {oversFormatted} <span className="text-[9px] sm:text-[10px] text-slate-500">/2.0</span>
+            </span>
+          </div>
+
+          {/* Balls Bowled */}
+          <div className="flex flex-col items-center justify-center border-r border-slate-800/80 px-1">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">BALLS</span>
+            <span className="text-sm sm:text-xl font-black text-yellow-400">
+              {ballsBowled} <span className="text-[9px] sm:text-[10px] text-slate-500">/{MAX_BALLS}</span>
+            </span>
+          </div>
+
+          {/* Target */}
+          <div className="flex flex-col items-center justify-center pl-1">
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">TARGET</span>
+            <span className="text-sm sm:text-xl font-black text-emerald-400">
+              {TARGET_SCORE} <span className="text-[9px] sm:text-[10px] text-slate-500 font-normal">RUNS</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. MAIN PLAYING AREA (WHEEL + CONTROLS) */}
+      <div
+        className={`flex-1 min-h-0 w-full flex ${
+          isWideLandscape ? 'flex-row items-center justify-around gap-4' : 'flex-col items-center justify-center my-auto py-1'
+        }`}
+      >
+        {/* PRO CRICKET SPIN DISC CONTAINER */}
+        <div className="relative flex flex-col items-center justify-center shrink-0">
+          {/* Stadium Light Glow Background */}
+          <div
+            style={{ width: `${wheelSize}px`, height: `${wheelSize}px` }}
+            className="absolute inset-0 m-auto rounded-full bg-[radial-gradient(circle_at_center,rgba(0,240,255,0.15)_0%,rgba(16,185,129,0.08)_50%,transparent_75%)] pointer-events-none blur-2xl animate-pulse"
+          />
+
+          {/* Current Ball Indicator */}
+          {!isCompactHeight && (
+            <div className="mb-1.5 sm:mb-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-900/90 border border-slate-800 text-[10px] sm:text-[11px] font-mono text-cyan-300 shadow-md shrink-0">
+              <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
+              <span>BALL {Math.min(MAX_BALLS, ballsBowled + 1)} OF {MAX_BALLS}</span>
+            </div>
+          )}
+
+          {/* Sized Wheel Container */}
+          <div
+            style={{ width: `${wheelSize}px`, height: `${wheelSize}px` }}
+            className="relative flex items-center justify-center transition-all duration-300"
+          >
+            {/* FIXED TOP POINTER */}
+            <div className="absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none drop-shadow-[0_4px_12px_rgba(239,68,68,0.7)]">
+              <div className="w-0 h-0 border-x-[11px] sm:border-x-[15px] border-x-transparent border-t-[22px] sm:border-t-[30px] border-t-rose-500 filter drop-shadow(0 2px 4px rgba(0,0,0,0.5))" />
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-300 -mt-6 sm:-mt-8 shadow-inner" />
+            </div>
+
+            {/* ROTATING RADIAL CRICKET DISC */}
+            <div
+              style={{
+                transform: `rotate(${wheelRotation}deg)`,
+                transition: isSpinning ? 'transform 3.2s cubic-bezier(0.12, 0.95, 0.18, 1)' : 'none',
+              }}
+              className="w-full h-full rounded-full relative shadow-[0_0_50px_rgba(0,0,0,0.85)] flex items-center justify-center"
+            >
+              {/* SVG Radial Wheel Render */}
+              <svg
+                viewBox="0 0 400 400"
+                className="w-full h-full rounded-full overflow-hidden select-none filter drop-shadow-2xl"
+              >
+                <defs>
+                  {CRICKET_DISC_SLICES.map((slice, idx) => (
+                    <linearGradient
+                      key={`grad-${idx}`}
+                      id={`slice-grad-${idx}`}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                    >
+                      <stop offset="0%" stopColor={slice.color} />
+                      <stop offset="100%" stopColor={slice.darkColor} />
+                    </linearGradient>
+                  ))}
+                  <radialGradient id="rim-grad" cx="50%" cy="50%" r="50%">
+                    <stop offset="90%" stopColor="#0f172a" />
+                    <stop offset="96%" stopColor="#1e293b" />
+                    <stop offset="100%" stopColor="#0284c7" />
+                  </radialGradient>
+                </defs>
+
+                {CRICKET_DISC_SLICES.map((slice, i) => {
+                  const sliceCount = CRICKET_DISC_SLICES.length;
+                  const sliceDeg = 360 / sliceCount;
+                  const startAngle = i * sliceDeg;
+                  const endAngle = (i + 1) * sliceDeg;
+                  const midAngle = startAngle + sliceDeg / 2;
+
+                  const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
+                  const r = 196;
+                  const cx = 200;
+                  const cy = 200;
+
+                  const x1 = cx + r * Math.cos(toRad(startAngle));
+                  const y1 = cy + r * Math.sin(toRad(startAngle));
+                  const x2 = cx + r * Math.cos(toRad(endAngle));
+                  const y2 = cy + r * Math.sin(toRad(endAngle));
+
+                  const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
+
+                  const textR = 138;
+                  const tx = cx + textR * Math.cos(toRad(midAngle));
+                  const ty = cy + textR * Math.sin(toRad(midAngle));
+
+                  return (
+                    <g key={slice.id + i}>
+                      <path
+                        d={pathData}
+                        fill={`url(#slice-grad-${i})`}
+                        stroke="#090d16"
+                        strokeWidth="2.5"
+                        className="transition-opacity duration-300"
+                      />
+                      <line
+                        x1={cx}
+                        y1={cy}
+                        x2={x1}
+                        y2={y1}
+                        stroke="rgba(255,255,255,0.25)"
+                        strokeWidth="1"
+                      />
+                      <g transform={`rotate(${midAngle}, ${tx}, ${ty})`}>
+                        <text
+                          x={tx}
+                          y={ty}
+                          fill={slice.textColor}
+                          fontSize={slice.label.length > 5 ? '13' : '15'}
+                          fontWeight="900"
+                          fontFamily="monospace, sans-serif"
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          style={{
+                            letterSpacing: '0.08em',
+                            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))',
+                          }}
+                        >
+                          {slice.displayLabel}
+                        </text>
+                      </g>
+                    </g>
+                  );
+                })}
+
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="196"
+                  fill="none"
+                  stroke="#0284c7"
+                  strokeWidth="6"
+                  className="opacity-60"
+                />
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="198"
+                  fill="none"
+                  stroke="#0f172a"
+                  strokeWidth="4"
+                />
+              </svg>
+
+              {/* CENTER CIRCULAR PLAY / SPIN BUTTON */}
+              <button
+                onClick={spinWheel}
+                disabled={isSpinning || status !== 'PLAYING' || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS}
+                style={{
+                  width: `${centerButtonSize}px`,
+                  height: `${centerButtonSize}px`,
+                }}
+                className={`absolute inset-0 m-auto rounded-full z-20 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer shadow-[0_0_30px_rgba(0,0,0,0.9)] border-4 border-cyan-400 bg-gradient-to-b from-slate-900 via-slate-950 to-black select-none ${
+                  isSpinning
+                    ? 'scale-95 opacity-80 border-slate-700'
+                    : 'hover:scale-105 active:scale-95 hover:border-[#00F0FF] hover:shadow-[0_0_25px_rgba(0,240,255,0.6)]'
+                }`}
+                title="Click to Spin Cricket Disc"
+              >
+                <span className="text-xl sm:text-2xl leading-none filter drop-shadow">🏏</span>
+                <span className="text-[10px] sm:text-xs font-black font-mono tracking-widest text-[#00F0FF] mt-0.5">
+                  {isSpinning ? 'SPIN' : 'PLAY'}
+                </span>
+                <span className="text-[8px] font-mono text-cyan-300/70 font-bold uppercase tracking-tighter hidden sm:inline">
+                  {isSpinning ? '...' : 'CLICK'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. BALL RESULT DISPLAY & COMMENTARY / CONTROLS */}
+        <div
+          className={`w-full shrink-0 flex flex-col justify-end space-y-1.5 sm:space-y-2 ${
+            isWideLandscape ? 'max-w-xs' : 'max-w-md'
+          }`}
+        >
+          {/* Revealed Shot Outcome Banner */}
+          {lastShot && (
+            <div
+              className={`w-full py-2 px-3 sm:px-4 rounded-xl sm:rounded-2xl border flex items-center justify-between shadow-xl backdrop-blur-md animate-in zoom-in-95 duration-200 ${
+                lastShot.isWicket
+                  ? 'bg-rose-950/80 border-rose-500/80 text-rose-300'
+                  : lastShot.runs === 6
+                  ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                  : lastShot.runs === 4
+                  ? 'bg-sky-950/80 border-sky-500/80 text-sky-300'
+                  : 'bg-slate-900/90 border-slate-700 text-slate-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg sm:text-xl">
+                  {lastShot.isWicket ? '🔴' : lastShot.runs >= 4 ? '🔥' : '🏏'}
+                </span>
+                <div>
+                  <div className="text-xs font-black tracking-wider uppercase font-mono">
+                    {lastShot.isWicket ? 'WICKET OUT!' : `${lastShot.label}!`}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    {lastShot.sublabel}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`text-sm sm:text-base font-black font-mono px-2.5 py-0.5 rounded-lg border ${
+                  lastShot.isWicket
+                    ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                    : 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                }`}
+              >
+                {lastShot.isWicket ? 'OUT' : `+${lastShot.runs}`}
+              </div>
+            </div>
+          )}
+
+          {/* Live Match Commentary */}
+          <div className="w-full bg-slate-900/90 border border-slate-800/90 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-mono text-cyan-300 text-center shadow-md truncate">
+            📢 {commentary}
+          </div>
+
+          {/* THIS OVER BALL HISTORY CHIPS */}
+          {!isCompactHeight && (
+            <div className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex items-center justify-between shadow-inner">
+              <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider pl-1">
+                THIS OVER:
+              </span>
+
+              <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5">
+                {thisOverHistory.length === 0 ? (
+                  <span className="text-[10px] font-mono text-slate-600 italic">No balls bowled yet</span>
+                ) : (
+                  thisOverHistory.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl flex items-center justify-center font-mono font-black text-[10px] sm:text-xs border transition-all ${
+                        item.isWicket
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                          : item.runs === 6
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                          : item.runs === 4
+                          ? 'bg-sky-500/20 border-sky-500 text-sky-300'
+                          : item.isExtra
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                          : item.runs === 0
+                          ? 'bg-slate-900 border-slate-800 text-slate-500'
+                          : 'bg-slate-800 border-slate-700 text-slate-200'
+                      }`}
+                    >
+                      {item.label}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ACTION BUTTON */}
+          {status === 'PLAYING' && (
+            <button
+              onClick={spinWheel}
+              disabled={isSpinning || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS}
+              className="w-full py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,240,255,0.3)] border border-cyan-300 cursor-pointer disabled:opacity-40 transition-all font-display"
+            >
+              <span>{isSpinning ? 'BOWLER RUNNING IN...' : 'SPIN NEXT BALL 🏏'}</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const SpinCricketCanvas: React.FC = () => {
   const { user, submitGameScore } = useAppStore();
@@ -383,321 +770,29 @@ export const SpinCricketCanvas: React.FC = () => {
       onPause={handlePause}
       onResume={handleResume}
       onRestart={handleRestart}
+      preferredAspectRatio="auto"
+      preferredOrientation="any"
+      scalingMode="responsive"
     >
-      <div className="w-full h-full flex flex-col items-center justify-between p-3 sm:p-5 select-none relative overflow-y-auto max-w-2xl mx-auto">
-        
-        {/* ========================================================= */}
-        {/* 1. CRICKET STADIUM SCOREBOARD HUD */}
-        {/* ========================================================= */}
-        <div className="w-full space-y-2">
-          <div className="grid grid-cols-4 gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md text-center font-mono">
-            {/* Runs & Wickets */}
-            <div className="flex flex-col items-center justify-center border-r border-slate-800/80 pr-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SCORE</span>
-              <span className="text-lg sm:text-2xl font-black text-[#00F0FF] tracking-tight">
-                {score} <span className="text-xs text-red-400">/{wickets}</span>
-              </span>
-            </div>
-
-            {/* Overs */}
-            <div className="flex flex-col items-center justify-center border-r border-slate-800/80 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">OVERS</span>
-              <span className="text-base sm:text-xl font-black text-amber-300">
-                {oversFormatted} <span className="text-[10px] text-slate-500">/2.0</span>
-              </span>
-            </div>
-
-            {/* Balls Bowled */}
-            <div className="flex flex-col items-center justify-center border-r border-slate-800/80 px-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">BALLS</span>
-              <span className="text-base sm:text-xl font-black text-yellow-400">
-                {ballsBowled} <span className="text-[10px] text-slate-500">/{MAX_BALLS}</span>
-              </span>
-            </div>
-
-            {/* Target */}
-            <div className="flex flex-col items-center justify-center pl-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">TARGET</span>
-              <span className="text-base sm:text-xl font-black text-emerald-400">
-                {TARGET_SCORE} <span className="text-[10px] text-slate-500 font-normal">RUNS</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 2. PRO CRICKET SPIN DISC (RADIAL WEDGE SECTORS) */}
-        {/* ========================================================= */}
-        <div className="relative flex flex-col items-center justify-center my-auto py-2">
-          
-          {/* Subtle Stadium Light Glow Background */}
-          <div className="absolute inset-0 m-auto w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-[radial-gradient(circle_at_center,rgba(0,240,255,0.12)_0%,rgba(16,185,129,0.06)_50%,transparent_75%)] pointer-events-none blur-xl animate-pulse" />
-
-          {/* Current Ball Indicator */}
-          <div className="mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 text-[11px] font-mono text-cyan-300 shadow-md">
-            <Target className="w-3.5 h-3.5 text-cyan-400" />
-            <span>BALL {Math.min(MAX_BALLS, ballsBowled + 1)} OF {MAX_BALLS}</span>
-          </div>
-
-          {/* Wheel Container */}
-          <div className="relative w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] md:w-[400px] md:h-[400px] flex items-center justify-center">
-            
-            {/* FIXED TOP POINTER (DOES NOT ROTATE) */}
-            <div className="absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none drop-shadow-[0_4px_12px_rgba(239,68,68,0.7)]">
-              {/* Pointer Triangle */}
-              <div className="w-0 h-0 border-x-[12px] sm:border-x-[15px] border-x-transparent border-t-[24px] sm:border-t-[30px] border-t-rose-500 filter drop-shadow(0 2px 4px rgba(0,0,0,0.5))" />
-              {/* Golden Pointer Core */}
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-300 -mt-7 sm:-mt-9 shadow-inner" />
-            </div>
-
-            {/* ROTATING RADIAL CRICKET DISC */}
-            <div
-              style={{
-                transform: `rotate(${wheelRotation}deg)`,
-                transition: isSpinning ? 'transform 3.2s cubic-bezier(0.12, 0.95, 0.18, 1)' : 'none',
-              }}
-              className="w-full h-full rounded-full relative shadow-[0_0_50px_rgba(0,0,0,0.8)] flex items-center justify-center"
-            >
-              {/* SVG Radial Wheel Render */}
-              <svg
-                viewBox="0 0 400 400"
-                className="w-full h-full rounded-full overflow-hidden select-none filter drop-shadow-2xl"
-              >
-                <defs>
-                  {/* Gradients for each sector */}
-                  {CRICKET_DISC_SLICES.map((slice, idx) => (
-                    <linearGradient
-                      key={`grad-${idx}`}
-                      id={`slice-grad-${idx}`}
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%"
-                    >
-                      <stop offset="0%" stopColor={slice.color} />
-                      <stop offset="100%" stopColor={slice.darkColor} />
-                    </linearGradient>
-                  ))}
-                  {/* Outer Rim Metallic Gradient */}
-                  <radialGradient id="rim-grad" cx="50%" cy="50%" r="50%">
-                    <stop offset="90%" stopColor="#0f172a" />
-                    <stop offset="96%" stopColor="#1e293b" />
-                    <stop offset="100%" stopColor="#0284c7" />
-                  </radialGradient>
-                </defs>
-
-                {/* 10 Pie Wedge Sectors */}
-                {CRICKET_DISC_SLICES.map((slice, i) => {
-                  const sliceCount = CRICKET_DISC_SLICES.length;
-                  const sliceDeg = 360 / sliceCount; // 36°
-                  const startAngle = i * sliceDeg;
-                  const endAngle = (i + 1) * sliceDeg;
-                  const midAngle = startAngle + sliceDeg / 2;
-
-                  // Polar coordinates helper (0° is top)
-                  const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
-                  const r = 196; // Outer radius
-                  const cx = 200;
-                  const cy = 200;
-
-                  const x1 = cx + r * Math.cos(toRad(startAngle));
-                  const y1 = cy + r * Math.sin(toRad(startAngle));
-                  const x2 = cx + r * Math.cos(toRad(endAngle));
-                  const y2 = cy + r * Math.sin(toRad(endAngle));
-
-                  // Path for wedge
-                  const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
-
-                  // Text Label radial positioning (~70% radius)
-                  const textR = 138;
-                  const tx = cx + textR * Math.cos(toRad(midAngle));
-                  const ty = cy + textR * Math.sin(toRad(midAngle));
-
-                  return (
-                    <g key={slice.id + i}>
-                      {/* Sector Wedge */}
-                      <path
-                        d={pathData}
-                        fill={`url(#slice-grad-${i})`}
-                        stroke="#090d16"
-                        strokeWidth="2.5"
-                        className="transition-opacity duration-300"
-                      />
-
-                      {/* Sector Divider Highlight Line */}
-                      <line
-                        x1={cx}
-                        y1={cy}
-                        x2={x1}
-                        y2={y1}
-                        stroke="rgba(255,255,255,0.25)"
-                        strokeWidth="1"
-                      />
-
-                      {/* Radial Outcome Text Label */}
-                      <g transform={`rotate(${midAngle}, ${tx}, ${ty})`}>
-                        <text
-                          x={tx}
-                          y={ty}
-                          fill={slice.textColor}
-                          fontSize={slice.label.length > 5 ? '13' : '15'}
-                          fontWeight="900"
-                          fontFamily="monospace, sans-serif"
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          style={{
-                            letterSpacing: '0.08em',
-                            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.8))'
-                          }}
-                        >
-                          {slice.displayLabel}
-                        </text>
-                      </g>
-                    </g>
-                  );
-                })}
-
-                {/* Outer Circular Ring & Border */}
-                <circle
-                  cx="200"
-                  cy="200"
-                  r="196"
-                  fill="none"
-                  stroke="#0284c7"
-                  strokeWidth="6"
-                  className="opacity-60"
-                />
-                <circle
-                  cx="200"
-                  cy="200"
-                  r="198"
-                  fill="none"
-                  stroke="#0f172a"
-                  strokeWidth="4"
-                />
-              </svg>
-
-              {/* CENTER CIRCULAR PLAY / SPIN BUTTON (HOVER & CLICKABLE) */}
-              <button
-                onClick={spinWheel}
-                disabled={isSpinning || status !== 'PLAYING' || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS}
-                className={`absolute inset-0 m-auto w-24 h-24 sm:w-28 sm:h-28 rounded-full z-20 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer shadow-[0_0_30px_rgba(0,0,0,0.9)] border-4 border-cyan-400 bg-gradient-to-b from-slate-900 via-slate-950 to-black select-none ${
-                  isSpinning
-                    ? 'scale-95 opacity-80 border-slate-700'
-                    : 'hover:scale-105 active:scale-95 hover:border-[#00F0FF] hover:shadow-[0_0_25px_rgba(0,240,255,0.6)]'
-                }`}
-                title="Click to Spin Cricket Disc"
-              >
-                <span className="text-2xl sm:text-3xl leading-none filter drop-shadow">🏏</span>
-                <span className="text-xs sm:text-sm font-black font-mono tracking-widest text-[#00F0FF] mt-1">
-                  {isSpinning ? 'SPINNING' : 'PLAY'}
-                </span>
-                <span className="text-[8px] font-mono text-cyan-300/70 font-bold uppercase tracking-tighter">
-                  {isSpinning ? '...' : 'CLICK'}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* 3. BALL RESULT DISPLAY & COMMENTARY */}
-        {/* ========================================================= */}
-        <div className="w-full max-w-md space-y-2.5">
-          
-          {/* Revealed Shot Outcome Banner */}
-          {lastShot && (
-            <div
-              className={`w-full py-2.5 px-4 rounded-2xl border flex items-center justify-between shadow-xl backdrop-blur-md animate-in zoom-in-95 duration-200 ${
-                lastShot.isWicket
-                  ? 'bg-rose-950/80 border-rose-500/80 text-rose-300'
-                  : lastShot.runs === 6
-                  ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                  : lastShot.runs === 4
-                  ? 'bg-sky-950/80 border-sky-500/80 text-sky-300'
-                  : 'bg-slate-900/90 border-slate-700 text-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">
-                  {lastShot.isWicket ? '🔴' : lastShot.runs >= 4 ? '🔥' : '🏏'}
-                </span>
-                <div>
-                  <div className="text-xs font-black tracking-wider uppercase font-mono">
-                    {lastShot.isWicket ? 'WICKET OUT!' : `${lastShot.label}!`}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {lastShot.sublabel}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`text-base sm:text-lg font-black font-mono px-3 py-1 rounded-xl border ${
-                  lastShot.isWicket
-                    ? 'bg-rose-500/20 border-rose-500 text-rose-300'
-                    : 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                }`}
-              >
-                {lastShot.isWicket ? 'OUT' : `+${lastShot.runs}`}
-              </div>
-            </div>
-          )}
-
-          {/* Live Match Commentary */}
-          <div className="w-full bg-slate-900/90 border border-slate-800/90 px-3.5 py-2 rounded-xl text-xs font-mono text-cyan-300 text-center shadow-md">
-            📢 {commentary}
-          </div>
-
-          {/* THIS OVER BALL HISTORY CHIPS */}
-          <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-2.5 flex items-center justify-between shadow-inner">
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider pl-1">
-              THIS OVER:
-            </span>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-              {thisOverHistory.length === 0 ? (
-                <span className="text-[11px] font-mono text-slate-600 italic">No balls bowled yet</span>
-              ) : (
-                thisOverHistory.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center font-mono font-black text-xs border transition-all ${
-                      item.isWicket
-                        ? 'bg-rose-500/20 border-rose-500 text-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.4)]'
-                        : item.runs === 6
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-                        : item.runs === 4
-                        ? 'bg-sky-500/20 border-sky-500 text-sky-300'
-                        : item.isExtra
-                        ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                        : item.runs === 0
-                        ? 'bg-slate-900 border-slate-800 text-slate-500'
-                        : 'bg-slate-800 border-slate-700 text-slate-200'
-                    }`}
-                  >
-                    {item.label}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* ACTION BUTTON */}
-          {status === 'PLAYING' && (
-            <button
-              onClick={spinWheel}
-              disabled={isSpinning || wickets >= MAX_WICKETS || ballsBowled >= MAX_BALLS}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,240,255,0.35)] border border-cyan-300 cursor-pointer disabled:opacity-40 transition-all"
-            >
-              <span>{isSpinning ? 'BOWLER RUNNING IN...' : 'SPIN NEXT BALL 🏏'}</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
-
-        </div>
-
-      </div>
+      <SpinCricketPlayArea
+        score={score}
+        wickets={wickets}
+        completedOvers={completedOvers}
+        remainingBallsInOver={remainingBallsInOver}
+        oversFormatted={oversFormatted}
+        ballsBowled={ballsBowled}
+        MAX_BALLS={MAX_BALLS}
+        TARGET_SCORE={TARGET_SCORE}
+        MAX_WICKETS={MAX_WICKETS}
+        wheelRotation={wheelRotation}
+        isSpinning={isSpinning}
+        spinWheel={spinWheel}
+        status={status}
+        lastShot={lastShot}
+        commentary={commentary}
+        thisOverHistory={thisOverHistory}
+      />
     </GameLifecycleWrapper>
   );
 };
+
