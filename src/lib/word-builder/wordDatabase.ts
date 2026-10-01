@@ -1,302 +1,589 @@
+export type WordDifficulty = 'easy' | 'easy+' | 'medium' | 'medium+' | 'hard' | 'expert';
+
+export interface WordLevelData {
+  level: number;
+  word: string;
+  meaning: string;
+  difficulty: WordDifficulty;
+  category: string;
+  acceptedAnswers?: string[];
+}
+
+// 50 Handcrafted, High-Quality English Word Levels with verified dictionary definitions
+export const WORD_BUILDER_LEVELS: WordLevelData[] = [
+  // ==========================================
+  // LEVEL 1–5: EASY (3 Letters)
+  // ==========================================
+  {
+    level: 1,
+    word: 'DOG',
+    meaning: 'A domesticated carnivorous mammal commonly kept as a loyal pet.',
+    difficulty: 'easy',
+    category: 'Animals',
+    acceptedAnswers: ['DOG', 'GOD']
+  },
+  {
+    level: 2,
+    word: 'CAT',
+    meaning: 'A small domesticated feline mammal with soft fur and sharp claws.',
+    difficulty: 'easy',
+    category: 'Animals',
+    acceptedAnswers: ['CAT', 'ACT']
+  },
+  {
+    level: 3,
+    word: 'SUN',
+    meaning: 'The luminous star around which the Earth orbits, providing light and heat.',
+    difficulty: 'easy',
+    category: 'Nature',
+    acceptedAnswers: ['SUN', 'NUS']
+  },
+  {
+    level: 4,
+    word: 'PEN',
+    meaning: 'An instrument used for writing or drawing with ink.',
+    difficulty: 'easy',
+    category: 'Everyday Objects',
+    acceptedAnswers: ['PEN']
+  },
+  {
+    level: 5,
+    word: 'ART',
+    meaning: 'The expression or application of human creative skill and imagination.',
+    difficulty: 'easy',
+    category: 'Culture',
+    acceptedAnswers: ['ART', 'RAT', 'TAR']
+  },
+
+  // ==========================================
+  // LEVEL 6–10: EASY+ (4 Letters)
+  // ==========================================
+  {
+    level: 6,
+    word: 'CAKE',
+    meaning: 'A sweet baked food made from flour, sugar, eggs, and butter.',
+    difficulty: 'easy+',
+    category: 'Food',
+    acceptedAnswers: ['CAKE']
+  },
+  {
+    level: 7,
+    word: 'STOP',
+    meaning: 'To cease movement, progress, or operation.',
+    difficulty: 'easy+',
+    category: 'Action',
+    acceptedAnswers: ['STOP', 'POST', 'SPOT', 'TOPS', 'POTS']
+  },
+  {
+    level: 8,
+    word: 'PALE',
+    meaning: 'Light in color or shade; having relatively little color.',
+    difficulty: 'easy+',
+    category: 'Colors & Senses',
+    acceptedAnswers: ['PALE', 'LEAP', 'PLEA', 'PEAL']
+  },
+  {
+    level: 9,
+    word: 'BIRD',
+    meaning: 'A warm-blooded feathered vertebrate with wings that can usually fly.',
+    difficulty: 'easy+',
+    category: 'Animals',
+    acceptedAnswers: ['BIRD', 'DRIP']
+  },
+  {
+    level: 10,
+    word: 'STAR',
+    meaning: 'A celestial body of hot gas that radiates energy in the night sky.',
+    difficulty: 'easy+',
+    category: 'Space',
+    acceptedAnswers: ['STAR', 'RATS', 'ARTS', 'TARS']
+  },
+
+  // ==========================================
+  // LEVEL 11–20: MEDIUM (5 Letters)
+  // ==========================================
+  {
+    level: 11,
+    word: 'APPLE',
+    meaning: 'The round edible fruit of a tree, typically red, green, or yellow.',
+    difficulty: 'medium',
+    category: 'Food',
+    acceptedAnswers: ['APPLE']
+  },
+  {
+    level: 12,
+    word: 'TABLE',
+    meaning: 'A piece of furniture with a flat top supported by legs.',
+    difficulty: 'medium',
+    category: 'Furniture',
+    acceptedAnswers: ['TABLE', 'BLEAT']
+  },
+  {
+    level: 13,
+    word: 'RIVER',
+    meaning: 'A large, natural stream of water flowing continuously toward the sea.',
+    difficulty: 'medium',
+    category: 'Geography',
+    acceptedAnswers: ['RIVER']
+  },
+  {
+    level: 14,
+    word: 'STONE',
+    meaning: 'Hard, solid non-metallic mineral matter that forms rocks.',
+    difficulty: 'medium',
+    category: 'Earth',
+    acceptedAnswers: ['STONE', 'TONES', 'NOTES', 'ONSET']
+  },
+  {
+    level: 15,
+    word: 'HEART',
+    meaning: 'A muscular organ that pumps blood through the body; center of emotions.',
+    difficulty: 'medium',
+    category: 'Anatomy',
+    acceptedAnswers: ['HEART', 'EARTH', 'HATER']
+  },
+  {
+    level: 16,
+    word: 'WATER',
+    meaning: 'A transparent odorless liquid vital for all known forms of life.',
+    difficulty: 'medium',
+    category: 'Nature',
+    acceptedAnswers: ['WATER']
+  },
+  {
+    level: 17,
+    word: 'SMILE',
+    meaning: 'A pleased or friendly facial expression with the corners of mouth turned up.',
+    difficulty: 'medium',
+    category: 'Emotions',
+    acceptedAnswers: ['SMILE', 'SLIME', 'MILES', 'LIMES']
+  },
+  {
+    level: 18,
+    word: 'DREAM',
+    meaning: 'A series of thoughts, visions, and sensations occurring during sleep.',
+    difficulty: 'medium',
+    category: 'Mind',
+    acceptedAnswers: ['DREAM', 'ARMED']
+  },
+  {
+    level: 19,
+    word: 'TIGER',
+    meaning: 'A magnificent large apex feline predator with an orange and black striped coat.',
+    difficulty: 'medium',
+    category: 'Animals',
+    acceptedAnswers: ['TIGER']
+  },
+  {
+    level: 20,
+    word: 'CLOUD',
+    meaning: 'A visible mass of condensed water droplets floating high in the sky.',
+    difficulty: 'medium',
+    category: 'Weather',
+    acceptedAnswers: ['CLOUD']
+  },
+
+  // ==========================================
+  // LEVEL 21–30: MEDIUM+ (6 Letters)
+  // ==========================================
+  {
+    level: 21,
+    word: 'PLANET',
+    meaning: 'A large celestial body in space orbiting around a central star.',
+    difficulty: 'medium+',
+    category: 'Cosmos',
+    acceptedAnswers: ['PLANET']
+  },
+  {
+    level: 22,
+    word: 'MARKET',
+    meaning: 'A public place or arena where buyers and sellers trade goods and services.',
+    difficulty: 'medium+',
+    category: 'Commerce',
+    acceptedAnswers: ['MARKET']
+  },
+  {
+    level: 23,
+    word: 'BRIGHT',
+    meaning: 'Giving off or reflecting plenty of light; radiant and intelligent.',
+    difficulty: 'medium+',
+    category: 'Qualities',
+    acceptedAnswers: ['BRIGHT']
+  },
+  {
+    level: 24,
+    word: 'FRIEND',
+    meaning: 'A person with whom one has a strong mutual bond of affection and trust.',
+    difficulty: 'medium+',
+    category: 'Relationships',
+    acceptedAnswers: ['FRIEND']
+  },
+  {
+    level: 25,
+    word: 'SILVER',
+    meaning: 'A precious lustrous grayish-white metallic chemical element.',
+    difficulty: 'medium+',
+    category: 'Elements',
+    acceptedAnswers: ['SILVER', 'SLIVER']
+  },
+  {
+    level: 26,
+    word: 'GARDEN',
+    meaning: 'A cultivated plot of land used for growing flowers, herbs, or vegetables.',
+    difficulty: 'medium+',
+    category: 'Nature',
+    acceptedAnswers: ['GARDEN', 'DANGER', 'GANDER']
+  },
+  {
+    level: 27,
+    word: 'CASTLE',
+    meaning: 'A grand fortified stronghold built in the Middle Ages by royalty.',
+    difficulty: 'medium+',
+    category: 'Architecture',
+    acceptedAnswers: ['CASTLE']
+  },
+  {
+    level: 28,
+    word: 'SILENT',
+    meaning: 'Completely devoid of noise or sound; tranquil and peaceful.',
+    difficulty: 'medium+',
+    category: 'Sound',
+    acceptedAnswers: ['SILENT', 'LISTEN', 'TINSEL']
+  },
+  {
+    level: 29,
+    word: 'STREAM',
+    meaning: 'A steady natural flow of fresh water, smaller than a river.',
+    difficulty: 'medium+',
+    category: 'Nature',
+    acceptedAnswers: ['STREAM', 'MASTER', 'TAMERS']
+  },
+  {
+    level: 30,
+    word: 'FOREST',
+    meaning: 'A vast dense area populated predominantly by trees and diverse wildlife.',
+    difficulty: 'medium+',
+    category: 'Biome',
+    acceptedAnswers: ['FOREST', 'FOSTER', 'SOFTER']
+  },
+
+  // ==========================================
+  // LEVEL 31–40: HARD (7 Letters)
+  // ==========================================
+  {
+    level: 31,
+    word: 'TEACHER',
+    meaning: 'A dedicated person whose occupation is guiding and educating students.',
+    difficulty: 'hard',
+    category: 'Professions',
+    acceptedAnswers: ['TEACHER']
+  },
+  {
+    level: 32,
+    word: 'COUNTRY',
+    meaning: 'A distinct nation with its own government and geographical territory.',
+    difficulty: 'hard',
+    category: 'Geography',
+    acceptedAnswers: ['COUNTRY']
+  },
+  {
+    level: 33,
+    word: 'PICTURE',
+    meaning: 'A visual design, painting, photograph, or illustration of something.',
+    difficulty: 'hard',
+    category: 'Art & Media',
+    acceptedAnswers: ['PICTURE']
+  },
+  {
+    level: 34,
+    word: 'FREEDOM',
+    meaning: 'The fundamental right or state of being free from coercion or imprisonment.',
+    difficulty: 'hard',
+    category: 'Philosophy',
+    acceptedAnswers: ['FREEDOM']
+  },
+  {
+    level: 35,
+    word: 'JOURNEY',
+    meaning: 'The act of traveling from one destination to another over time.',
+    difficulty: 'hard',
+    category: 'Travel',
+    acceptedAnswers: ['JOURNEY']
+  },
+  {
+    level: 36,
+    word: 'VICTORY',
+    meaning: 'Success or triumph achieved through defeating a rival or overcoming adversity.',
+    difficulty: 'hard',
+    category: 'Achievement',
+    acceptedAnswers: ['VICTORY']
+  },
+  {
+    level: 37,
+    word: 'DIAMOND',
+    meaning: 'A rare and extremely hard mineral composed of crystallized pure carbon.',
+    difficulty: 'hard',
+    category: 'Gems',
+    acceptedAnswers: ['DIAMOND']
+  },
+  {
+    level: 38,
+    word: 'MORNING',
+    meaning: 'The early phase of the day starting from dawn until solar noon.',
+    difficulty: 'hard',
+    category: 'Time',
+    acceptedAnswers: ['MORNING']
+  },
+  {
+    level: 39,
+    word: 'COURAGE',
+    meaning: 'The moral or physical strength to face fear, danger, or severe difficulty.',
+    difficulty: 'hard',
+    category: 'Virtues',
+    acceptedAnswers: ['COURAGE']
+  },
+  {
+    level: 40,
+    word: 'KINGDOM',
+    meaning: 'A sovereign realm or territory ruled by a monarch.',
+    difficulty: 'hard',
+    category: 'History & Sovereignty',
+    acceptedAnswers: ['KINGDOM']
+  },
+
+  // ==========================================
+  // LEVEL 41–50: EXPERT (8+ Letters)
+  // ==========================================
+  {
+    level: 41,
+    word: 'COMPUTER',
+    meaning: 'A high-speed electronic calculating device for processing and storing data.',
+    difficulty: 'expert',
+    category: 'Technology',
+    acceptedAnswers: ['COMPUTER']
+  },
+  {
+    level: 42,
+    word: 'LANGUAGE',
+    meaning: 'A structured system of vocal and written symbols used for communication.',
+    difficulty: 'expert',
+    category: 'Linguistics',
+    acceptedAnswers: ['LANGUAGE']
+  },
+  {
+    level: 43,
+    word: 'KNOWLEDGE',
+    meaning: 'Facts, principles, and understanding gained through study or experience.',
+    difficulty: 'expert',
+    category: 'Wisdom',
+    acceptedAnswers: ['KNOWLEDGE']
+  },
+  {
+    level: 44,
+    word: 'ADVENTURE',
+    meaning: 'An exciting and daring endeavor, often accompanied by unexpected discovery.',
+    difficulty: 'expert',
+    category: 'Exploration',
+    acceptedAnswers: ['ADVENTURE']
+  },
+  {
+    level: 45,
+    word: 'CHALLENGE',
+    meaning: 'A demanding test of ability, endurance, or character requiring great effort.',
+    difficulty: 'expert',
+    category: 'Esports & Mind',
+    acceptedAnswers: ['CHALLENGE']
+  },
+  {
+    level: 46,
+    word: 'BEAUTIFUL',
+    meaning: 'Possessing qualities that delight the aesthetic senses and touch the heart.',
+    difficulty: 'expert',
+    category: 'Aesthetics',
+    acceptedAnswers: ['BEAUTIFUL']
+  },
+  {
+    level: 47,
+    word: 'DISCOVERY',
+    meaning: 'The revelation or finding of something previously unnoticed or concealed.',
+    difficulty: 'expert',
+    category: 'Science',
+    acceptedAnswers: ['DISCOVERY']
+  },
+  {
+    level: 48,
+    word: 'UNIVERSE',
+    meaning: 'All existing physical matter, energy, galaxies, and spacetime combined.',
+    difficulty: 'expert',
+    category: 'Cosmology',
+    acceptedAnswers: ['UNIVERSE']
+  },
+  {
+    level: 49,
+    word: 'CELEBRATE',
+    meaning: 'To honor and commemorate a triumph or happy occasion with festivities.',
+    difficulty: 'expert',
+    category: 'Joy & Triumph',
+    acceptedAnswers: ['CELEBRATE']
+  },
+  {
+    level: 50,
+    word: 'BRILLIANT',
+    meaning: 'Shining with supreme brilliance, radiant intellect, and outstanding mastery.',
+    difficulty: 'expert',
+    category: 'Mastery',
+    acceptedAnswers: ['BRILLIANT']
+  }
+];
+
+// Helper: Get data for a level (1-50 with loop wrap if extended)
+export function getLevelData(levelNumber: number): WordLevelData {
+  const safeIndex = Math.max(0, (levelNumber - 1) % WORD_BUILDER_LEVELS.length);
+  return {
+    ...WORD_BUILDER_LEVELS[safeIndex],
+    level: levelNumber
+  };
+}
+
+// Helper: Scramble a word's letters guaranteeing it is NOT identical to the word
+export function scrambleWord(word: string): string[] {
+  const letters = word.toUpperCase().split('');
+  if (letters.length <= 1) return letters;
+
+  let scrambled = [...letters];
+  let attempts = 0;
+  const maxAttempts = 30;
+
+  // Keep shuffling until the joined scrambled word is different from the original word
+  while (attempts < maxAttempts) {
+    for (let i = scrambled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]];
+    }
+
+    if (scrambled.join('') !== word.toUpperCase()) {
+      return scrambled;
+    }
+    attempts++;
+  }
+
+  // Fallback transposition if random permutation matched by chance
+  if (scrambled.join('') === word.toUpperCase()) {
+    [scrambled[0], scrambled[scrambled.length - 1]] = [scrambled[scrambled.length - 1], scrambled[0]];
+  }
+
+  return scrambled;
+}
+
+// XP reward calculation by level range
+export function calculateLevelXP(level: number): number {
+  if (level <= 10) return 10;
+  if (level <= 20) return 20;
+  if (level <= 30) return 30;
+  if (level <= 40) return 40;
+  return 50;
+}
+
+// Suggested timer countdown based on difficulty
+export function getTimerForDifficulty(diff: WordDifficulty): number {
+  switch (diff) {
+    case 'easy':
+      return 30;
+    case 'easy+':
+      return 30;
+    case 'medium':
+      return 25;
+    case 'medium+':
+      return 25;
+    case 'hard':
+      return 20;
+    case 'expert':
+      return 15;
+    default:
+      return 25;
+  }
+}
+
+// Validate word submission
+export function validateWordAnswer(
+  rawInput: string,
+  levelData: WordLevelData
+): { isValid: boolean; isAccepted: boolean; reason?: string } {
+  const clean = rawInput.trim().toUpperCase().replace(/[^A-Z]/g, '');
+
+  if (!clean) {
+    return { isValid: false, isAccepted: false, reason: 'Input cannot be empty.' };
+  }
+
+  if (clean.length !== levelData.word.length) {
+    return {
+      isValid: false,
+      isAccepted: false,
+      reason: `Answer must be exactly ${levelData.word.length} letters long.`
+    };
+  }
+
+  // Frequency check
+  const letterCounts: Record<string, number> = {};
+  for (const char of levelData.word.toUpperCase()) {
+    letterCounts[char] = (letterCounts[char] || 0) + 1;
+  }
+
+  const inputCounts: Record<string, number> = {};
+  for (const char of clean) {
+    inputCounts[char] = (inputCounts[char] || 0) + 1;
+  }
+
+  for (const char of Object.keys(inputCounts)) {
+    if ((inputCounts[char] || 0) > (letterCounts[char] || 0)) {
+      return {
+        isValid: false,
+        isAccepted: false,
+        reason: `Letter "${char}" does not match the scrambled tiles.`
+      };
+    }
+  }
+
+  // Check if matches intended word or acceptable alternate anagram
+  const accepted = (levelData.acceptedAnswers || [levelData.word]).map((w) => w.toUpperCase());
+  const isAccepted = accepted.includes(clean) || clean === levelData.word.toUpperCase();
+
+  return {
+    isValid: true,
+    isAccepted,
+    reason: isAccepted ? undefined : `"${clean}" is not the target word.`
+  };
+}
+
+// =========================================================================
+// Legacy Types & Exports for Multiplayer Compatibility and Existing Modules
+// =========================================================================
+
 export interface WordPuzzleLevel {
   id: string;
   rootWord: string;
   letters: string[];
   theme: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  targetWords: string[]; // Key words to solve on the board
+  targetWords: string[];
   allSolutions: {
     [length: number]: { word: string; definition: string }[];
   };
 }
 
-export const PUZZLE_LEVELS: WordPuzzleLevel[] = [
-  {
-    id: 'lvl-1',
-    rootWord: 'PLANET',
-    letters: ['P', 'L', 'A', 'N', 'E', 'T'],
-    theme: 'Cosmic & Space',
-    difficulty: 'Easy',
-    targetWords: ['PLANET', 'PLANT', 'PLANE', 'PLATE', 'PANEL', 'LATE', 'TAPE', 'PLAN', 'NEAT', 'LEAP'],
-    allSolutions: {
-      6: [
-        { word: 'PLANET', definition: 'A celestial body moving in an elliptical orbit around a star.' }
-      ],
-      5: [
-        { word: 'PLANT', definition: 'A living organism of the kind exemplified by trees, shrubs, herbs.' },
-        { word: 'PLANE', definition: 'A flat surface or aircraft.' },
-        { word: 'PLATE', definition: 'A flat dish from which food is eaten.' },
-        { word: 'PANEL', definition: 'A flat or curved component forming part of a surface.' },
-        { word: 'PLEAT', definition: 'A double or multiple fold in a garment.' },
-        { word: 'PETAL', definition: 'Each of the segments of the corolla of a flower.' }
-      ],
-      4: [
-        { word: 'PLAN', definition: 'A detailed proposal for doing or achieving something.' },
-        { word: 'LATE', definition: 'Taking place after the expected time.' },
-        { word: 'TAPE', definition: 'A narrow strip of adhesive material.' },
-        { word: 'NEAT', definition: 'Arranged in an orderly, tidy way.' },
-        { word: 'LEAP', definition: 'Jump or spring a long way with force.' },
-        { word: 'PALE', definition: 'Light in color or dim.' },
-        { word: 'LANE', definition: 'A narrow road or track.' },
-        { word: 'LEAN', definition: 'Be in a sloping position or slender.' },
-        { word: 'TALE', definition: 'A narrative story.' },
-        { word: 'PEAL', definition: 'A loud ringing of bells.' }
-      ],
-      3: [
-        { word: 'PEN', definition: 'An instrument for writing with ink.' },
-        { word: 'PAN', definition: 'A metal container used for cooking.' },
-        { word: 'PET', definition: 'A domestic animal kept for companionship.' },
-        { word: 'NET', definition: 'Mesh material used for catching.' },
-        { word: 'TEN', definition: 'Number after nine; 10.' },
-        { word: 'TAP', definition: 'Strike lightly or control valve.' },
-        { word: 'PAT', definition: 'Touch gently with flat hand.' },
-        { word: 'LET', definition: 'Allow or permit.' },
-        { word: 'ALE', definition: 'A type of beer.' },
-        { word: 'ATE', definition: 'Consumed food.' },
-        { word: 'TEA', definition: 'A hot brewed herbal beverage.' },
-        { word: 'EAT', definition: 'Chew and swallow food.' },
-        { word: 'ANT', definition: 'Small social insect.' },
-        { word: 'TAN', definition: 'Yellowish-brown hue.' },
-        { word: 'APT', definition: 'Appropriate or suitable.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-2',
-    rootWord: 'STREAM',
-    letters: ['S', 'T', 'R', 'E', 'A', 'M'],
-    theme: 'Nature & Currents',
-    difficulty: 'Easy',
-    targetWords: ['STREAM', 'MASTER', 'SMART', 'STARE', 'STEAM', 'MATES', 'TEAMS', 'REST', 'STAR', 'TEAM', 'MEAT'],
-    allSolutions: {
-      6: [
-        { word: 'STREAM', definition: 'A small, narrow river or continuous flow.' },
-        { word: 'MASTER', definition: 'A person skilled in a particular art or trade.' },
-        { word: 'TAMERS', definition: 'People who train wild animals.' }
-      ],
-      5: [
-        { word: 'SMART', definition: 'Having or showing quick-witted intelligence.' },
-        { word: 'STARE', definition: 'Look fixedly with wide eyes.' },
-        { word: 'STEAM', definition: 'Vapor into which water converts when heated.' },
-        { word: 'MATES', definition: 'Friends, companions, or partners.' },
-        { word: 'TEAMS', definition: 'Groups of players in competitive sports.' },
-        { word: 'TAMER', definition: 'One who trains wild creatures.' },
-        { word: 'RATES', definition: 'Measures or prices per unit.' }
-      ],
-      4: [
-        { word: 'REST', definition: 'Cease work to relax or sleep.' },
-        { word: 'STAR', definition: 'A fixed luminous point in the night sky.' },
-        { word: 'TEAM', definition: 'A cooperative group.' },
-        { word: 'MEAT', definition: 'Flesh of animals as food.' },
-        { word: 'MATE', definition: 'Friend or partner.' },
-        { word: 'RATE', definition: 'Speed, frequency, or value.' },
-        { word: 'SEAM', definition: 'Line joining two pieces of cloth.' },
-        { word: 'STEM', definition: 'Main stalk of a plant.' },
-        { word: 'MAST', definition: 'Tall upright pole on a ship.' },
-        { word: 'SEAT', definition: 'Furniture designed for sitting.' },
-        { word: 'EAST', definition: 'Direction of sunrise.' },
-        { word: 'TEAR', definition: 'Rip apart or drop from eye.' },
-        { word: 'ARMS', definition: 'Upper limbs or weapons.' }
-      ],
-      3: [
-        { word: 'SEA', definition: 'Large body of salt water.' },
-        { word: 'SET', definition: 'Place or position.' },
-        { word: 'MAT', definition: 'Floor covering piece.' },
-        { word: 'RAT', definition: 'Small rodent mammal.' },
-        { word: 'TAR', definition: 'Dark thick petroleum liquid.' },
-        { word: 'ART', definition: 'Human creative expression.' },
-        { word: 'RAM', definition: 'Male adult sheep.' },
-        { word: 'ARM', definition: 'Upper human limb.' },
-        { word: 'EAT', definition: 'Consume nourishment.' },
-        { word: 'TEA', definition: 'Herbal hot infusion.' },
-        { word: 'EAR', definition: 'Hearing organ.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-3',
-    rootWord: 'CASTLE',
-    letters: ['C', 'A', 'S', 'T', 'L', 'E'],
-    theme: 'Medieval Fortresses',
-    difficulty: 'Medium',
-    targetWords: ['CASTLE', 'SCALE', 'STALE', 'CLEAT', 'LACE', 'SALE', 'LATE', 'EAST', 'CASE', 'CAST'],
-    allSolutions: {
-      6: [
-        { word: 'CASTLE', definition: 'A fortified medieval building with towers.' }
-      ],
-      5: [
-        { word: 'SCALE', definition: 'Graduated series or fish skin plates.' },
-        { word: 'STALE', definition: 'No longer fresh; hard or dry.' },
-        { word: 'CLEAT', definition: 'T-shaped fastening fixture.' },
-        { word: 'CASTE', definition: 'Hereditary social class.' }
-      ],
-      4: [
-        { word: 'LACE', definition: 'Delicate open fabric.' },
-        { word: 'SALE', definition: 'Exchange of goods for money.' },
-        { word: 'LATE', definition: 'After the agreed time.' },
-        { word: 'EAST', definition: 'Compass direction.' },
-        { word: 'CASE', definition: 'Instance or container.' },
-        { word: 'CAST', definition: 'Throw forcefully or acting ensemble.' },
-        { word: 'SEAL', definition: 'Marine mammal or stamp of approval.' },
-        { word: 'TALE', definition: 'Imaginative story.' }
-      ],
-      3: [
-        { word: 'CAT', definition: 'Feline companion animal.' },
-        { word: 'ACT', definition: 'Take action or perform.' },
-        { word: 'ACE', definition: 'Top playing card or expert.' },
-        { word: 'LET', definition: 'Permit.' },
-        { word: 'SET', definition: 'Group or place.' },
-        { word: 'SEA', definition: 'Ocean body.' },
-        { word: 'TEA', definition: 'Hot beverage.' },
-        { word: 'ATE', definition: 'Swallowed food.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-4',
-    rootWord: 'SILENT',
-    letters: ['S', 'I', 'L', 'E', 'N', 'T'],
-    theme: 'Mystery & Focus',
-    difficulty: 'Medium',
-    targetWords: ['SILENT', 'LISTEN', 'INLET', 'STEIN', 'LINES', 'TILES', 'LINE', 'NEST', 'LION', 'LENT', 'TILE'],
-    allSolutions: {
-      6: [
-        { word: 'SILENT', definition: 'Making completely no sound.' },
-        { word: 'LISTEN', definition: 'Give attention to sound.' },
-        { word: 'TINSEL', definition: 'Shiny metallic decoration ribbon.' }
-      ],
-      5: [
-        { word: 'INLET', definition: 'Narrow water opening.' },
-        { word: 'STEIN', definition: 'Large ceramic drink mug.' },
-        { word: 'LINES', definition: 'Long marks or boundaries.' },
-        { word: 'TILES', definition: 'Clay or ceramic plates for flooring.' }
-      ],
-      4: [
-        { word: 'LINE', definition: 'Continuous mark.' },
-        { word: 'NEST', definition: 'Bird home for hatching eggs.' },
-        { word: 'LION', definition: 'Majestic feline king of jungle.' },
-        { word: 'LENT', definition: 'Loaned temporarily.' },
-        { word: 'TILE', definition: 'Square slab for floor or wall.' },
-        { word: 'SITE', definition: 'Location or construction area.' },
-        { word: 'SENT', definition: 'Dispatched to destination.' }
-      ],
-      3: [
-        { word: 'SET', definition: 'Fix in place.' },
-        { word: 'SIT', definition: 'Rest on chair.' },
-        { word: 'NET', definition: 'Intertwined mesh.' },
-        { word: 'TEN', definition: 'Number 10.' },
-        { word: 'TIN', definition: 'Metallic chemical element.' },
-        { word: 'SIN', definition: 'Moral transgression.' },
-        { word: 'LIE', definition: 'False statement or recline.' },
-        { word: 'LIT', definition: 'Brightened with light.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-5',
-    rootWord: 'FRIEND',
-    letters: ['F', 'R', 'I', 'E', 'N', 'D'],
-    theme: 'Companionship',
-    difficulty: 'Medium',
-    targetWords: ['FRIEND', 'FIEND', 'DINER', 'FINED', 'RIDE', 'FIND', 'FIRE', 'FINE', 'DINE', 'RED'],
-    allSolutions: {
-      6: [
-        { word: 'FRIEND', definition: 'A person with whom one has a bond of affection.' }
-      ],
-      5: [
-        { word: 'FIEND', definition: 'Enthusiast or mischievous spirit.' },
-        { word: 'DINER', definition: 'One who partakes in a meal or roadside restaurant.' },
-        { word: 'FINED', definition: 'Penalized with money.' }
-      ],
-      4: [
-        { word: 'RIDE', definition: 'Journey on a vehicle or animal.' },
-        { word: 'FIND', definition: 'Discover by searching.' },
-        { word: 'FIRE', definition: 'Combustion emitting heat and light.' },
-        { word: 'FINE', definition: 'Excellent quality or fee.' },
-        { word: 'DINE', definition: 'Eat formal meal.' },
-        { word: 'DIRE', definition: 'Urgent and desperate.' },
-        { word: 'FERN', definition: 'Green frond plant.' }
-      ],
-      3: [
-        { word: 'RED', definition: 'Crimson color.' },
-        { word: 'FED', definition: 'Given sustenance.' },
-        { word: 'DIE', definition: 'Gaming cube or cease living.' },
-        { word: 'DEN', definition: 'Animal retreat or study room.' },
-        { word: 'END', definition: 'Terminal conclusion.' },
-        { word: 'FIN', definition: 'Fish steering appendage.' },
-        { word: 'RID', definition: 'Clear away unwanted items.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-6',
-    rootWord: 'GARDEN',
-    letters: ['G', 'A', 'R', 'D', 'E', 'N'],
-    theme: 'Flora & Earth',
-    difficulty: 'Easy',
-    targetWords: ['GARDEN', 'DANGER', 'RANGED', 'GRADE', 'GRAND', 'DREAM', 'READ', 'DEAR', 'NEAR', 'EARN', 'GEAR'],
-    allSolutions: {
-      6: [
-        { word: 'GARDEN', definition: 'Plot of ground for cultivating plants and flowers.' },
-        { word: 'DANGER', definition: 'Risk of harm or peril.' },
-        { word: 'GANDER', definition: 'Male goose or quick glance.' }
-      ],
-      5: [
-        { word: 'GRADE', definition: 'Level of quality or slope.' },
-        { word: 'GRAND', definition: 'Magnificent or one thousand.' },
-        { word: 'RANGED', definition: 'Varied between bounds.' },
-        { word: 'ANGER', definition: 'Strong feeling of displeasure.' }
-      ],
-      4: [
-        { word: 'READ', definition: 'Interpret written language.' },
-        { word: 'DEAR', definition: 'Cherished or costly.' },
-        { word: 'NEAR', definition: 'Close in proximity.' },
-        { word: 'EARN', definition: 'Gain through effort.' },
-        { word: 'GEAR', definition: 'Equipment or cogwheel.' },
-        { word: 'RAGE', definition: 'Intense boiling anger.' },
-        { word: 'DARE', definition: 'Challenge courage.' }
-      ],
-      3: [
-        { word: 'RED', definition: 'Ruby color.' },
-        { word: 'AGE', definition: 'Years lived.' },
-        { word: 'RAG', definition: 'Scrap of fabric.' },
-        { word: 'END', definition: 'Completion point.' },
-        { word: 'DEN', definition: 'Quiet room.' },
-        { word: 'EAR', definition: 'Auditory sensor.' }
-      ]
-    }
-  },
-  {
-    id: 'lvl-7',
-    rootWord: 'BRIGHT',
-    letters: ['B', 'R', 'I', 'G', 'H', 'T'],
-    theme: 'Luminescence',
-    difficulty: 'Hard',
-    targetWords: ['BRIGHT', 'BIRTH', 'RIGHT', 'GRITH', 'BRIG', 'GRIT', 'GIRTH', 'BIRD', 'HIT', 'BIT', 'RIB'],
-    allSolutions: {
-      6: [
-        { word: 'BRIGHT', definition: 'Emitting or reflecting much light; shining.' }
-      ],
-      5: [
-        { word: 'RIGHT', definition: 'Morally good, justified, or correct direction.' },
-        { word: 'BIRTH', definition: 'The emergence of a baby or other young from the body of its mother.' },
-        { word: 'GIRTH', definition: 'The measurement around the middle of something.' }
-      ],
-      4: [
-        { word: 'GRIT', definition: 'Small loose particles of stone or sand; courage and resolve.' },
-        { word: 'BRIG', definition: 'A two-masted square-rigged ship or military prison.' },
-        { word: 'THIR', definition: 'These (archaic dialect).' }
-      ],
-      3: [
-        { word: 'BIT', definition: 'A small piece, amount, or binary digit.' },
-        { word: 'HIT', definition: 'Bring one\'s hand or tool into contact forcefully.' },
-        { word: 'RIB', definition: 'Each of a series of curved bones in chest.' },
-        { word: 'BIG', definition: 'Of considerable size or extent.' },
-        { word: 'RIG', definition: 'Set up equipment for use.' }
-      ]
-    }
+export const PUZZLE_LEVELS: WordPuzzleLevel[] = WORD_BUILDER_LEVELS.slice(0, 10).map((lvl) => ({
+  id: `lvl-${lvl.level}`,
+  rootWord: lvl.word,
+  letters: lvl.word.split(''),
+  theme: lvl.category,
+  difficulty: lvl.level <= 5 ? 'Easy' : lvl.level <= 10 ? 'Medium' : 'Hard',
+  targetWords: [lvl.word, ...(lvl.acceptedAnswers || [])],
+  allSolutions: {
+    [lvl.word.length]: [
+      { word: lvl.word, definition: lvl.meaning }
+    ]
   }
-];
+}));
 
 export function getRandomPuzzleLevel(): WordPuzzleLevel {
   const randomIndex = Math.floor(Math.random() * PUZZLE_LEVELS.length);

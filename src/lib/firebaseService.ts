@@ -837,8 +837,8 @@ export const fetchCloudLeaderboard = async (
 };
 
 /**
- * Fetches all players from both 'leaderboards' and 'users' collections,
- * creating an exhaustive, unified, and deterministically ranked leaderboard.
+ * Fetches all players from both 'users' and 'leaderboards' collections,
+ * creating an exhaustive, strictly deduplicated (1 row per real user) ranked leaderboard.
  */
 export const fetchAllCloudLeaderboard = async (
   selectedGameId = 'all'
@@ -849,91 +849,86 @@ export const fetchAllCloudLeaderboard = async (
   }
 
   try {
-    const entriesMap = new Map<string, LeaderboardEntry>();
+    const usersMap = new Map<string, LeaderboardEntry>();
 
-    // 1. Fetch scores from leaderboards collection
-    try {
-      const leaderboardsRef = collection(db, 'leaderboards');
-      const lSnap = await getDocs(query(leaderboardsRef, limit(500)));
-      lSnap.docs.forEach((d) => {
-        const data = d.data();
-        if (selectedGameId !== 'all' && data.gameId !== selectedGameId) return;
-
-        const key = `${data.userId || data.username}_${data.gameId || 'all'}`;
-        entriesMap.set(key, {
-          rank: 0,
-          username: data.username || 'Anonymous',
-          avatar: data.avatar || '🚀',
-          score: Number(data.score) || 0,
-          gameId: data.gameId,
-          gameTitle: data.gameTitle,
-          country: data.country || '🇮🇳 Global',
-          wins: Number(data.wins) || 0,
-          xp: Number(data.xp) || 0,
-          badge: data.badge || '🔥 Arena Competitor'
-        });
-      });
-    } catch (e) {
-      console.warn('Leaderboard collection query note:', e);
-    }
-
-    // 2. Fetch users from users collection to ensure ALL registered users appear
+    // 1. Fetch real registered users from Firestore 'users' collection
     try {
       const usersRef = collection(db, 'users');
       const uSnap = await getDocs(query(usersRef, limit(500)));
       uSnap.docs.forEach((d) => {
-        const uData = d.data();
-        const uname = uData.displayName || uData.username || 'Gamer';
+        const data = d.data();
         const userId = d.id;
+        const username = data.displayName || data.username || 'Gamer';
+        const avatar = data.avatar || '🚀';
+        const xp = Number(data.xp) || 0;
+        const wins = Number(data.stats?.totalWins) || 0;
 
+        let score = 0;
         if (selectedGameId === 'all') {
-          const userKey = `${userId}_all`;
-          const existing = entriesMap.get(userKey);
-          const totalScore = Number(uData.stats?.totalScore) || Number(uData.xp) || 0;
-          const totalWins = Number(uData.stats?.totalWins) || 0;
-
-          if (!existing) {
-            entriesMap.set(userKey, {
-              rank: 0,
-              username: uname,
-              avatar: uData.avatar || '🚀',
-              score: totalScore,
-              gameId: 'all',
-              gameTitle: 'Overall Arena Career',
-              country: uData.country || '🇮🇳 Global',
-              wins: totalWins,
-              xp: Number(uData.xp) || 0,
-              badge: totalWins >= 10 ? '👑 Master' : totalWins >= 3 ? '🥈 Champion' : '⚡ Contender'
-            });
-          }
+          const best = Number(data.stats?.bestScore) || 0;
+          const total = Number(data.stats?.totalScore) || 0;
+          const highScoresList = Object.values(data.stats?.highScores || {}).map(Number).filter((n) => !isNaN(n));
+          score = Math.max(best, total, xp, ...highScoresList, 0);
         } else {
-          // Check if user has a score for this specific game
-          const gameScore = uData.stats?.highScores?.[selectedGameId];
-          if (gameScore !== undefined && gameScore > 0) {
-            const userGameKey = `${userId}_${selectedGameId}`;
-            if (!entriesMap.has(userGameKey)) {
-              entriesMap.set(userGameKey, {
-                rank: 0,
-                username: uname,
-                avatar: uData.avatar || '🚀',
-                score: Number(gameScore),
-                gameId: selectedGameId,
-                gameTitle: selectedGameId,
-                country: uData.country || '🇮🇳 Global',
-                wins: Number(uData.stats?.totalWins) || 0,
-                xp: Number(uData.xp) || 0,
-                badge: '⚡ Verified Player'
-              });
-            }
-          }
+          score = Number(data.stats?.highScores?.[selectedGameId]) || 0;
+        }
+
+        if (selectedGameId === 'all' || score > 0) {
+          usersMap.set(userId, {
+            rank: 0,
+            username,
+            avatar,
+            score,
+            wins,
+            xp,
+            gameId: selectedGameId,
+            gameTitle: selectedGameId === 'all' ? 'All Arena Games' : selectedGameId,
+            country: data.country || '🇮🇳 Global',
+            badge: wins >= 10 ? '👑 Master' : wins >= 3 ? '🥈 Champion' : '⚡ Contender'
+          });
         }
       });
     } catch (e) {
       console.warn('Users collection query note:', e);
     }
 
+    // 2. Fetch match records from 'leaderboards' collection to capture any new scores
+    try {
+      const leaderboardsRef = collection(db, 'leaderboards');
+      const lSnap = await getDocs(query(leaderboardsRef, limit(500)));
+      lSnap.docs.forEach((d) => {
+        const data = d.data();
+        const userId = data.userId || d.id.split('_')[0];
+        const score = Number(data.score) || 0;
+        if (selectedGameId !== 'all' && data.gameId !== selectedGameId) return;
+
+        if (usersMap.has(userId)) {
+          const existing = usersMap.get(userId)!;
+          existing.score = Math.max(existing.score, score);
+          if (data.wins) existing.wins = Math.max(existing.wins ?? 0, Number(data.wins));
+          if (data.xp) existing.xp = Math.max(existing.xp ?? 0, Number(data.xp));
+        } else {
+          // If a standalone user doc without users profile
+          usersMap.set(userId, {
+            rank: 0,
+            username: data.username || 'Anonymous',
+            avatar: data.avatar || '🚀',
+            score,
+            wins: Number(data.wins) || 0,
+            xp: Number(data.xp) || 0,
+            gameId: data.gameId || selectedGameId,
+            gameTitle: data.gameTitle || 'Arena Game',
+            country: data.country || '🇮🇳 Global',
+            badge: '⚡ Verified Player'
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('Leaderboards collection query note:', e);
+    }
+
     // 3. Sort deterministically: Score DESC -> Wins DESC -> XP DESC -> Username ASC
-    const combined = Array.from(entriesMap.values()).sort((a, b) => {
+    const combined = Array.from(usersMap.values()).sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       const bWins = Number(b.wins) || 0;
       const aWins = Number(a.wins) || 0;
@@ -944,7 +939,7 @@ export const fetchAllCloudLeaderboard = async (
       return a.username.localeCompare(b.username);
     });
 
-    // 4. Assign deterministic ranks
+    // 4. Assign clean deterministic ranks
     return combined.map((entry, idx) => ({
       ...entry,
       rank: idx + 1,
