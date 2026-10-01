@@ -30,8 +30,6 @@ import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
-import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
-import { EraserThrowCanvas } from '@/components/games/EraserThrowCanvas';
 
 export default function PlayRoomPage({
   params
@@ -84,10 +82,6 @@ export default function PlayRoomPage({
         return <WordBuilderCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
-      case 'gully-cricket':
-        return <GullyCricketCanvas />;
-      case 'eraser-throw':
-        return <EraserThrowCanvas />;
       default:
         return <TicTacToeCanvas />;
     }

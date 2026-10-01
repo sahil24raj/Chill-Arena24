@@ -22,9 +22,7 @@ const ADAPTER_REGISTRY: Record<string, GameAdapter<any, any>> = {
   'spin-cricket': SpinCricketAdapter,
   'pen-flip': PenFlipAdapter,
   'word-builder': WordBuilderAdapter,
-  'brain-pot': BrainPotAdapter,
-  'gully-cricket': createGeneralDuelAdapter('gully-cricket', 'Gully Cricket Box League 🏏🔥'),
-  'eraser-throw': createGeneralDuelAdapter('eraser-throw', 'Last Bench Eraser Throw 🎯')
+  'brain-pot': BrainPotAdapter
 };
 
 /**

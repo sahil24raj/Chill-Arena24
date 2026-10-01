@@ -5,17 +5,8 @@ import Link from 'next/link';
 import { GAMES_CATALOG, useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
 
-// Existing Game Canvases
-import { ModiRunCanvas } from '@/components/games/ModiRunCanvas';
-import { CIDEscapeCanvas } from '@/components/games/CIDEscapeCanvas';
-import { ChaiTapriCanvas } from '@/components/games/ChaiTapriCanvas';
-import { EmojiDodgeCanvas } from '@/components/games/EmojiDodgeCanvas';
-import { MemeClickerCanvas } from '@/components/games/MemeClickerCanvas';
-import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
-
-// 6 New Interactive Mini-Games
+// 6 Core Interactive Arena Games
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
-import { EraserThrowCanvas } from '@/components/games/EraserThrowCanvas';
 import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { TicTacToeCanvas } from '@/components/games/TicTacToeCanvas';
@@ -112,20 +103,6 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
         return <PenFlipCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
-      case 'eraser-throw':
-        return <EraserThrowCanvas />;
-      case 'modi-run':
-        return <ModiRunCanvas />;
-      case 'cid-escape':
-        return <CIDEscapeCanvas />;
-      case 'chai-tapri':
-        return <ChaiTapriCanvas />;
-      case 'gully-cricket':
-        return <GullyCricketCanvas />;
-      case 'emoji-dodge':
-        return <EmojiDodgeCanvas />;
-      case 'meme-clicker':
-        return <MemeClickerCanvas />;
       default:
         return <WordBuilderCanvas />;
     }
