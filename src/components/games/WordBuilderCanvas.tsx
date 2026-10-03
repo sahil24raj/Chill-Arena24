@@ -682,30 +682,6 @@ export const WordBuilderCanvas: React.FC = () => {
       onOpenPassPlayConfig={() => setShowModeSelector(true)}
       onChangeMode={() => setShowModeSelector(true)}
       onExitGame={() => setStatus('MENU')}
-      modeBadge={
-        <button
-          onClick={() => setShowModeSelector(true)}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-xs font-mono font-bold text-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer"
-          title="Click to Switch Mode"
-        >
-          {currentMode === 'ai' ? (
-            <>
-              <Bot className="w-3 h-3 text-cyan-400" />
-              <span>VS AI ({aiDifficulty.toUpperCase()})</span>
-            </>
-          ) : currentMode === 'pass-and-play' ? (
-            <>
-              <Users className="w-3 h-3 text-purple-400" />
-              <span className="text-purple-300">PASS & PLAY</span>
-            </>
-          ) : (
-            <>
-              <Globe className="w-3 h-3 text-lime-400" />
-              <span className="text-lime-300">ONLINE</span>
-            </>
-          )}
-        </button>
-      }
       activePlayerInfo={
         <span className="text-[10px] font-mono text-gray-300 flex items-center gap-1">
           <span>Active:</span>

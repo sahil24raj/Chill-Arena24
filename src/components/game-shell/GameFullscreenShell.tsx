@@ -140,7 +140,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
         className={`game-fullscreen-root relative select-none flex flex-col justify-between transition-all duration-200 outline-none ${
           isFullscreen
             ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] min-h-[100dvh] max-w-none max-h-none m-0 p-0 rounded-none border-0 bg-[#04060c] text-gray-100 overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]'
-            : 'relative w-full max-w-5xl mx-auto rounded-3xl border border-slate-800/80 bg-slate-950/95 shadow-2xl overflow-hidden'
+            : 'relative w-full max-w-5xl mx-auto min-h-[580px] sm:min-h-[660px] rounded-3xl border border-slate-800/80 bg-slate-950/95 shadow-2xl overflow-hidden flex flex-col'
         }`}
       >
         {/* ========================================================= */}
@@ -154,30 +154,27 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                 : 'px-3 sm:px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs text-gray-300'
             }`}
           >
-            {/* Left: Category, Title & Mode Badge */}
+            {/* Left: Category, Title & Mode Bar */}
             <div className="flex items-center gap-2 min-w-0">
-              <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-[#00F0FF] font-black text-[10px] sm:text-[11px] border border-indigo-500/30 uppercase tracking-wider shrink-0 hidden xs:inline">
+              <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-[#00F0FF] font-black text-[10px] sm:text-[11px] border border-indigo-500/30 uppercase tracking-wider shrink-0 hidden sm:inline">
                 {category}
               </span>
-              <span className="font-black text-white truncate text-xs sm:text-sm font-display tracking-wide drop-shadow-sm">
+              <span className="font-black text-white text-xs sm:text-sm font-display tracking-wide drop-shadow-sm shrink-0 whitespace-nowrap">
                 {gameTitle}
               </span>
 
-              {/* Mode Badge if provided */}
-              {modeBadge && (
-                <div className="shrink-0">{modeBadge}</div>
-              )}
-
-              {/* Compact Game Mode Bar in Header */}
-              {compactModeBar && (
-                <div className="hidden md:inline-flex shrink-0">
+              {/* Compact Game Mode Bar in Header (Takes precedence over legacy modeBadge) */}
+              {compactModeBar ? (
+                <div className="inline-flex shrink-0">
                   {compactModeBar}
                 </div>
-              )}
+              ) : modeBadge ? (
+                <div className="shrink-0">{modeBadge}</div>
+              ) : null}
 
-              {/* Active Player Info if provided */}
+              {/* Active Player Info if provided (Desktop only) */}
               {activePlayerInfo && (
-                <div className="hidden lg:inline-flex shrink-0">{activePlayerInfo}</div>
+                <div className="hidden xl:inline-flex shrink-0">{activePlayerInfo}</div>
               )}
 
               {isFullscreen && (
@@ -211,8 +208,8 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                 </div>
               )}
 
-              {/* Change Mode button if handler passed */}
-              {onChangeMode && (
+              {/* Change Mode button only if compactModeBar is NOT present */}
+              {onChangeMode && !compactModeBar && (
                 <button
                   onClick={() => {
                     soundFx.playClick();
@@ -350,7 +347,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
           className={`game-playing-viewport relative w-full flex-1 min-w-0 min-h-0 flex flex-col ${
             isFullscreen
               ? 'h-[calc(100dvh-48px)] max-h-[calc(100dvh-48px)] w-full p-1 sm:p-3 overflow-y-auto overflow-x-hidden'
-              : 'min-h-[460px] max-h-[88vh] h-auto p-1.5 sm:p-3 overflow-y-auto overflow-x-hidden'
+              : 'min-h-[540px] sm:min-h-[600px] h-full p-2 sm:p-4 overflow-y-auto overflow-x-hidden'
           }`}
         >
           {/* Inner Aspect Ratio & Scaling Containment Box with margin:auto for safe scrollable centering */}
