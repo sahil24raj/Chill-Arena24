@@ -15,10 +15,13 @@ import {
   submitPlayerActionOnServer,
   leaveRoomOnServer,
   subscribeToRoomUpdates,
-  sendPlayerHeartbeat
+  sendPlayerHeartbeat,
+  addBotToRoomOnServer,
+  removePlayerOrBotFromServer
 } from './realtimeService';
 import { normalizeRoomCode } from './roomCodeGenerator';
 import { soundFx } from '@/lib/audio';
+import { AIDifficulty } from '@/types/gameMode';
 
 export interface UseMultiplayerRoomOptions {
   roomCode: string;
@@ -267,6 +270,32 @@ export function useMultiplayerRoom({
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   }, [normalizedCode, room?.gameTitle]);
 
+  const addBot = useCallback(
+    async (difficulty: AIDifficulty = 'medium') => {
+      if (!room || !isHost) return { success: false, error: 'Only the host can add bots.' };
+      soundFx.playClick();
+      const res = await addBotToRoomOnServer(normalizedCode, currentPlayer?.id || user.id, difficulty);
+      if (res.success && res.data) {
+        setRoom(res.data);
+      }
+      return res;
+    },
+    [room, isHost, normalizedCode, currentPlayer, user.id]
+  );
+
+  const removePlayerOrBot = useCallback(
+    async (targetPlayerId: string) => {
+      if (!room || !isHost) return { success: false, error: 'Only the host can manage players.' };
+      soundFx.playClick();
+      const res = await removePlayerOrBotFromServer(normalizedCode, currentPlayer?.id || user.id, targetPlayerId);
+      if (res.success && res.data) {
+        setRoom(res.data);
+      }
+      return res;
+    },
+    [room, isHost, normalizedCode, currentPlayer, user.id]
+  );
+
   return {
     room,
     loading,
@@ -279,6 +308,8 @@ export function useMultiplayerRoom({
     copiedCode,
     copiedLink,
     startGame,
+    addBot,
+    removePlayerOrBot,
     submitAction,
     leaveRoom,
     copyRoomCode,

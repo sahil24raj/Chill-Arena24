@@ -1,8 +1,30 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bot, Users, Globe, Swords, Sparkles, Check, ArrowRight, Shield, Zap, X } from 'lucide-react';
-import { GameModeType, AIDifficulty, PlayerSetup, DEFAULT_AVATARS, GameModeSelection } from '@/types/gameMode';
+import {
+  Bot,
+  Users,
+  Globe,
+  Swords,
+  Sparkles,
+  Check,
+  ArrowRight,
+  Shield,
+  Zap,
+  X,
+  Plus,
+  Trash2,
+  UserCheck,
+  Cpu
+} from 'lucide-react';
+import {
+  GameModeType,
+  AIDifficulty,
+  PlayerSetup,
+  DEFAULT_AVATARS,
+  BOT_NAME_PRESETS,
+  GameModeSelection
+} from '@/types/gameMode';
 import { soundFx } from '@/lib/audio';
 import { UserProfile } from '@/types';
 
@@ -29,82 +51,129 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
   supportsPassAndPlay = true,
   supportsAI = true,
   supportsOnline = true,
-  maxPassAndPlayPlayers = 2,
+  maxPassAndPlayPlayers = 4,
 }) => {
   const [selectedTab, setSelectedTab] = useState<GameModeType>('ai');
-  const [difficulty, setDifficulty] = useState<AIDifficulty>('medium');
 
-  // Pass & Play player state
-  const [p1Name, setP1Name] = useState(user.displayName || user.username || 'Player 1');
-  const [p1Avatar, setP1Avatar] = useState(user.avatar || '🚀');
-  const [p2Name, setP2Name] = useState('Player 2');
-  const [p2Avatar, setP2Avatar] = useState('⚡');
-  const [p3Name, setP3Name] = useState('Player 3');
-  const [p3Avatar, setP3Avatar] = useState('👑');
-  const [p4Name, setP4Name] = useState('Player 4');
-  const [p4Avatar, setP4Avatar] = useState('🥷');
+  // VS AI Setup
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('medium');
+  const [userName, setUserName] = useState(user.displayName || user.username || 'You');
+  const [userAvatar, setUserAvatar] = useState(user.avatar || '🚀');
 
-  // Online code state
+  // Pass & Play dynamic player slots (Humans + Bots)
+  const [passPlayers, setPassPlayers] = useState<PlayerSetup[]>([
+    {
+      id: user.id || 'p1',
+      name: user.displayName || user.username || 'Player 1',
+      avatar: user.avatar || '🚀',
+      isAI: false,
+    },
+    {
+      id: 'p2',
+      name: 'Player 2',
+      avatar: '⚡',
+      isAI: false,
+    },
+  ]);
+
+  // Online Multiplayer Setup with Smart Bot Auto-Fill
   const [roomCodeInput, setRoomCodeInput] = useState('');
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [onlineCapacity, setOnlineCapacity] = useState<number>(2);
+  const [botFillMode, setBotFillMode] = useState<'auto' | 'manual' | 'none'>('auto');
+  const [onlineBotDifficulty, setOnlineBotDifficulty] = useState<AIDifficulty>('medium');
 
   if (!isOpen) return null;
 
+  // Add a player slot in Pass & Play
+  const handleAddPassPlayer = () => {
+    if (passPlayers.length >= maxPassAndPlayPlayers) return;
+    soundFx.playClick();
+    const nextIdx = passPlayers.length + 1;
+    const isBotByDefault = passPlayers.length >= 2;
+    const botPreset = BOT_NAME_PRESETS[(nextIdx - 1) % BOT_NAME_PRESETS.length];
+
+    setPassPlayers((prev) => [
+      ...prev,
+      {
+        id: `p_${Date.now()}_${nextIdx}`,
+        name: isBotByDefault ? botPreset.name : `Player ${nextIdx}`,
+        avatar: isBotByDefault ? botPreset.avatar : DEFAULT_AVATARS[nextIdx % DEFAULT_AVATARS.length],
+        isAI: isBotByDefault,
+        aiDifficulty: isBotByDefault ? 'medium' : undefined,
+      },
+    ]);
+  };
+
+  // Remove player slot
+  const handleRemovePassPlayer = (idx: number) => {
+    if (passPlayers.length <= 2) return;
+    soundFx.playClick();
+    setPassPlayers((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Toggle Human vs Bot for slot
+  const handleTogglePassPlayerType = (idx: number) => {
+    soundFx.playClick();
+    setPassPlayers((prev) =>
+      prev.map((p, i) => {
+        if (i !== idx) return p;
+        const newIsAI = !p.isAI;
+        const botPreset = BOT_NAME_PRESETS[idx % BOT_NAME_PRESETS.length];
+        return {
+          ...p,
+          isAI: newIsAI,
+          name: newIsAI ? botPreset.name : `Player ${idx + 1}`,
+          avatar: newIsAI ? botPreset.avatar : DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
+          aiDifficulty: newIsAI ? 'medium' : undefined,
+        };
+      })
+    );
+  };
+
+  // Update player property
+  const handleUpdatePassPlayer = (idx: number, updates: Partial<PlayerSetup>) => {
+    setPassPlayers((prev) =>
+      prev.map((p, i) => (i === idx ? { ...p, ...updates } : p))
+    );
+  };
+
+  // Start VS AI
   const handleStartAI = () => {
     soundFx.playClick();
     const players: PlayerSetup[] = [
       {
         id: user.id || 'p1',
-        name: user.displayName || user.username || 'You',
-        avatar: user.avatar || '🚀',
+        name: userName.trim() || 'You',
+        avatar: userAvatar,
         isAI: false,
       },
       {
         id: 'ai-opponent',
-        name: `AI Bot (${difficulty.toUpperCase()})`,
+        name: `AI Bot (${aiDifficulty.toUpperCase()})`,
         avatar: '🤖',
         isAI: true,
+        aiDifficulty,
       },
     ];
 
     onSelectMode({
       mode: 'ai',
-      difficulty,
+      difficulty: aiDifficulty,
       players,
     });
   };
 
+  // Start Pass & Play
   const handleStartPassAndPlay = () => {
     soundFx.playClick();
-    const players: PlayerSetup[] = [
-      {
-        id: 'p1',
-        name: p1Name.trim() || 'Player 1',
-        avatar: p1Avatar,
-        isAI: false,
-      },
-      {
-        id: 'p2',
-        name: p2Name.trim() || 'Player 2',
-        avatar: p2Avatar,
-        isAI: false,
-      },
-    ];
-
-    if (maxPassAndPlayPlayers >= 4) {
-      players.push(
-        { id: 'p3', name: p3Name.trim() || 'Player 3', avatar: p3Avatar, isAI: false },
-        { id: 'p4', name: p4Name.trim() || 'Player 4', avatar: p4Avatar, isAI: false }
-      );
-    }
-
     onSelectMode({
       mode: 'pass-and-play',
       difficulty: 'medium',
-      players,
+      players: passPlayers,
     });
   };
 
+  // Start Online (Host)
   const handleStartOnlineCreate = () => {
     soundFx.playClick();
     const players: PlayerSetup[] = [
@@ -118,12 +187,14 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
 
     onSelectMode({
       mode: 'online',
-      difficulty: 'medium',
+      difficulty: onlineBotDifficulty,
       players,
       isOnlineHost: true,
+      botFillMode,
     });
   };
 
+  // Start Online (Join)
   const handleStartOnlineJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCodeInput.trim()) return;
@@ -149,17 +220,17 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
 
   return (
     <div className="fixed inset-0 z-[100000] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-xl animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#0e1422] to-[#070a12] border border-cyan-500/30 rounded-3xl p-5 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.15)] my-auto">
+      <div className="relative w-full max-w-2xl bg-gradient-to-b from-[#0e1422] to-[#070a12] border border-cyan-500/30 rounded-3xl p-5 sm:p-8 shadow-[0_0_60px_rgba(0,240,255,0.15)] my-auto max-h-[92vh] overflow-y-auto">
         {/* Glow corner decorations */}
         <div className="absolute -top-12 -left-12 w-36 h-36 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -right-12 w-36 h-36 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-5 border-b border-slate-800/80">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5">
               <Sparkles className="w-3 h-3 text-cyan-400" />
-              <span>Select Game Mode</span>
+              <span>Universal Game Modes</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white font-display tracking-wide">
               {gameTitle}
@@ -181,7 +252,7 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
         </div>
 
         {/* Mode Navigation Tabs */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 my-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 my-5">
           {/* TAB 1: VS AI */}
           {supportsAI && (
             <button
@@ -207,7 +278,7 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                 <span className="text-xs sm:text-sm font-bold font-display text-white">VS AI</span>
               </div>
               <p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 font-sans">
-                Challenge Smart Computer Bot
+                Player vs Bot (You move first)
               </p>
             </button>
           )}
@@ -239,7 +310,7 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                 <span className="text-xs sm:text-sm font-bold font-display text-white">Pass & Play</span>
               </div>
               <p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 font-sans">
-                Local 2+ Players on 1 Screen
+                Humans + Smart Bot Fill
               </p>
             </button>
           )}
@@ -269,38 +340,89 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                 <span className="text-xs sm:text-sm font-bold font-display text-white">Online PvP</span>
               </div>
               <p className="text-[10px] sm:text-xs text-gray-400 line-clamp-1 font-sans">
-                Real-Time Room Sync (#Code)
+                Real-Time Room Sync + Auto-Bots
               </p>
             </button>
           )}
         </div>
 
-        {/* TAB 1 CONTENT: VS AI */}
+        {/* TAB 1: VS AI */}
         {selectedTab === 'ai' && (
-          <div className="space-y-5 animate-in fade-in duration-200">
-            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* User Profile Card */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Your Player Profile</span>
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-lg">
+                  ⚡ Human moves first by default
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <span className="text-3xl p-2 bg-slate-950 rounded-2xl border border-cyan-500/40 inline-block shadow-md">
+                    {userAvatar}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-gray-400 font-mono uppercase block mb-1">Your Name</label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    maxLength={16}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Avatar selection */}
+              <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+                {DEFAULT_AVATARS.map((av) => (
+                  <button
+                    key={av}
+                    type="button"
+                    onClick={() => {
+                      soundFx.playClick();
+                      setUserAvatar(av);
+                    }}
+                    className={`text-lg p-1.5 rounded-xl transition-all ${
+                      userAvatar === av ? 'bg-cyan-500/30 border border-cyan-400 scale-110' : 'hover:bg-slate-800'
+                    }`}
+                  >
+                    {av}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Difficulty Selector */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
               <h3 className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Select AI Opponent Difficulty</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {/* Easy */}
                 <button
                   type="button"
                   onClick={() => {
                     soundFx.playClick();
-                    setDifficulty('easy');
+                    setAiDifficulty('easy');
                   }}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    difficulty === 'easy'
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    aiDifficulty === 'easy'
                       ? 'bg-emerald-500/15 border-emerald-400 text-white shadow-md'
                       : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-gray-300 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold font-display text-emerald-400">EASY BOT</span>
-                    {difficulty === 'easy' && <Check className="w-4 h-4 text-emerald-400" />}
+                    {aiDifficulty === 'easy' && <Check className="w-4 h-4 text-emerald-400" />}
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
                     Casual decision making. Makes occasional mistakes for relaxed play.
@@ -312,17 +434,17 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                   type="button"
                   onClick={() => {
                     soundFx.playClick();
-                    setDifficulty('medium');
+                    setAiDifficulty('medium');
                   }}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    difficulty === 'medium'
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    aiDifficulty === 'medium'
                       ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md'
                       : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-gray-300 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold font-display text-cyan-400">MEDIUM BOT</span>
-                    {difficulty === 'medium' && <Check className="w-4 h-4 text-cyan-400" />}
+                    {aiDifficulty === 'medium' && <Check className="w-4 h-4 text-cyan-400" />}
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
                     Balanced strategy. Blocks dangerous moves and seizes opportunities.
@@ -334,39 +456,28 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                   type="button"
                   onClick={() => {
                     soundFx.playClick();
-                    setDifficulty('hard');
+                    setAiDifficulty('hard');
                   }}
-                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    difficulty === 'hard'
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    aiDifficulty === 'hard'
                       ? 'bg-rose-500/15 border-rose-400 text-white shadow-md'
                       : 'bg-slate-950/60 border-slate-800 text-gray-400 hover:text-gray-300 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold font-display text-rose-400">HARD BOT</span>
-                    {difficulty === 'hard' && <Check className="w-4 h-4 text-rose-400" />}
+                    {aiDifficulty === 'hard' && <Check className="w-4 h-4 text-rose-400" />}
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans">
-                    Ruthless AI engine. Deeper calculation, razor-sharp tactical counters.
+                    Ruthless AI engine. Game-specific heuristics and deep calculations.
                   </p>
                 </button>
-              </div>
-
-              {/* Bot Info Banner */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-gray-300">
-                <span className="text-2xl">🤖</span>
-                <div>
-                  <div className="font-bold text-white font-display">Neural Arena Bot v2.4</div>
-                  <div className="text-[11px] text-gray-400">
-                    Calculates legal moves in real-time with humanized delay. Zero cheating or hidden data leaks.
-                  </div>
-                </div>
               </div>
             </div>
 
             <button
               onClick={handleStartAI}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-sm font-display uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,240,255,0.4)] active:scale-98 transition-all cursor-pointer"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-sm font-display uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,240,255,0.4)] active:scale-98 transition-all cursor-pointer"
             >
               <span>START VS AI MATCH</span>
               <ArrowRight className="w-4 h-4" />
@@ -374,146 +485,214 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
           </div>
         )}
 
-        {/* TAB 2 CONTENT: PASS & PLAY */}
+        {/* TAB 2: PASS & PLAY (HUMANS + BOTS) */}
         {selectedTab === 'pass-and-play' && (
-          <div className="space-y-5 animate-in fade-in duration-200">
-            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4">
-              <h3 className="text-xs font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-purple-400" />
-                <span>Customize Local Players</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Player 1 Card */}
-                <div className="bg-slate-950/80 border border-purple-500/30 rounded-xl p-3.5 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-purple-300 font-mono">PLAYER 1</span>
-                    <span className="text-2xl p-1 bg-purple-900/30 rounded-lg border border-purple-700/50">
-                      {p1Avatar}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 font-mono uppercase block mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={p1Name}
-                      onChange={(e) => setP1Name(e.target.value)}
-                      maxLength={14}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-400"
-                    />
-                  </div>
-                  {/* Quick Avatar Choices */}
-                  <div className="flex items-center gap-1 overflow-x-auto py-1">
-                    {DEFAULT_AVATARS.slice(0, 6).map((av) => (
-                      <button
-                        key={av}
-                        type="button"
-                        onClick={() => setP1Avatar(av)}
-                        className={`text-base p-1 rounded-md transition-all ${
-                          p1Avatar === av ? 'bg-purple-600/40 border border-purple-400 scale-110' : 'hover:bg-slate-800'
-                        }`}
-                      >
-                        {av}
-                      </button>
-                    ))}
-                  </div>
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Manage Players & Bot Slots</span>
+                  </h3>
+                  <p className="text-[11px] text-gray-400 font-sans">
+                    {passPlayers.filter((p) => !p.isAI).length} Human(s), {passPlayers.filter((p) => p.isAI).length} Bot(s) ({passPlayers.length} total)
+                  </p>
                 </div>
 
-                {/* Player 2 Card */}
-                <div className="bg-slate-950/80 border border-cyan-500/30 rounded-xl p-3.5 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-cyan-300 font-mono">PLAYER 2</span>
-                    <span className="text-2xl p-1 bg-cyan-900/30 rounded-lg border border-cyan-700/50">
-                      {p2Avatar}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 font-mono uppercase block mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={p2Name}
-                      onChange={(e) => setP2Name(e.target.value)}
-                      maxLength={14}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
-                    />
-                  </div>
-                  {/* Quick Avatar Choices */}
-                  <div className="flex items-center gap-1 overflow-x-auto py-1">
-                    {DEFAULT_AVATARS.slice(6, 12).map((av) => (
-                      <button
-                        key={av}
-                        type="button"
-                        onClick={() => setP2Avatar(av)}
-                        className={`text-base p-1 rounded-md transition-all ${
-                          p2Avatar === av ? 'bg-cyan-600/40 border border-cyan-400 scale-110' : 'hover:bg-slate-800'
-                        }`}
-                      >
-                        {av}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {passPlayers.length < maxPassAndPlayPlayers && (
+                  <button
+                    type="button"
+                    onClick={handleAddPassPlayer}
+                    className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-bold font-display flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Seat</span>
+                  </button>
+                )}
               </div>
 
-              {/* Notice for Pass & Play */}
+              {/* Player Slots List */}
+              <div className="space-y-2.5 max-h-[44vh] overflow-y-auto pr-1">
+                {passPlayers.map((player, idx) => (
+                  <div
+                    key={player.id}
+                    className={`p-3.5 rounded-2xl border transition-all ${
+                      player.isAI
+                        ? 'bg-slate-950/80 border-cyan-500/30'
+                        : 'bg-slate-950/80 border-purple-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-black text-gray-400">
+                          #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePassPlayerType(idx)}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 border transition-all cursor-pointer ${
+                            player.isAI
+                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                              : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          }`}
+                          title="Click to toggle Human / AI Bot"
+                        >
+                          {player.isAI ? <Cpu className="w-3 h-3 text-cyan-400" /> : <UserCheck className="w-3 h-3 text-purple-400" />}
+                          <span>{player.isAI ? 'AI BOT' : 'HUMAN'}</span>
+                        </button>
+                      </div>
+
+                      {/* Difficulty Selector for Bot */}
+                      {player.isAI && (
+                        <div className="flex items-center gap-1 text-[10px] font-mono">
+                          {(['easy', 'medium', 'hard'] as AIDifficulty[]).map((d) => (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => handleUpdatePassPlayer(idx, { aiDifficulty: d })}
+                              className={`px-1.5 py-0.5 rounded capitalize ${
+                                player.aiDifficulty === d
+                                  ? 'bg-cyan-500 text-slate-950 font-bold'
+                                  : 'bg-slate-900 text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Remove Button (if > 2 players) */}
+                      {passPlayers.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePassPlayer(idx)}
+                          className="p-1 rounded-lg text-gray-500 hover:text-red-400 transition-colors"
+                          title="Remove player"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl p-1.5 bg-slate-900 rounded-xl border border-slate-800">
+                        {player.avatar}
+                      </span>
+                      <input
+                        type="text"
+                        value={player.name}
+                        onChange={(e) => handleUpdatePassPlayer(idx, { name: e.target.value })}
+                        maxLength={14}
+                        placeholder={player.isAI ? 'Bot Name' : 'Player Name'}
+                        className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-400 font-bold"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pass & Play Notice */}
               <div className="text-[11px] font-mono text-purple-300/80 bg-purple-950/30 border border-purple-800/40 p-2.5 rounded-xl">
-                📱 Players alternate turns on this same screen. Turn changes and score trackers update automatically.
+                📱 Players alternate turns locally on this device. Automated bots make moves on their turns automatically without blocking UI.
               </div>
             </div>
 
             <button
               onClick={handleStartPassAndPlay}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-black text-sm font-display uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(168,85,247,0.4)] active:scale-98 transition-all cursor-pointer"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-black text-sm font-display uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(168,85,247,0.4)] active:scale-98 transition-all cursor-pointer"
             >
-              <span>START PASS & PLAY MATCH</span>
+              <span>START PASS & PLAY MATCH ({passPlayers.length} PLAYERS)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* TAB 3 CONTENT: ONLINE MULTIPLAYER */}
+        {/* TAB 3: ONLINE MULTIPLAYER (HUMANS + BOTS) */}
         {selectedTab === 'online' && (
-          <div className="space-y-5 animate-in fade-in duration-200">
-            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-4">
               <h3 className="text-xs font-mono font-bold text-lime-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-lime-400" />
                 <span>Host or Join Multiplayer Room</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {/* Host a Room */}
-                <div className="p-4 rounded-xl bg-slate-950/90 border border-lime-500/30 space-y-3 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-lime-500/30 space-y-3 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-bold text-white font-display flex items-center gap-1.5">
                       <Swords className="w-4 h-4 text-[#ADFF2F]" />
-                      <span>Host New Room</span>
+                      <span>Create Room</span>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-1 font-sans">
-                      Generate a private 6-letter room code and duel invitation link to invite friends.
+                      Get a unique 6-digit room code with automatic bot backfill options.
                     </p>
                   </div>
+
+                  {/* Smart Bot Auto-Fill Settings */}
+                  <div className="space-y-2 pt-2 border-t border-slate-800/80 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300 text-[11px]">Smart Bot Auto-Fill:</span>
+                      <button
+                        type="button"
+                        onClick={() => setBotFillMode((prev) => (prev === 'auto' ? 'none' : 'auto'))}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          botFillMode === 'auto'
+                            ? 'bg-lime-500/20 text-lime-300 border border-lime-500/40'
+                            : 'bg-slate-800 text-gray-400'
+                        }`}
+                      >
+                        {botFillMode === 'auto' ? 'AUTO-FILL ON' : 'HUMAN ONLY'}
+                      </button>
+                    </div>
+
+                    {botFillMode === 'auto' && (
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-gray-400">Bot Difficulty:</span>
+                        <div className="flex gap-1">
+                          {(['easy', 'medium', 'hard'] as AIDifficulty[]).map((d) => (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => setOnlineBotDifficulty(d)}
+                              className={`px-1.5 py-0.5 rounded capitalize text-[10px] ${
+                                onlineBotDifficulty === d
+                                  ? 'bg-lime-400 text-slate-950 font-bold'
+                                  : 'bg-slate-900 text-gray-400'
+                              }`}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleStartOnlineCreate}
-                    className="w-full py-2.5 rounded-xl bg-[#ADFF2F] hover:bg-[#b8ff47] active:scale-95 text-slate-950 font-black text-xs font-display uppercase tracking-wider shadow-lg shadow-lime-500/20 transition-all cursor-pointer"
+                    className="w-full py-3 rounded-xl bg-[#ADFF2F] hover:bg-[#b8ff47] active:scale-95 text-slate-950 font-black text-xs font-display uppercase tracking-wider shadow-lg shadow-lime-500/20 transition-all cursor-pointer"
                   >
-                    CREATE ROOM NOW
+                    CREATE ROOM (#CODE)
                   </button>
                 </div>
 
                 {/* Join a Room */}
-                <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3 flex flex-col justify-between">
                   <div>
                     <div className="text-xs font-bold text-white font-display flex items-center gap-1.5">
                       <Zap className="w-4 h-4 text-cyan-400" />
                       <span>Join with #Code</span>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-1 font-sans">
-                      Enter the 6-character room code shared by your friend to jump into the lobby.
+                      Enter the 6-character room code or invite link to join your squad.
                     </p>
                   </div>
 
-                  <form onSubmit={handleStartOnlineJoin} className="flex gap-2">
+                  <form onSubmit={handleStartOnlineJoin} className="space-y-2">
                     <input
                       type="text"
                       placeholder="e.g. 8K2M9P"
@@ -525,9 +704,9 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                     <button
                       type="submit"
                       disabled={!roomCodeInput.trim()}
-                      className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-black text-xs font-display disabled:opacity-30 transition-all cursor-pointer shrink-0"
+                      className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-black text-xs font-display uppercase disabled:opacity-30 transition-all cursor-pointer"
                     >
-                      JOIN
+                      JOIN ROOM
                     </button>
                   </form>
                 </div>
@@ -536,7 +715,7 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
               {/* Online Architecture Info */}
               <div className="text-[11px] font-mono text-lime-300/80 bg-lime-950/30 border border-lime-800/40 p-2.5 rounded-xl flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-lime-400 animate-ping shrink-0" />
-                <span>Authoritative server synchronization with automatic reconnection and atomic state validation.</span>
+                <span>Authoritative server sync. If friends leave, bots can auto-fill seamlessly.</span>
               </div>
             </div>
           </div>

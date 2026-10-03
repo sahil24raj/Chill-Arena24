@@ -31,6 +31,7 @@ import { UserProfile } from '@/types';
 import { generateRoomCode, normalizeRoomCode, isValidRoomCode } from './roomCodeGenerator';
 import { getGameAdapter } from './adapters';
 import { GAMES_CATALOG } from '@/store/useAppStore';
+import { BOT_NAME_PRESETS, AIDifficulty } from '@/types/gameMode';
 
 const ROOM_EXPIRATION_MS = 2 * 60 * 60 * 1000; // 2 hours
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 mins
@@ -402,7 +403,40 @@ export const startMatchOnServer = async (
       return { success: false, error: 'Only the room host can start the game!', code: 'UNAUTHORIZED' };
     }
 
-    if (room.players.length < room.minPlayers) {
+    const now = Date.now();
+    let finalPlayers = [...room.players];
+
+    // Smart Bot Auto-Fill: If auto-fill enabled or slots are below minPlayers, add bots
+    const autoFillEnabled = room.settings.botFillMode !== 'none';
+    if (autoFillEnabled && finalPlayers.length < room.maxPlayers) {
+      const needed = Math.max(
+        room.minPlayers - finalPlayers.length,
+        room.settings.botFillMode === 'auto' ? room.maxPlayers - finalPlayers.length : 0
+      );
+      const botDiff: AIDifficulty = room.settings.botDifficulty || 'medium';
+
+      for (let i = 0; i < needed; i++) {
+        const botPreset = BOT_NAME_PRESETS[(finalPlayers.length + i) % BOT_NAME_PRESETS.length];
+        finalPlayers.push({
+          id: `bot_${Date.now()}_${i + 1}`,
+          userId: `bot_${Date.now()}_${i + 1}`,
+          username: `${botPreset.name} (${botDiff.toUpperCase()})`,
+          displayName: `${botPreset.name} (${botDiff.toUpperCase()})`,
+          avatar: botPreset.avatar,
+          role: 'player',
+          isHost: false,
+          isReady: true,
+          connectionStatus: 'CONNECTED',
+          score: 0,
+          joinedAt: now,
+          lastSeenAt: now,
+          isBot: true,
+          botDifficulty: botDiff,
+        });
+      }
+    }
+
+    if (finalPlayers.length < room.minPlayers) {
       return {
         success: false,
         error: `Need at least ${room.minPlayers} players to start.`,
@@ -411,15 +445,15 @@ export const startMatchOnServer = async (
     }
 
     const adapter = getGameAdapter(room.gameId, room.gameTitle);
-    const initialGameState = adapter.getInitialState(room.players, room.settings);
-    const now = Date.now();
+    const initialGameState = adapter.getInitialState(finalPlayers, room.settings);
 
     const updatedRoom: MultiplayerRoomState = {
       ...room,
+      players: finalPlayers,
       status: 'PLAYING',
       countdown: 0,
       gameState: initialGameState,
-      currentTurnPlayerId: room.players[0]?.id || null,
+      currentTurnPlayerId: finalPlayers[0]?.id || null,
       winnerPlayerId: null,
       winnerUsername: null,
       stateVersion: room.stateVersion + 1,
@@ -442,6 +476,121 @@ export const startMatchOnServer = async (
     return { success: true, data: cleaned };
   } catch (error: any) {
     return { success: false, error: error.message || 'Failed to start match.', code: 'INTERNAL_ERROR' };
+  }
+};
+
+/**
+ * Manually adds an AI bot to an empty slot in the lobby.
+ */
+export const addBotToRoomOnServer = async (
+  rawCode: string,
+  hostPlayerId: string,
+  difficulty: AIDifficulty = 'medium'
+): Promise<MultiplayerApiResponse<MultiplayerRoomState>> => {
+  try {
+    const code = normalizeRoomCode(rawCode);
+    const getRes = await getRoomByCode(code);
+    if (!getRes.success || !getRes.data) return getRes;
+
+    const room = getRes.data;
+    if (room.hostId !== hostPlayerId) {
+      return { success: false, error: 'Only the room host can add bots!', code: 'UNAUTHORIZED' };
+    }
+
+    if (room.players.length >= room.maxPlayers) {
+      return { success: false, error: 'Room is already full!', code: 'ROOM_FULL' };
+    }
+
+    const now = Date.now();
+    const botPreset = BOT_NAME_PRESETS[room.players.length % BOT_NAME_PRESETS.length];
+    const newBot: RoomPlayer = {
+      id: `bot_${now}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: `bot_${now}`,
+      username: `${botPreset.name} (${difficulty.toUpperCase()})`,
+      displayName: `${botPreset.name} (${difficulty.toUpperCase()})`,
+      avatar: botPreset.avatar,
+      role: 'player',
+      isHost: false,
+      isReady: true,
+      connectionStatus: 'CONNECTED',
+      score: 0,
+      joinedAt: now,
+      lastSeenAt: now,
+      isBot: true,
+      botDifficulty: difficulty,
+    };
+
+    const updatedPlayers = [...room.players, newBot];
+    const updatedRoom: MultiplayerRoomState = {
+      ...room,
+      players: updatedPlayers,
+      status: updatedPlayers.length >= room.minPlayers && room.status === 'WAITING' ? 'READY' : room.status,
+      stateVersion: room.stateVersion + 1,
+      updatedAt: now,
+    };
+
+    const cleaned = cleanForFirestore(updatedRoom);
+    const db = getFirebaseDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'rooms', code), cleaned);
+      } catch (err) {
+        console.warn('Firestore setDoc addBot failed:', err);
+      }
+    }
+
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to add bot.', code: 'INTERNAL_ERROR' };
+  }
+};
+
+/**
+ * Removes a player or bot from the lobby (Host only).
+ */
+export const removePlayerOrBotFromServer = async (
+  rawCode: string,
+  hostPlayerId: string,
+  targetPlayerId: string
+): Promise<MultiplayerApiResponse<MultiplayerRoomState>> => {
+  try {
+    const code = normalizeRoomCode(rawCode);
+    const getRes = await getRoomByCode(code);
+    if (!getRes.success || !getRes.data) return getRes;
+
+    const room = getRes.data;
+    if (room.hostId !== hostPlayerId && hostPlayerId !== targetPlayerId) {
+      return { success: false, error: 'Unauthorized to remove player.', code: 'UNAUTHORIZED' };
+    }
+
+    const updatedPlayers = room.players.filter((p) => p.id !== targetPlayerId);
+    const now = Date.now();
+
+    const updatedRoom: MultiplayerRoomState = {
+      ...room,
+      players: updatedPlayers,
+      status: updatedPlayers.length >= room.minPlayers ? 'READY' : 'WAITING',
+      stateVersion: room.stateVersion + 1,
+      updatedAt: now,
+    };
+
+    const cleaned = cleanForFirestore(updatedRoom);
+    const db = getFirebaseDb();
+    if (db) {
+      try {
+        await setDoc(doc(db, 'rooms', code), cleaned);
+      } catch (err) {
+        console.warn('Firestore setDoc removePlayer failed:', err);
+      }
+    }
+
+    memoryRooms.set(code, cleaned);
+    notifyMemoryListeners(cleaned);
+    return { success: true, data: cleaned };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to remove player.', code: 'INTERNAL_ERROR' };
   }
 };
 

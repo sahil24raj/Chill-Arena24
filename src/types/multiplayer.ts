@@ -30,6 +30,8 @@ export interface RoomPlayer {
   score: number;
   joinedAt: number;
   lastSeenAt: number;
+  isBot?: boolean;
+  botDifficulty?: 'easy' | 'medium' | 'hard';
   customData?: Record<string, any>;
 }
 
@@ -39,6 +41,8 @@ export interface RoomSettings {
   roundsToWin?: number;
   allowSpectators?: boolean;
   maxPlayers?: number;
+  botFillMode?: 'manual' | 'auto' | 'none';
+  botDifficulty?: 'easy' | 'medium' | 'hard';
   [key: string]: any;
 }
 

@@ -19,12 +19,17 @@ import {
   Trophy,
   RefreshCw,
   AlertCircle,
-  MessageCircle
+  MessageCircle,
+  Bot,
+  UserPlus,
+  Trash2,
+  Cpu
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 // Game Canvases for in-room live play
 import { TicTacToeCanvas } from '@/components/games/TicTacToeCanvas';
+import { MultiplayerTicTacToe } from '@/components/multiplayer/MultiplayerTicTacToe';
 import { ChorSipahiGame } from '@/components/games/chor-sipahi/ChorSipahiGame';
 import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
@@ -39,6 +44,7 @@ export default function PlayRoomPage({
 }) {
   const { roomCode } = use(params);
   const router = useRouter();
+  const { user } = useAppStore();
 
   const {
     room,
@@ -49,6 +55,9 @@ export default function PlayRoomPage({
     isHost,
     isMyTurn,
     startGame,
+    addBot,
+    removePlayerOrBot,
+    submitAction,
     leaveRoom,
     copyRoomCode,
     copyInviteLink,
@@ -74,7 +83,14 @@ export default function PlayRoomPage({
       case 'chor-sipahi':
         return <ChorSipahiGame />;
       case 'tic-tac-toe':
-        return <TicTacToeCanvas />;
+        return (
+          <MultiplayerTicTacToe
+            room={room as any}
+            currentUserId={currentPlayer?.id || user.id}
+            isMyTurn={isMyTurn}
+            submitAction={submitAction}
+          />
+        );
       case 'spin-cricket':
         return <SpinCricketCanvas />;
       case 'pen-flip':
@@ -84,7 +100,14 @@ export default function PlayRoomPage({
       case 'brain-pot':
         return <BrainPotCanvas />;
       default:
-        return <TicTacToeCanvas />;
+        return (
+          <MultiplayerTicTacToe
+            room={room as any}
+            currentUserId={currentPlayer?.id || user.id}
+            isMyTurn={isMyTurn}
+            submitAction={submitAction}
+          />
+        );
     }
   };
 
@@ -336,10 +359,21 @@ export default function PlayRoomPage({
             {room.players.map((player) => (
               <div
                 key={player.id}
-                className="flex items-center justify-between p-4 rounded-2xl bg-[#0a0e16] border border-gray-800"
+                className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                  player.isBot
+                    ? 'bg-purple-950/20 border-purple-500/30'
+                    : 'bg-[#0a0e16] border-gray-800'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{player.avatar}</span>
+                  <div className="relative">
+                    <span className="text-2xl">{player.avatar}</span>
+                    {player.isBot && (
+                      <span className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-purple-600 text-[10px] text-white">
+                        <Bot className="w-2.5 h-2.5" />
+                      </span>
+                    )}
+                  </div>
                   <div>
                     <div className="text-xs font-bold text-white font-display flex items-center gap-1.5">
                       <span>{player.username}</span>
@@ -348,13 +382,32 @@ export default function PlayRoomPage({
                           HOST
                         </span>
                       )}
+                      {player.isBot && (
+                        <span className="px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 text-[9px] font-mono uppercase">
+                          AI • {player.botDifficulty || 'MED'}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[10px] font-mono text-emerald-400">● Connected</div>
+                    <div className="text-[10px] font-mono text-emerald-400">
+                      {player.isBot ? '🤖 Smart Bot Ready' : '● Connected'}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-[11px] font-mono px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  READY
+                <div className="flex items-center gap-2">
+                  <div className="text-[11px] font-mono px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    READY
+                  </div>
+
+                  {isHost && (player.isBot || player.id !== (currentPlayer?.id || user.id)) && (
+                    <button
+                      onClick={() => removePlayerOrBot(player.id)}
+                      title={player.isBot ? 'Remove Bot' : 'Kick Player'}
+                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -362,11 +415,41 @@ export default function PlayRoomPage({
             {/* Empty Slots */}
             {Array.from({ length: Math.max(0, room.maxPlayers - room.players.length) }).map((_, i) => (
               <div
-                key={i}
-                className="flex items-center justify-center p-4 rounded-2xl border-2 border-dashed border-gray-800 bg-slate-950/40 text-xs font-mono text-gray-500 space-x-2"
+                key={`empty-${i}`}
+                className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border-2 border-dashed border-gray-800 bg-slate-950/40 gap-3"
               >
-                <span className="animate-pulse">⏳</span>
-                <span>Waiting for opponent...</span>
+                <div className="flex items-center gap-2 text-xs font-mono text-gray-500">
+                  <span className="animate-pulse">⏳</span>
+                  <span>Empty Seat #{room.players.length + i + 1}</span>
+                </div>
+
+                {isHost ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => addBot('easy')}
+                      className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-purple-900/40 border border-gray-700 hover:border-purple-500 text-[10px] font-mono text-purple-300 transition-all flex items-center gap-1"
+                    >
+                      <Bot className="w-3 h-3" />
+                      <span>+ Bot (Easy)</span>
+                    </button>
+                    <button
+                      onClick={() => addBot('medium')}
+                      className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/50 text-[10px] font-mono text-purple-200 font-bold transition-all flex items-center gap-1"
+                    >
+                      <Bot className="w-3 h-3" />
+                      <span>+ Bot (Med)</span>
+                    </button>
+                    <button
+                      onClick={() => addBot('hard')}
+                      className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-red-900/40 border border-gray-700 hover:border-red-500 text-[10px] font-mono text-rose-300 transition-all flex items-center gap-1"
+                    >
+                      <Cpu className="w-3 h-3" />
+                      <span>+ Bot (Hard)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-[10px] font-mono text-gray-500">Waiting for player or host to fill...</div>
+                )}
               </div>
             ))}
           </div>
@@ -375,22 +458,24 @@ export default function PlayRoomPage({
         {/* Start Game Action */}
         <div className="pt-4 border-t border-gray-800 flex flex-col gap-3">
           {isHost ? (
-            <button
-              onClick={startGame}
-              disabled={room.players.length < room.minPlayers}
-              className={`w-full py-4 rounded-2xl font-display text-sm font-black flex items-center justify-center gap-2 shadow-2xl transition-all ${
-                room.players.length >= room.minPlayers
-                  ? 'cyber-button text-slate-950 cursor-pointer'
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-              }`}
-            >
-              <Play className="w-5 h-5 fill-current" />
-              <span>
-                {room.players.length >= room.minPlayers
-                  ? 'START MATCH NOW 🚀'
-                  : `WAITING FOR ${room.minPlayers - room.players.length} MORE PLAYER`}
-              </span>
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={startGame}
+                className="w-full py-4 rounded-2xl font-display text-sm font-black flex items-center justify-center gap-2 shadow-2xl transition-all cyber-button text-slate-950 cursor-pointer"
+              >
+                <Play className="w-5 h-5 fill-current" />
+                <span>
+                  {room.players.length >= room.minPlayers
+                    ? 'START MATCH NOW 🚀'
+                    : `START MATCH (AUTO-FILL ${room.minPlayers - room.players.length} BOTS) 🤖`}
+                </span>
+              </button>
+              {room.players.length < room.minPlayers && (
+                <p className="text-[11px] font-mono text-center text-cyan-400/80">
+                  💡 Empty seats will automatically be filled by Smart Bots!
+                </p>
+              )}
+            </div>
           ) : (
             <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-center space-y-1">
               <div className="text-xs font-bold text-purple-300 font-display">YOU ARE IN THE LOBBY!</div>
