@@ -619,8 +619,6 @@ export const WordBuilderCanvas: React.FC = () => {
   const handleSelectMode = (selection: GameModeSelection) => {
     setShowModeSelector(false);
     if (selection.mode === 'online') {
-      const g = GAMES_CATALOG.find((item) => item.id === 'word-builder');
-      openMultiplayerModal(g);
       return;
     }
 
@@ -663,6 +661,25 @@ export const WordBuilderCanvas: React.FC = () => {
       onPause={handlePause}
       onResume={handleResume}
       onRestart={handleRestart}
+      currentMode={currentMode}
+      onSelectMode={(m) => {
+        setCurrentMode(m);
+        if (m === 'ai') {
+          setPlayers([
+            { id: user.id || 'p1', name: user.displayName || user.username || 'You', avatar: user.avatar || '🔤', isAI: false },
+            { id: 'ai-lexi', name: `LexiBot (${aiDifficulty.toUpperCase()})`, avatar: '🤖', isAI: true }
+          ]);
+        }
+      }}
+      aiDifficulty={aiDifficulty}
+      onSelectDifficulty={(d) => {
+        setAiDifficulty(d);
+        setPlayers((prev) =>
+          prev.map((p) => (p.isAI ? { ...p, name: `LexiBot (${d.toUpperCase()})` } : p))
+        );
+      }}
+      players={players}
+      onOpenPassPlayConfig={() => setShowModeSelector(true)}
       onChangeMode={() => setShowModeSelector(true)}
       onExitGame={() => setStatus('MENU')}
       modeBadge={

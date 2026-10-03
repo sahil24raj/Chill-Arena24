@@ -27,6 +27,8 @@ import {
 } from '@/types/gameMode';
 import { soundFx } from '@/lib/audio';
 import { UserProfile } from '@/types';
+import { useRouter } from 'next/navigation';
+import { createRoomOnServer } from '@/lib/multiplayer/realtimeService';
 
 export interface UniversalGameModeSelectorProps {
   gameTitle: string;
@@ -77,6 +79,8 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
   ]);
 
   // Online Multiplayer Setup with Smart Bot Auto-Fill
+  const router = useRouter();
+  const [isCreatingOnline, setIsCreatingOnline] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [onlineCapacity, setOnlineCapacity] = useState<number>(2);
   const [botFillMode, setBotFillMode] = useState<'auto' | 'manual' | 'none'>('auto');
@@ -173,9 +177,29 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
     });
   };
 
-  // Start Online (Host)
-  const handleStartOnlineCreate = () => {
+  // Start Online (Host) - Direct 1-Click Room Creation (NO SECOND POPUP)
+  const handleStartOnlineCreate = async () => {
     soundFx.playClick();
+    setIsCreatingOnline(true);
+    try {
+      const res = await createRoomOnServer(gameId, user, {
+        maxPlayers: onlineCapacity,
+        botFillMode,
+        botDifficulty: onlineBotDifficulty,
+      });
+
+      if (res.success && res.data?.roomCode) {
+        onClose?.();
+        router.push(`/play/room/${res.data.roomCode}`);
+        return;
+      }
+    } catch (err) {
+      console.error('[UniversalGameModeSelector] Failed to create room on server:', err);
+    } finally {
+      setIsCreatingOnline(false);
+    }
+
+    // Fallback: Notify parent if direct creation fails
     const players: PlayerSetup[] = [
       {
         id: user.id || 'p1',
@@ -192,30 +216,25 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
       isOnlineHost: true,
       botFillMode,
     });
+    onClose?.();
   };
 
-  // Start Online (Join)
+  // Start Online (Join) - Direct 1-Click Join (NO SECOND POPUP)
   const handleStartOnlineJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCodeInput.trim()) return;
     soundFx.playClick();
-    const cleanCode = roomCodeInput.trim().toUpperCase().replace('#', '');
-    const players: PlayerSetup[] = [
-      {
-        id: user.id || 'p2',
-        name: user.displayName || user.username || 'Player',
-        avatar: user.avatar || '🚀',
-        isAI: false,
-      },
-    ];
 
-    onSelectMode({
-      mode: 'online',
-      difficulty: 'medium',
-      players,
-      onlineRoomCode: cleanCode,
-      isOnlineHost: false,
-    });
+    // Extract clean code whether user pasted raw code or full share URL
+    let cleanCode = roomCodeInput.trim().toUpperCase().replace('#', '');
+    if (cleanCode.includes('/ROOM/')) {
+      cleanCode = cleanCode.split('/ROOM/').pop()?.split('?')[0]?.trim() || cleanCode;
+    } else if (cleanCode.includes('/PLAY/ROOM/')) {
+      cleanCode = cleanCode.split('/PLAY/ROOM/').pop()?.split('?')[0]?.trim() || cleanCode;
+    }
+
+    onClose?.();
+    router.push(`/play/room/${cleanCode}`);
   };
 
   return (
@@ -674,9 +693,17 @@ export const UniversalGameModeSelector: React.FC<UniversalGameModeSelectorProps>
                   <button
                     type="button"
                     onClick={handleStartOnlineCreate}
-                    className="w-full py-3 rounded-xl bg-[#ADFF2F] hover:bg-[#b8ff47] active:scale-95 text-slate-950 font-black text-xs font-display uppercase tracking-wider shadow-lg shadow-lime-500/20 transition-all cursor-pointer"
+                    disabled={isCreatingOnline}
+                    className="w-full py-3 rounded-xl bg-[#ADFF2F] hover:bg-[#b8ff47] active:scale-95 disabled:opacity-50 text-slate-950 font-black text-xs font-display uppercase tracking-wider shadow-lg shadow-lime-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    CREATE ROOM (#CODE)
+                    {isCreatingOnline ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>CREATING ROOM...</span>
+                      </>
+                    ) : (
+                      <span>CREATE ROOM (#CODE)</span>
+                    )}
                   </button>
                 </div>
 

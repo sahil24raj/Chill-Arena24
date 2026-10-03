@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Play,
@@ -9,11 +9,19 @@ import {
   ShieldCheck,
   Share2,
   HelpCircle,
+  Bot,
+  Users,
+  Target,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { soundFx } from './AudioManager';
 import { GameStatus, GameSessionFinishResponse } from './types';
 import { GameFullscreenShell } from '@/components/game-shell/GameFullscreenShell';
-import { useGameViewport } from './useGameViewport';
+import { CompactGameModeBar } from '@/components/game-shell/CompactGameModeBar';
+import { SingleUnifiedMultiplayerModal } from '@/components/game-shell/SingleUnifiedMultiplayerModal';
+import { GameModeType, AIDifficulty, PlayerSetup } from '@/types/gameMode';
+import { useAppStore } from '@/store/useAppStore';
 
 export interface GameLifecycleWrapperProps {
   gameTitle: string;
@@ -35,6 +43,15 @@ export interface GameLifecycleWrapperProps {
   scalingMode?: 'contain' | 'responsive' | 'fill';
   modeBadge?: React.ReactNode;
   activePlayerInfo?: React.ReactNode;
+  currentMode?: GameModeType;
+  onSelectMode?: (mode: GameModeType) => void;
+  aiDifficulty?: AIDifficulty;
+  onSelectDifficulty?: (diff: AIDifficulty) => void;
+  players?: PlayerSetup[];
+  onOpenPassPlayConfig?: () => void;
+  supportsAI?: boolean;
+  supportsPassAndPlay?: boolean;
+  supportsOnline?: boolean;
   onChangeMode?: () => void;
   onExitGame?: () => void;
   children: React.ReactNode;
@@ -60,11 +77,72 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
   scalingMode,
   modeBadge,
   activePlayerInfo,
+  currentMode: propCurrentMode,
+  onSelectMode,
+  aiDifficulty: propAiDifficulty,
+  onSelectDifficulty,
+  players,
+  onOpenPassPlayConfig,
+  supportsAI = true,
+  supportsPassAndPlay = true,
+  supportsOnline = true,
   onChangeMode,
   onExitGame,
   children,
 }) => {
+  const { user } = useAppStore();
   const [countdown, setCountdown] = useState<number | string | null>(null);
+
+  // Fallback internal mode & difficulty (defaults to VS AI)
+  const [internalMode, setInternalMode] = useState<GameModeType>('ai');
+  const [internalDiff, setInternalDiff] = useState<AIDifficulty>('medium');
+  const [showMultiplayerModal, setShowMultiplayerModal] = useState(false);
+
+  // Pass & Play 2-Player local run state for arcade games
+  const [passPlayerIndex, setPassPlayerIndex] = useState<0 | 1>(0);
+  const [passP1Score, setPassP1Score] = useState<number | null>(null);
+
+  // VS AI Target Score for arcade games
+  const [aiTargetScore, setAiTargetScore] = useState<number>(() => {
+    return (propAiDifficulty || internalDiff) === 'easy'
+      ? 350
+      : (propAiDifficulty || internalDiff) === 'medium'
+      ? 750
+      : 1400;
+  });
+
+  const activeMode = propCurrentMode !== undefined ? propCurrentMode : internalMode;
+  const activeDiff = propAiDifficulty !== undefined ? propAiDifficulty : internalDiff;
+
+  // Recalculate AI Target when difficulty changes
+  useEffect(() => {
+    const diff = activeDiff;
+    const baseTarget = diff === 'easy' ? 350 : diff === 'medium' ? 750 : 1400;
+    const variance = Math.floor(Math.random() * 80) - 40;
+    setAiTargetScore(Math.max(100, baseTarget + variance));
+  }, [activeDiff]);
+
+  const handleModeChange = (mode: GameModeType) => {
+    if (mode === 'online') {
+      setShowMultiplayerModal(true);
+      return;
+    }
+    if (onSelectMode) {
+      onSelectMode(mode);
+    } else {
+      setInternalMode(mode);
+    }
+    setPassPlayerIndex(0);
+    setPassP1Score(null);
+  };
+
+  const handleDiffChange = (diff: AIDifficulty) => {
+    if (onSelectDifficulty) {
+      onSelectDifficulty(diff);
+    } else {
+      setInternalDiff(diff);
+    }
+  };
 
   // Countdown handler
   const triggerStartWithCountdown = () => {
@@ -104,11 +182,28 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
     soundFx.playClick();
     if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(
-        `🎮 I scored ${score} pts in ${gameTitle} on Chill Arena! Can you beat me? https://chillarena.com/game/${gameId}`
+        `🎮 I scored ${score} pts in ${gameTitle} on Chill Arena! Can you beat me? https://chill-arena24.vercel.app/game/${gameId}`
       );
       alert('Score duel copied to clipboard!');
     }
   };
+
+  // Compact Mode Selector Element for Header & Start Screen
+  const modeBarElement = (
+    <CompactGameModeBar
+      currentMode={activeMode}
+      onChangeMode={handleModeChange}
+      aiDifficulty={activeDiff}
+      onChangeDifficulty={handleDiffChange}
+      players={players}
+      onOpenPassPlayConfig={onOpenPassPlayConfig}
+      isPlaying={status === 'PLAYING'}
+      hasUnsavedProgress={score > 0}
+      supportsAI={supportsAI}
+      supportsPassAndPlay={supportsPassAndPlay}
+      supportsOnline={supportsOnline}
+    />
+  );
 
   return (
     <GameFullscreenShell
@@ -125,6 +220,7 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
       scalingMode={scalingMode}
       modeBadge={modeBadge}
       activePlayerInfo={activePlayerInfo}
+      compactModeBar={modeBarElement}
       onChangeMode={onChangeMode}
       onExitGame={onExitGame}
       showHUD={true}
@@ -136,19 +232,27 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
         {/* 1. START / INSTRUCTIONS OVERLAY */}
         {status === 'MENU' && (
           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center z-30 overflow-y-auto">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-2xl sm:text-3xl shadow-xl shadow-cyan-500/20 mb-3 sm:mb-4 animate-pulse shrink-0">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-2xl sm:text-3xl shadow-xl shadow-cyan-500/20 mb-2 sm:mb-3 animate-pulse shrink-0">
               🎮
             </div>
-            <h2 className="text-xl sm:text-3xl font-black text-white tracking-wide uppercase font-display">
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide uppercase font-display">
               {gameTitle}
             </h2>
-            <p className="text-[11px] sm:text-xs text-cyan-400 font-mono mt-1 mb-4 sm:mb-6">
+            <p className="text-[10px] sm:text-xs text-cyan-400 font-mono mt-0.5 mb-3 sm:mb-4">
               READY YOUR REFLEXES • SERVER VERIFIED ARENA
             </p>
 
+            {/* Prominent Mode Bar on Start Screen */}
+            <div className="mb-4 flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest font-bold">
+                SELECT GAMEPLAY MODE
+              </span>
+              {modeBarElement}
+            </div>
+
             {/* Instructions list */}
-            <div className="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-4 text-left mb-4 sm:mb-6 space-y-2 text-xs text-gray-300 shadow-xl">
-              <div className="flex items-center gap-1.5 text-white font-bold text-xs uppercase tracking-wider mb-2">
+            <div className="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 sm:p-4 text-left mb-4 space-y-1.5 text-xs text-gray-300 shadow-xl">
+              <div className="flex items-center gap-1.5 text-white font-bold text-xs uppercase tracking-wider mb-1.5">
                 <HelpCircle className="w-4 h-4 text-cyan-400" />
                 <span>How to Play</span>
               </div>
@@ -225,15 +329,40 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
         {(status === 'GAMEOVER' || status === 'VICTORY') && (
           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 text-center z-30 animate-fade-in overflow-y-auto">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-amber-500 to-red-500 flex items-center justify-center text-3xl shadow-xl shadow-red-500/20 mb-3 animate-bounce shrink-0">
-              {status === 'VICTORY' ? '🏆' : '💀'}
+              {status === 'VICTORY' || (activeMode === 'ai' && score >= aiTargetScore) ? '🏆' : '💀'}
             </div>
 
-            <h3 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-wider font-display">
-              {status === 'VICTORY' ? 'VICTORY SECURED!' : 'MATCH COMPLETED'}
+            <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-wider font-display">
+              {activeMode === 'ai'
+                ? score >= aiTargetScore
+                  ? 'VICTORY OVER AI BOT!'
+                  : 'AI BOT WINS THIS DUEL'
+                : activeMode === 'pass-and-play' && passP1Score !== null
+                ? score > passP1Score
+                  ? 'PLAYER 2 CLAIMS VICTORY!'
+                  : score < passP1Score
+                  ? 'PLAYER 1 CLAIMS VICTORY!'
+                  : 'A DEADLOCK TIE!'
+                : status === 'VICTORY'
+                ? 'VICTORY SECURED!'
+                : 'MATCH COMPLETED'}
             </h3>
 
+            {/* Mode match summary badge */}
+            {activeMode === 'ai' && (
+              <div className="text-xs font-mono text-cyan-300 mt-1 mb-2">
+                Your Score: <span className="font-bold text-white">{score}</span> • AI Target: <span className="font-bold text-yellow-400">{aiTargetScore}</span> ({activeDiff.toUpperCase()})
+              </div>
+            )}
+
+            {activeMode === 'pass-and-play' && passPlayerIndex === 0 && passP1Score === null && (
+              <div className="my-3 p-3 rounded-2xl bg-purple-950/60 border border-purple-500/40 text-purple-200 text-xs font-mono max-w-sm">
+                📱 Player 1 scored <span className="font-bold text-white">{score}</span> pts! Hand over the screen to Player 2 to beat it!
+              </div>
+            )}
+
             {/* Server Anti-Cheat Verified Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono mt-2 mb-5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono mt-1 mb-4">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>SERVER-VERIFIED ANTI-CHEAT AUDIT PASSED</span>
             </div>
@@ -256,16 +385,33 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
 
             {/* Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  onRestart();
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00F0FF] to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 cursor-pointer transform active:scale-95"
-              >
-                <RotateCcw className="w-4 h-4" />
-                PLAY AGAIN
-              </button>
+              {activeMode === 'pass-and-play' && passPlayerIndex === 0 && passP1Score === null ? (
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPassP1Score(score);
+                    setPassPlayerIndex(1);
+                    onRestart();
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-purple-500/30 cursor-pointer transform active:scale-95"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  START PLAYER 2 RUN 📱
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPassPlayerIndex(0);
+                    setPassP1Score(null);
+                    onRestart();
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#00F0FF] to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 cursor-pointer transform active:scale-95"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  PLAY AGAIN
+                </button>
+              )}
 
               <button
                 onClick={handleShareResult}
@@ -287,6 +433,15 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
           </div>
         )}
       </div>
+
+      {/* Single Unified Multiplayer Modal for this game (Zero duplicate popups) */}
+      <SingleUnifiedMultiplayerModal
+        isOpen={showMultiplayerModal}
+        onClose={() => setShowMultiplayerModal(false)}
+        gameId={gameId}
+        gameTitle={gameTitle}
+        user={user}
+      />
     </GameFullscreenShell>
   );
 };

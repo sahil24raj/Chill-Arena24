@@ -20,7 +20,7 @@ import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
 import { ChaiTapriCanvas } from '@/components/games/ChaiTapriCanvas';
 import { MemeClickerCanvas } from '@/components/games/MemeClickerCanvas';
 
-import { MultiplayerLobbyModal } from '@/components/MultiplayerLobbyModal';
+import { SingleUnifiedMultiplayerModal } from '@/components/game-shell/SingleUnifiedMultiplayerModal';
 import {
   Gamepad2,
   ThumbsUp,
@@ -40,11 +40,12 @@ import confetti from 'canvas-confetti';
 
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { user, addRecentlyPlayed, openMultiplayerModal } = useAppStore();
+  const { user, addRecentlyPlayed } = useAppStore();
 
   const [hasLiked, setHasLiked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [commentText, setCommentText] = useState('');
+  const [isOnlineModalOpen, setIsOnlineModalOpen] = useState(false);
   const [commentsList, setCommentsList] = useState<
     { id: string; user: string; text: string; time: string; likes: number }[]
   >([]);
@@ -131,7 +132,14 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="space-y-8 pb-16">
-      <MultiplayerLobbyModal />
+      <SingleUnifiedMultiplayerModal
+        isOpen={isOnlineModalOpen}
+        onClose={() => setIsOnlineModalOpen(false)}
+        gameId={game.id}
+        gameTitle={game.title}
+        gameThumbnail={game.thumbnail}
+        user={user}
+      />
 
       {/* Back to Games Breadcrumb */}
       <div className="flex items-center justify-between">
@@ -148,11 +156,11 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
           <button
             onClick={() => {
               soundFx.playClick();
-              openMultiplayerModal(game);
+              setIsOnlineModalOpen(true);
             }}
-            className="px-4 py-1.5 rounded-lg bg-purple-600/20 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold font-display flex items-center gap-1.5 transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-lime-400/10 border border-lime-400/40 text-lime-400 hover:bg-lime-400 hover:text-slate-950 text-xs font-bold font-display flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(173,255,47,0.15)] cursor-pointer"
           >
-            <Swords className="w-3.5 h-3.5 text-pink-400" />
+            <Swords className="w-3.5 h-3.5 text-lime-400 group-hover:text-slate-950" />
             <span>CREATE MULTIPLAYER ROOM (#CODE)</span>
           </button>
         )}

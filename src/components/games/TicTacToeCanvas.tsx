@@ -93,24 +93,6 @@ export const TicTacToeCanvas: React.FC = () => {
   const handleModeSelection = (selection: GameModeSelection) => {
     setShowModeSelector(false);
     if (selection.mode === 'online') {
-      openMultiplayerModal({
-        id: 'tic-tac-toe',
-        title: 'Neon Tic-Tac-Toe ❌⭕',
-        slug: 'tic-tac-toe',
-        tagline: 'Multiplayer Grid Duel',
-        description: 'Online Tic-Tac-Toe',
-        category: '🧠 Mind Games',
-        categoryKey: 'mind',
-        thumbnail: '❌',
-        bannerImage: '/games/tic-tac-toe.jpg',
-        playCount: 204000,
-        rating: 4.93,
-        difficulty: 'Easy',
-        duration: '1-2 min',
-        multiplayer: true,
-        controls: ['Click cell to place mark'],
-        tags: ['Strategy', 'Multiplayer'],
-      });
       return;
     }
     handleStartGame(selection.mode, selection.difficulty, selection.players);
@@ -385,6 +367,19 @@ export const TicTacToeCanvas: React.FC = () => {
         onPause={() => setStatus('PAUSED')}
         onResume={() => setStatus('PLAYING')}
         onRestart={() => handleStartGame()}
+        currentMode={currentMode}
+        onSelectMode={(m) => {
+          if (m !== 'online') {
+            handleStartGame(m, aiDifficulty);
+          }
+        }}
+        aiDifficulty={aiDifficulty}
+        onSelectDifficulty={(d) => {
+          setAiDifficulty(d);
+          handleStartGame(currentMode, d);
+        }}
+        players={players}
+        onOpenPassPlayConfig={() => setShowModeSelector(true)}
         onChangeMode={() => setShowModeSelector(true)}
         modeBadge={
           <span className="px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-[#00F0FF] text-[10px] font-bold font-mono uppercase tracking-wider flex items-center gap-1">

@@ -35,6 +35,13 @@ import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
+import { ModiRunCanvas } from '@/components/games/ModiRunCanvas';
+import { CIDEscapeCanvas } from '@/components/games/CIDEscapeCanvas';
+import { EmojiDodgeCanvas } from '@/components/games/EmojiDodgeCanvas';
+import { EraserThrowCanvas } from '@/components/games/EraserThrowCanvas';
+import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
+import { ChaiTapriCanvas } from '@/components/games/ChaiTapriCanvas';
+import { MemeClickerCanvas } from '@/components/games/MemeClickerCanvas';
 import { GameFullscreenShell } from '@/components/game-shell/GameFullscreenShell';
 
 export default function PlayRoomPage({
@@ -99,6 +106,20 @@ export default function PlayRoomPage({
         return <WordBuilderCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
+      case 'modi-run':
+        return <ModiRunCanvas />;
+      case 'cid-escape':
+        return <CIDEscapeCanvas />;
+      case 'emoji-dodge':
+        return <EmojiDodgeCanvas />;
+      case 'eraser-throw':
+        return <EraserThrowCanvas />;
+      case 'gully-cricket':
+        return <GullyCricketCanvas />;
+      case 'chai-tapri':
+        return <ChaiTapriCanvas />;
+      case 'meme-clicker':
+        return <MemeClickerCanvas />;
       default:
         return (
           <MultiplayerTicTacToe

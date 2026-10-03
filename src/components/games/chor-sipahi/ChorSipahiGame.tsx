@@ -25,12 +25,19 @@ import { SipahiGuess } from './SipahiGuess';
 import { ResultReveal } from './ResultReveal';
 import { soundFx } from '@/lib/audio';
 import { GameFullscreenShell } from '@/components/game-shell/GameFullscreenShell';
+import { CompactGameModeBar } from '@/components/game-shell/CompactGameModeBar';
+import { SingleUnifiedMultiplayerModal } from '@/components/game-shell/SingleUnifiedMultiplayerModal';
+import { GameModeType, AIDifficulty } from '@/types/gameMode';
 
 export const ChorSipahiGame: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomParam = searchParams.get('room');
   const { user, submitGameScore, addCoins, addXP } = useAppStore();
+
+  const [currentMode, setCurrentMode] = useState<GameModeType>('ai');
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('medium');
+  const [showOnlineModal, setShowOnlineModal] = useState(false);
 
   const [gameState, setGameState] = useState<GameRoomState>(() => {
     const defaultCode = roomParam ? roomParam.toUpperCase() : generateRoomCode();
@@ -314,6 +321,32 @@ export const ChorSipahiGame: React.FC = () => {
     router.push('/multiplayer');
   };
 
+  const handleModeChange = (mode: GameModeType) => {
+    setCurrentMode(mode);
+    if (mode === 'online') {
+      setShowOnlineModal(true);
+      return;
+    }
+    if (mode === 'ai') {
+      // Auto fill bots up to 4 for instant VS AI match
+      if (gameState.players.length < 4) {
+        const needed = 4 - gameState.players.length;
+        for (let i = 0; i < needed; i++) {
+          handleAddBot();
+        }
+      }
+    }
+  };
+
+  // Default VS AI: auto-fill bots on mount if alone in room
+  useEffect(() => {
+    if (!roomParam && currentMode === 'ai' && gameState.players.length === 1) {
+      handleAddBot();
+      handleAddBot();
+      handleAddBot();
+    }
+  }, []);
+
   const clientSafeState = getMaskedGameState(gameState, currentPlayer.id);
   const rajaPlayer = clientSafeState.players.find((p) => p.id === clientSafeState.activeRajaId);
   const sipahiPlayer = gameState.players.find((p) => p.id === gameState.activeSipahiId) || gameState.players[0];
@@ -324,6 +357,14 @@ export const ChorSipahiGame: React.FC = () => {
       gameTitle="Chor Sipahi: Royal Court"
       category="Social Deduction"
       score={currentPlayer.totalScore}
+      compactModeBar={
+        <CompactGameModeBar
+          currentMode={currentMode}
+          onChangeMode={handleModeChange}
+          aiDifficulty={aiDifficulty}
+          onChangeDifficulty={(d: AIDifficulty) => setAiDifficulty(d)}
+        />
+      }
     >
       <div className="w-full min-h-[560px] h-full flex flex-col justify-center overflow-y-auto p-2 sm:p-4">
         {clientSafeState.phase === 'lobby' && (
@@ -383,6 +424,15 @@ export const ChorSipahiGame: React.FC = () => {
           />
         )}
       </div>
+
+      <SingleUnifiedMultiplayerModal
+        isOpen={showOnlineModal}
+        onClose={() => setShowOnlineModal(false)}
+        gameId="chor-sipahi"
+        gameTitle="Chor Sipahi: Royal Court"
+        gameThumbnail="👑"
+        user={user}
+      />
     </GameFullscreenShell>
   );
 };

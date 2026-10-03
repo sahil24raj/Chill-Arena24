@@ -43,6 +43,7 @@ export interface GameFullscreenShellProps {
   extraControls?: React.ReactNode;
   modeBadge?: React.ReactNode;
   activePlayerInfo?: React.ReactNode;
+  compactModeBar?: React.ReactNode;
   onChangeMode?: () => void;
   onExitGame?: () => void;
   children: React.ReactNode | ((metrics: GameViewportMetrics) => React.ReactNode);
@@ -66,6 +67,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
   extraControls,
   modeBadge,
   activePlayerInfo,
+  compactModeBar,
   onChangeMode,
   onExitGame,
   children,
@@ -166,9 +168,16 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                 <div className="shrink-0">{modeBadge}</div>
               )}
 
+              {/* Compact Game Mode Bar in Header */}
+              {compactModeBar && (
+                <div className="hidden md:inline-flex shrink-0">
+                  {compactModeBar}
+                </div>
+              )}
+
               {/* Active Player Info if provided */}
               {activePlayerInfo && (
-                <div className="hidden md:inline-flex shrink-0">{activePlayerInfo}</div>
+                <div className="hidden lg:inline-flex shrink-0">{activePlayerInfo}</div>
               )}
 
               {isFullscreen && (
@@ -338,22 +347,22 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
         {/* MAIN GAME VIEWPORT PLAYING AREA */}
         {/* ========================================================= */}
         <main
-          className={`game-playing-viewport relative w-full flex-1 min-w-0 min-h-0 flex items-center justify-center overflow-hidden ${
+          className={`game-playing-viewport relative w-full flex-1 min-w-0 min-h-0 flex flex-col ${
             isFullscreen
-              ? 'h-full w-full p-2 sm:p-4'
-              : 'min-h-[480px] h-[520px] sm:h-[560px] p-2 sm:p-4'
+              ? 'h-[calc(100dvh-48px)] max-h-[calc(100dvh-48px)] w-full p-1 sm:p-3 overflow-y-auto overflow-x-hidden'
+              : 'min-h-[460px] max-h-[88vh] h-auto p-1.5 sm:p-3 overflow-y-auto overflow-x-hidden'
           }`}
         >
-          {/* Inner Aspect Ratio & Scaling Containment Box */}
+          {/* Inner Aspect Ratio & Scaling Containment Box with margin:auto for safe scrollable centering */}
           <div
-            className={`game-aspect-container relative w-full h-full min-w-0 min-h-0 flex items-center justify-center ${
-              finalAspectRatio === '16/9'
+            className={`game-aspect-container relative w-full min-w-0 min-h-0 m-auto flex flex-col items-center justify-center ${
+              finalScaling === 'contain' && finalAspectRatio === '16/9'
                 ? 'aspect-video max-w-full max-h-full'
-                : finalAspectRatio === '1/1'
+                : finalScaling === 'contain' && finalAspectRatio === '1/1'
                 ? 'aspect-square max-w-full max-h-full'
-                : finalAspectRatio === '4/3'
+                : finalScaling === 'contain' && finalAspectRatio === '4/3'
                 ? 'aspect-[4/3] max-w-full max-h-full'
-                : 'w-full h-full'
+                : 'w-full h-full max-w-full max-h-full'
             }`}
           >
             {typeof children === 'function' ? children(metrics) : children}

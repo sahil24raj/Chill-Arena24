@@ -141,24 +141,6 @@ export const BrainPotCanvas: React.FC = () => {
   const handleModeSelection = (selection: GameModeSelection) => {
     setShowModeSelector(false);
     if (selection.mode === 'online') {
-      openMultiplayerModal({
-        id: 'brain-pot',
-        title: 'Brain Pot: Rapid IQ Arena 🧠',
-        slug: 'brain-pot',
-        tagline: 'Rapid Cognitive Micro Challenges',
-        description: 'Multiplayer IQ Challenge',
-        category: '🧠 Mind Games',
-        categoryKey: 'mind',
-        thumbnail: '🧠',
-        bannerImage: '/games/brain-pot.jpg',
-        playCount: 168000,
-        rating: 4.95,
-        difficulty: 'Medium',
-        duration: '1-2 min',
-        multiplayer: true,
-        controls: ['Click correct option'],
-        tags: ['IQ', 'Micro-games', 'Multiplayer'],
-      });
       return;
     }
     handleStartGame(selection.mode, selection.difficulty, selection.players);
@@ -374,6 +356,19 @@ export const BrainPotCanvas: React.FC = () => {
         onPause={() => setStatus('PAUSED')}
         onResume={() => setStatus('PLAYING')}
         onRestart={() => handleStartGame()}
+        currentMode={currentMode}
+        onSelectMode={(m) => {
+          if (m !== 'online') {
+            handleStartGame(m, aiDifficulty);
+          }
+        }}
+        aiDifficulty={aiDifficulty}
+        onSelectDifficulty={(d) => {
+          setAiDifficulty(d);
+          handleStartGame(currentMode, d);
+        }}
+        players={players}
+        onOpenPassPlayConfig={() => setShowModeSelector(true)}
         onChangeMode={() => setShowModeSelector(true)}
         modeBadge={
           <span className="px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-[#00F0FF] text-[10px] font-bold font-mono uppercase tracking-wider flex items-center gap-1">

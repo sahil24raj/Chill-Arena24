@@ -27,6 +27,12 @@ export const MultiplayerLobbyModal: React.FC = () => {
   );
   const [gameMode, setGameMode] = useState<'local' | 'online' | 'ai'>('online');
 
+  React.useEffect(() => {
+    if (selectedMultiplayerGame?.id) {
+      setSelectedGameId(selectedMultiplayerGame.id);
+    }
+  }, [selectedMultiplayerGame]);
+
   if (!activeMultiplayerModal) return null;
 
   const handleCreateRoom = async () => {

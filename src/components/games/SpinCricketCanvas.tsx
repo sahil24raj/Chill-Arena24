@@ -270,24 +270,6 @@ export const SpinCricketCanvas: React.FC = () => {
   const handleModeSelection = (selection: GameModeSelection) => {
     setShowModeSelector(false);
     if (selection.mode === 'online') {
-      openMultiplayerModal({
-        id: 'spin-cricket',
-        title: 'Spin Cricket (Book Cricket) 🏏',
-        slug: 'spin-cricket',
-        tagline: 'Multiplayer Spinner Duel',
-        description: 'Spin Cricket multiplayer',
-        category: '🏫 School Vibes',
-        categoryKey: 'school',
-        thumbnail: '🏏',
-        bannerImage: '/games/spin-cricket.jpg',
-        playCount: 172000,
-        rating: 4.94,
-        difficulty: 'Easy',
-        duration: '1-3 min',
-        multiplayer: true,
-        controls: ['Click SPIN to deliver shot'],
-        tags: ['Cricket', 'Multiplayer'],
-      });
       return;
     }
     startMatch(selection.mode, selection.difficulty, selection.players);
@@ -601,6 +583,19 @@ export const SpinCricketCanvas: React.FC = () => {
         onPause={() => setStatus('PAUSED')}
         onResume={() => setStatus('PLAYING')}
         onRestart={() => startMatch()}
+        currentMode={currentMode}
+        onSelectMode={(m) => {
+          if (m !== 'online') {
+            startMatch(m, aiDifficulty);
+          }
+        }}
+        aiDifficulty={aiDifficulty}
+        onSelectDifficulty={(d) => {
+          setAiDifficulty(d);
+          startMatch(currentMode, d);
+        }}
+        players={players}
+        onOpenPassPlayConfig={() => setShowModeSelector(true)}
         onChangeMode={() => setShowModeSelector(true)}
         modeBadge={
           <span className="px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-[#00F0FF] text-[10px] font-bold font-mono uppercase tracking-wider flex items-center gap-1">
