@@ -30,10 +30,11 @@ const DEFAULT_METRICS: GameViewportMetrics = {
   safeAreaBottom: 0,
 };
 
-export const GameViewportContext = createContext<GameViewportMetrics>(DEFAULT_METRICS);
+export const GameViewportContext = createContext<GameViewportMetrics | null>(null);
 
 export function useGameViewport(): GameViewportMetrics {
-  return useContext(GameViewportContext);
+  const ctx = useContext(GameViewportContext);
+  return ctx || DEFAULT_METRICS;
 }
 
 interface ViewportTrackerOptions {
@@ -54,11 +55,12 @@ export function useTrackGameViewport(options: ViewportTrackerOptions = {}): {
 
   const [metrics, setMetrics] = useState<GameViewportMetrics>(DEFAULT_METRICS);
   const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const [cssFullscreen, setCssFullscreen] = useState(false);
 
   // Determine actual fullscreen state
   const isFullscreen = forceFullscreenState !== undefined
     ? forceFullscreenState
-    : internalFullscreen;
+    : (internalFullscreen || cssFullscreen);
 
   // Sync fullscreen state with DOM
   useEffect(() => {
@@ -74,6 +76,9 @@ export function useTrackGameViewport(options: ViewportTrackerOptions = {}): {
       // Check if document or the active container is fullscreen
       const isFS = !!fsEl;
       setInternalFullscreen(isFS);
+      if (!isFS && !cssFullscreen) {
+        // Exited DOM fullscreen
+      }
     };
 
     checkFullscreen();
@@ -89,7 +94,7 @@ export function useTrackGameViewport(options: ViewportTrackerOptions = {}): {
       document.removeEventListener('mozfullscreenchange', checkFullscreen);
       document.removeEventListener('MSFullscreenChange', checkFullscreen);
     };
-  }, []);
+  }, [cssFullscreen]);
 
   // Update layout and dimensions with ResizeObserver and window listeners
   useEffect(() => {
@@ -184,16 +189,17 @@ export function useTrackGameViewport(options: ViewportTrackerOptions = {}): {
         await (target as any).msRequestFullscreen();
       } else {
         // Fallback for iOS Safari or restricted environments
-        setInternalFullscreen(true);
+        setCssFullscreen(true);
       }
     } catch {
       // In case of permission errors or older mobile browsers, fallback to CSS fullscreen
-      setInternalFullscreen(true);
+      setCssFullscreen(true);
     }
   };
 
   // Safe exitFullscreen
   const exitFullscreen = async () => {
+    setCssFullscreen(false);
     try {
       if (document.exitFullscreen && document.fullscreenElement) {
         await document.exitFullscreen();
@@ -203,11 +209,9 @@ export function useTrackGameViewport(options: ViewportTrackerOptions = {}): {
         await (document as any).mozCancelFullScreen();
       } else if ((document as any).msExitFullscreen && (document as any).msFullscreenElement) {
         await (document as any).msExitFullscreen();
-      } else {
-        setInternalFullscreen(false);
       }
     } catch {
-      setInternalFullscreen(false);
+      // ignore
     }
   };
 

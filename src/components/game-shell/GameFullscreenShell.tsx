@@ -41,6 +41,10 @@ export interface GameFullscreenShellProps {
   scalingMode?: 'contain' | 'responsive' | 'fill';
   showHUD?: boolean;
   extraControls?: React.ReactNode;
+  modeBadge?: React.ReactNode;
+  activePlayerInfo?: React.ReactNode;
+  onChangeMode?: () => void;
+  onExitGame?: () => void;
   children: React.ReactNode | ((metrics: GameViewportMetrics) => React.ReactNode);
 }
 
@@ -60,6 +64,10 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
   scalingMode,
   showHUD = true,
   extraControls,
+  modeBadge,
+  activePlayerInfo,
+  onChangeMode,
+  onExitGame,
   children,
 }) => {
   const parentViewport = React.useContext(GameViewportContext);
@@ -130,7 +138,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
         className={`game-fullscreen-root relative select-none flex flex-col justify-between transition-all duration-200 outline-none ${
           isFullscreen
             ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] min-h-[100dvh] max-w-none max-h-none m-0 p-0 rounded-none border-0 bg-[#04060c] text-gray-100 overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]'
-            : 'relative w-full max-w-4xl mx-auto rounded-3xl border border-slate-800/80 bg-slate-950/95 shadow-2xl overflow-hidden'
+            : 'relative w-full max-w-5xl mx-auto rounded-3xl border border-slate-800/80 bg-slate-950/95 shadow-2xl overflow-hidden'
         }`}
       >
         {/* ========================================================= */}
@@ -140,37 +148,47 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
           <header
             className={`w-full flex items-center justify-between z-40 transition-all duration-200 font-mono ${
               isFullscreen
-                ? 'px-4 sm:px-6 py-2.5 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/70 text-xs shadow-lg'
-                : 'px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs text-gray-300'
+                ? 'px-3 sm:px-6 py-2 bg-slate-950/95 backdrop-blur-md border-b border-cyan-500/30 text-xs shadow-lg'
+                : 'px-3 sm:px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs text-gray-300'
             }`}
           >
-            {/* Left: Category & Title */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-[#00F0FF] font-black text-[11px] border border-indigo-500/30 uppercase tracking-wider shrink-0">
+            {/* Left: Category, Title & Mode Badge */}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-[#00F0FF] font-black text-[10px] sm:text-[11px] border border-indigo-500/30 uppercase tracking-wider shrink-0 hidden xs:inline">
                 {category}
               </span>
               <span className="font-black text-white truncate text-xs sm:text-sm font-display tracking-wide drop-shadow-sm">
                 {gameTitle}
               </span>
 
+              {/* Mode Badge if provided */}
+              {modeBadge && (
+                <div className="shrink-0">{modeBadge}</div>
+              )}
+
+              {/* Active Player Info if provided */}
+              {activePlayerInfo && (
+                <div className="hidden md:inline-flex shrink-0">{activePlayerInfo}</div>
+              )}
+
               {isFullscreen && (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-cyan-400/80 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-md">
+                <span className="hidden lg:inline-flex items-center gap-1 text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-md font-bold">
                   ⛶ FULLSCREEN
                 </span>
               )}
             </div>
 
-            {/* Right: Scores, Controls & Fullscreen toggle */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Right: Scores, Controls, Mode Switch, Fullscreen toggle */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               {/* Score Display */}
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-700/80 shadow-inner">
-                <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">SCORE:</span>
+              <div className="flex items-center gap-1 bg-slate-800/90 px-2 sm:px-2.5 py-1 rounded-xl border border-slate-700/80 shadow-inner">
+                <span className="text-gray-400 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider">SCORE:</span>
                 <span className="text-[#00F0FF] font-black text-xs sm:text-sm">{score}</span>
               </div>
 
               {/* High Score (Desktop / Tablet) */}
               {highScore > 0 && (
-                <div className="hidden sm:flex items-center gap-1 bg-slate-800/50 px-2.5 py-1 rounded-xl border border-slate-700/50 text-yellow-400 font-bold text-xs">
+                <div className="hidden sm:flex items-center gap-1 bg-slate-800/50 px-2 py-1 rounded-xl border border-slate-700/50 text-yellow-400 font-bold text-xs">
                   <Trophy className="w-3.5 h-3.5 fill-yellow-400/20" />
                   <span>{highScore}</span>
                 </div>
@@ -182,6 +200,22 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                   <Zap className="w-3 h-3 fill-current" />
                   {combo}x
                 </div>
+              )}
+
+              {/* Change Mode button if handler passed */}
+              {onChangeMode && (
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    onChangeMode();
+                  }}
+                  title="Change Game Mode (VS AI, Pass & Play, Online)"
+                  aria-label="Change Game Mode"
+                  className="px-2 sm:px-2.5 py-1 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-purple-300 hover:text-white text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span className="hidden xs:inline">MODES</span>
+                  <span>🎯</span>
+                </button>
               )}
 
               {/* Extra game-specific controls if passed */}
@@ -198,7 +232,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                   aria-label="Pause Game"
                   className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white transition-all transform active:scale-95 cursor-pointer border border-slate-700/60"
                 >
-                  <Pause className="w-4 h-4" />
+                  <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               )}
 
@@ -213,7 +247,7 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                   aria-label="Restart Game"
                   className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white transition-all transform active:scale-95 cursor-pointer border border-slate-700/60 hidden xs:inline-flex"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               )}
 
@@ -225,35 +259,54 @@ export const GameFullscreenShell: React.FC<GameFullscreenShellProps> = ({
                 className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white transition-all transform active:scale-95 cursor-pointer border border-slate-700/60"
               >
                 {isMuted ? (
-                  <VolumeX className="w-4 h-4 text-red-400" />
+                  <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
                 ) : (
-                  <Volume2 className="w-4 h-4 text-[#00F0FF]" />
+                  <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00F0FF]" />
                 )}
               </button>
 
-              {/* Fullscreen Toggle Button */}
+              {/* Universal Clearly Visible Fullscreen Toggle Button */}
               <button
                 onClick={toggleFullscreen}
                 title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen (⛶)'}
                 aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-                className={`p-1.5 sm:p-2 rounded-xl font-bold flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer ${
+                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all transform active:scale-95 cursor-pointer shadow-md ${
                   isFullscreen
-                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 shadow-lg shadow-rose-500/10'
-                    : 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 text-[#00F0FF] border border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+                    ? 'bg-rose-500/25 hover:bg-rose-500/40 text-rose-300 border border-rose-500/50 shadow-rose-500/20'
+                    : 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-teal-500/20 hover:from-cyan-500/35 hover:to-teal-500/35 text-[#00F0FF] border border-cyan-400/50 shadow-cyan-500/20'
                 }`}
               >
                 {isFullscreen ? (
                   <>
-                    <Minimize2 className="w-4 h-4" />
-                    <span className="hidden md:inline text-[11px]">EXIT</span>
+                    <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline text-[11px] font-black tracking-wider">EXIT (✕)</span>
                   </>
                 ) : (
                   <>
-                    <Maximize2 className="w-4 h-4" />
-                    <span className="hidden md:inline text-[11px]">FULLSCREEN</span>
+                    <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline text-[11px] font-black tracking-wider">⛶ FULLSCREEN</span>
                   </>
                 )}
               </button>
+
+              {/* Exit Game / Back button if in fullscreen */}
+              {isFullscreen && (
+                <button
+                  onClick={() => {
+                    soundFx.playClick();
+                    if (onExitGame) {
+                      onExitGame();
+                    } else {
+                      exitFullscreen();
+                    }
+                  }}
+                  title="Exit Fullscreen (Esc)"
+                  aria-label="Exit Fullscreen"
+                  className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-red-950/70 border border-slate-700 hover:border-red-500/60 text-gray-400 hover:text-red-300 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </header>
         )}

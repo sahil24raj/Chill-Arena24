@@ -33,6 +33,10 @@ export interface GameLifecycleWrapperProps {
   preferredAspectRatio?: '16/9' | '1/1' | '4/3' | '9/16' | 'auto';
   preferredOrientation?: 'landscape' | 'portrait' | 'any';
   scalingMode?: 'contain' | 'responsive' | 'fill';
+  modeBadge?: React.ReactNode;
+  activePlayerInfo?: React.ReactNode;
+  onChangeMode?: () => void;
+  onExitGame?: () => void;
   children: React.ReactNode;
 }
 
@@ -54,6 +58,10 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
   preferredAspectRatio,
   preferredOrientation,
   scalingMode,
+  modeBadge,
+  activePlayerInfo,
+  onChangeMode,
+  onExitGame,
   children,
 }) => {
   const [countdown, setCountdown] = useState<number | string | null>(null);
@@ -115,6 +123,10 @@ export const GameLifecycleWrapper: React.FC<GameLifecycleWrapperProps> = ({
       preferredAspectRatio={preferredAspectRatio}
       preferredOrientation={preferredOrientation}
       scalingMode={scalingMode}
+      modeBadge={modeBadge}
+      activePlayerInfo={activePlayerInfo}
+      onChangeMode={onChangeMode}
+      onExitGame={onExitGame}
       showHUD={true}
     >
       <div className="relative w-full h-full min-w-0 min-h-0 flex items-center justify-center overflow-hidden">
