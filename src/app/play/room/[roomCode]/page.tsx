@@ -30,6 +30,8 @@ import confetti from 'canvas-confetti';
 // Game Canvases for in-room live play
 import { TicTacToeCanvas } from '@/components/games/TicTacToeCanvas';
 import { MultiplayerTicTacToe } from '@/components/multiplayer/MultiplayerTicTacToe';
+import { MultiplayerWordBuilder } from '@/components/multiplayer/MultiplayerWordBuilder';
+import { MultiplayerChorSipahi } from '@/components/multiplayer/MultiplayerChorSipahi';
 import { ChorSipahiGame } from '@/components/games/chor-sipahi/ChorSipahiGame';
 import { SpinCricketCanvas } from '@/components/games/SpinCricketCanvas';
 import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
@@ -88,7 +90,15 @@ export default function PlayRoomPage({
 
     switch (room.gameId) {
       case 'chor-sipahi':
-        return <ChorSipahiGame />;
+        return (
+          <MultiplayerChorSipahi
+            room={room as any}
+            currentUserId={currentPlayer?.id || user.id}
+            isMyTurn={isMyTurn}
+            isHost={isHost}
+            submitAction={submitAction}
+          />
+        );
       case 'tic-tac-toe':
         return (
           <MultiplayerTicTacToe
@@ -98,12 +108,19 @@ export default function PlayRoomPage({
             submitAction={submitAction}
           />
         );
+      case 'word-builder':
+        return (
+          <MultiplayerWordBuilder
+            room={room as any}
+            currentUserId={currentPlayer?.id || user.id}
+            isHost={isHost}
+            submitAction={submitAction}
+          />
+        );
       case 'spin-cricket':
         return <SpinCricketCanvas />;
       case 'pen-flip':
         return <PenFlipCanvas />;
-      case 'word-builder':
-        return <WordBuilderCanvas />;
       case 'brain-pot':
         return <BrainPotCanvas />;
       case 'modi-run':

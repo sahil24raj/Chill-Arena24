@@ -12,10 +12,14 @@ export interface WordBuilderState {
   timeRemainingSec: number;
 }
 
-export interface WordBuilderAction {
-  type: 'SUBMIT_WORD';
-  word: string;
-}
+export type WordBuilderAction =
+  | {
+      type: 'SUBMIT_WORD';
+      word: string;
+    }
+  | {
+      type: 'TIME_UP';
+    };
 
 export const WordBuilderAdapter: GameAdapter<WordBuilderState, WordBuilderAction> = {
   gameId: 'word-builder',
@@ -33,11 +37,14 @@ export const WordBuilderAdapter: GameAdapter<WordBuilderState, WordBuilderAction
       playerScores[p.id] = 0;
     });
 
+    // Scramble letters so it's a true anagram challenge
+    const scrambled = [...level.letters].sort(() => Math.random() - 0.5);
+
     return {
       levelId: level.id,
       theme: level.theme,
-      letters: level.letters,
-      targetWords: level.targetWords,
+      letters: scrambled,
+      targetWords: level.targetWords.map((w) => w.toUpperCase()),
       foundWordsMap,
       playerScores,
       timeRemainingSec: settings?.turnTimeLimitSec || 60
@@ -49,6 +56,10 @@ export const WordBuilderAdapter: GameAdapter<WordBuilderState, WordBuilderAction
     action: WordBuilderAction,
     playerId: string
   ): ActionValidationResult => {
+    if (action.type === 'TIME_UP') {
+      return { valid: true };
+    }
+
     if (action.type !== 'SUBMIT_WORD') {
       return { valid: false, error: 'Unknown action' };
     }
@@ -88,6 +99,36 @@ export const WordBuilderAdapter: GameAdapter<WordBuilderState, WordBuilderAction
     playerId: string,
     players: RoomPlayer[]
   ): ActionResult<WordBuilderState> => {
+    if (action.type === 'TIME_UP') {
+      // Determine winner based on top score
+      let topScore = -1;
+      let topPlayerId: string | null = null;
+      let isDraw = false;
+
+      players.forEach((p) => {
+        const pScore = state.playerScores[p.id] || 0;
+        if (pScore > topScore) {
+          topScore = pScore;
+          topPlayerId = p.id;
+          isDraw = false;
+        } else if (pScore === topScore && pScore > 0) {
+          isDraw = true;
+        }
+      });
+
+      const winnerId = isDraw ? null : topPlayerId;
+      const winnerUsername = winnerId ? players.find((p) => p.id === winnerId)?.username : null;
+
+      return {
+        nextState: state,
+        nextTurn: null,
+        winnerId,
+        winnerUsername,
+        isFinished: true,
+        events: [{ type: 'MATCH_TIME_UP', data: { winnerId, topScore } }]
+      };
+    }
+
     const cleanWord = action.word.trim().toUpperCase();
     const isTarget = state.targetWords.includes(cleanWord);
 
