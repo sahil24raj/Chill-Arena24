@@ -38,6 +38,7 @@ import { PenFlipCanvas } from '@/components/games/PenFlipCanvas';
 import { WordBuilderCanvas } from '@/components/games/WordBuilderCanvas';
 import { BrainPotCanvas } from '@/components/games/BrainPotCanvas';
 import { ModiRunCanvas } from '@/components/games/ModiRunCanvas';
+import { FakeBombCanvas } from '@/components/games/fake-bomb/FakeBombCanvas';
 import { CIDEscapeCanvas } from '@/components/games/CIDEscapeCanvas';
 import { EmojiDodgeCanvas } from '@/components/games/EmojiDodgeCanvas';
 import { EraserThrowCanvas } from '@/components/games/EraserThrowCanvas';
@@ -89,6 +90,8 @@ export default function PlayRoomPage({
     if (!room || !game) return null;
 
     switch (room.gameId) {
+      case 'fake-bomb':
+        return <FakeBombCanvas roomCode={roomCode} isMultiplayerSession={true} />;
       case 'chor-sipahi':
         return (
           <MultiplayerChorSipahi

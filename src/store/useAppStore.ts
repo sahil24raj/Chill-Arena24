@@ -119,6 +119,42 @@ export const INITIAL_RECENT_MATCHES: RecentMatch[] = [];
 
 export const GAMES_CATALOG: GameItem[] = [
   {
+    id: 'fake-bomb',
+    title: 'Fake Bomb (Chaos Core) 💣⚛️',
+    slug: 'fake-bomb',
+    tagline: 'Trust nobody. Press carefully.',
+    description: 'Fast-paced cooperative social deduction party game for 3–6 players! Defuse the cartoon Chaos Core together before time runs out. Every player holds partial clues, but beware: one secret Gremlin is trying to mislead the squad!',
+    category: '🎭 Squad Games',
+    categoryKey: 'squad',
+    thumbnail: '⚛️',
+    bannerImage: '/games/fake-bomb.jpg',
+    playCount: 198000,
+    rating: 4.99,
+    difficulty: 'Medium',
+    duration: '1-3 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    isPopular: true,
+    isFeatured: true,
+    controls: [
+      'Click Glowing Symbol Buttons in Sequence',
+      'Inspect Your Secret Clue Card',
+      'Chat & Coordinate Clues with Squad',
+      'Vote for the Secret Gremlin'
+    ],
+    tags: ['Co-op', 'Social Deduction', 'Party Game', 'Chaos Core', '3-6 Players', 'Partial Clues'],
+    rules: [
+      '3 rounds per match. Each round lasts 35 seconds.',
+      'Cartoon Chaos Core requires 3 to 5 harmless symbols pressed in exact sequence.',
+      'Each player receives one partial secret clue. No single player knows the full answer!',
+      'Team starts with 2 shields per round. A wrong button deducts 1 shield and resets current attempt.',
+      'In Gremlin mode, 1 secret player receives a misleading clue to confuse the squad.',
+      'At the end of each round, vote on who acted suspicious to raise their Suspicion Meter!'
+    ]
+  },
+  {
     id: 'chor-sipahi',
     title: 'Chor Sipahi (Raja Mantri) 👑🥷',
     slug: 'chor-sipahi',

@@ -116,6 +116,14 @@ export const GAME_FULLSCREEN_REGISTRY: Record<string, GameFullscreenConfig> = {
     scalingMode: 'responsive',
     showHUD: true,
   },
+  'fake-bomb': {
+    id: 'fake-bomb',
+    title: 'Fake Bomb (Chaos Core) 💣⚛️',
+    preferredAspectRatio: '16/9',
+    preferredOrientation: 'landscape',
+    scalingMode: 'responsive',
+    showHUD: true,
+  },
 };
 
 const DEFAULT_CONFIG: GameFullscreenConfig = {
