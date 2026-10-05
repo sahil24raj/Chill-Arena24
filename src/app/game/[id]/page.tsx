@@ -39,6 +39,52 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallbackTitle?: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class GameErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[GameErrorBoundary] Captured game runtime error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full min-h-[500px] rounded-3xl bg-[#0c1017] border border-pink-500/30 p-8 flex flex-col items-center justify-center text-center space-y-4 shadow-2xl">
+          <span className="text-5xl">⚛️</span>
+          <h3 className="text-xl font-black text-white font-display">Arena Standby</h3>
+          <p className="text-xs text-gray-400 max-w-md">
+            Click below to initialize the game arena session!
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-xs tracking-wider transition-all shadow-lg cursor-pointer"
+          >
+            LAUNCH GAME ARENA
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user, addRecentlyPlayed } = useAppStore();
@@ -222,7 +268,9 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
       {/* LIVE GAME VIEWPORT */}
       <div className="w-full flex justify-center">
-        {renderGameCanvas()}
+        <GameErrorBoundary fallbackTitle={game.title}>
+          {renderGameCanvas()}
+        </GameErrorBoundary>
       </div>
 
       {/* Game Details, Rules & Comments Grid */}

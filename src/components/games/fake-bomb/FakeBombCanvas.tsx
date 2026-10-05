@@ -42,7 +42,10 @@ import {
   Bot,
   UserCheck,
   Zap,
-  Radio
+  Radio,
+  Share2,
+  Smile,
+  Info
 } from 'lucide-react';
 
 interface FakeBombCanvasProps {
@@ -59,6 +62,24 @@ const AI_BOT_TEMPLATES = [
   { name: 'AlienBro', avatar: '👾', tag: 'Suspicious' }
 ];
 
+const DEFAULT_HUMAN_PLAYER: FakeBombPlayer = {
+  id: 'player-1',
+  name: 'Commander',
+  avatar: '🚀',
+  isHost: true,
+  isAi: false,
+  role: 'operator',
+  suspicionScore: 0,
+  ready: true,
+  votesReceived: 0,
+  tag: 'Human Pilot',
+  clue: {
+    id: 'default-clue',
+    text: 'Analyze the Chaos Core symbols carefully!',
+    type: 'exact'
+  }
+};
+
 export function FakeBombCanvas({
   onGameEnd,
   roomCode: initialRoomCode,
@@ -66,13 +87,20 @@ export function FakeBombCanvas({
 }: FakeBombCanvasProps) {
   const { user, submitGameScore, addXP, addCoins, recordGameWin } = useAppStore();
 
+  // Client Hydration Guard to prevent SSR mismatch
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Audio mute state
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Difficulty Mode (Easy mode for smooth, relaxed play)
+  const [difficultyMode, setDifficultyMode] = useState<'easy' | 'normal' | 'hard'>('easy');
+
   // Mode & Room State
   const [gameMode, setGameMode] = useState<'solo' | 'room' | 'quick'>('solo');
-  const [roomCode, setRoomCode] = useState<string>(
-    initialRoomCode || `CORE${Math.floor(10 + Math.random() * 90)}`
-  );
+  const [roomCode, setRoomCode] = useState<string>(initialRoomCode || 'CORE88');
   const [copiedCode, setCopiedCode] = useState(false);
-  const [enableGremlin, setEnableGremlin] = useState(true);
+  const [enableGremlin, setEnableGremlin] = useState(false); // default off for smooth start!
 
   // Match State
   const [phase, setPhase] = useState<GamePhase>('mode_select');
@@ -90,8 +118,8 @@ export function FakeBombCanvas({
   const [enteredSequence, setEnteredSequence] = useState<string[]>([]);
   const [activeButtonFlash, setActiveButtonFlash] = useState<string | null>(null);
 
-  // Players & Clues
-  const [players, setPlayers] = useState<FakeBombPlayer[]>([]);
+  // Players & Clues (Safe initial state with guaranteed fallback)
+  const [players, setPlayers] = useState<FakeBombPlayer[]>([DEFAULT_HUMAN_PLAYER]);
   const [myPlayerId, setMyPlayerId] = useState<string>('player-1');
   const [isClueHidden, setIsClueHidden] = useState(false);
 
@@ -100,22 +128,42 @@ export function FakeBombCanvas({
   const [chatInput, setChatInput] = useState('');
   const [duckPops, setDuckPops] = useState<DuckPopEffect[]>([]);
   const [isShaking, setIsShaking] = useState(false);
-  const [reactorEnergy, setReactorEnergy] = useState(100);
   const [selectedVoteId, setSelectedVoteId] = useState<string | null>(null);
   const [roundSummary, setRoundSummary] = useState<RoundScoreBreakdown | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const aiChatTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load High Score
+  // Mount Effect
   useEffect(() => {
+    setIsMounted(true);
+    if (!initialRoomCode) {
+      setRoomCode(`CORE${Math.floor(10 + Math.random() * 90)}`);
+    }
+
     try {
       const saved = localStorage.getItem('fake_bomb_high_score');
       if (saved) setHighScore(parseInt(saved, 10));
     } catch {
       // ignore
     }
-  }, []);
+  }, [initialRoomCode]);
+
+  // Sync human player name with user profile once mounted
+  useEffect(() => {
+    if (user) {
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.id === 'player-1'
+            ? {
+                ...p,
+                name: user.displayName || user.username || 'Commander',
+                avatar: user.avatar || '🚀'
+              }
+            : p
+        )
+      );
+    }
+  }, [user]);
 
   const saveHighScore = (newScore: number) => {
     if (newScore > highScore) {
@@ -128,9 +176,20 @@ export function FakeBombCanvas({
     }
   };
 
+  // Safe sound trigger
+  const playSfx = (fn: () => void) => {
+    if (!isMuted) {
+      try {
+        fn();
+      } catch {
+        // ignore audio errors
+      }
+    }
+  };
+
   // Quack / Duck animation on wrong press
   const triggerDuckPop = (text = 'QUACK! 🦆') => {
-    soundFx.playHit();
+    playSfx(() => soundFx.playHit());
     const id = Date.now().toString() + Math.random();
     const newDuck: DuckPopEffect = {
       id,
@@ -147,49 +206,57 @@ export function FakeBombCanvas({
     }, 1800);
   };
 
-  // Setup Solo Players
-  const initPlayers = useCallback((mode: 'solo' | 'room', gremlinActive: boolean) => {
-    const human: FakeBombPlayer = {
-      id: 'player-1',
-      name: user.displayName || user.username || 'You (Commander)',
-      avatar: user.avatar || '🚀',
-      isHost: true,
-      isAi: false,
-      role: 'operator',
-      suspicionScore: 0,
-      ready: true,
-      votesReceived: 0,
-      tag: 'Human Pilot'
-    };
-
-    const squad: FakeBombPlayer[] = [human];
-    const aiCount = mode === 'solo' ? 3 : 2; // 4 players total in solo, 3 in private room default
-
-    for (let i = 0; i < aiCount; i++) {
-      const template = AI_BOT_TEMPLATES[i % AI_BOT_TEMPLATES.length];
-      squad.push({
-        id: `ai-${i + 1}`,
-        name: template.name,
-        avatar: template.avatar,
-        isHost: false,
-        isAi: true,
+  // Setup Players
+  const initPlayers = useCallback(
+    (mode: 'solo' | 'room', gremlinActive: boolean) => {
+      const human: FakeBombPlayer = {
+        id: 'player-1',
+        name: user?.displayName || user?.username || 'Commander',
+        avatar: user?.avatar || '🚀',
+        isHost: true,
+        isAi: false,
         role: 'operator',
         suspicionScore: 0,
         ready: true,
         votesReceived: 0,
-        tag: template.tag
-      });
-    }
+        tag: 'Human Pilot',
+        clue: {
+          id: 'initial',
+          text: 'Check your clue card as soon as the round begins!',
+          type: 'exact'
+        }
+      };
 
-    // Assign 1 secret Gremlin if enabled
-    if (gremlinActive && squad.length >= 3) {
-      const gremlinIndex = Math.floor(Math.random() * squad.length);
-      squad[gremlinIndex].role = 'gremlin';
-    }
+      const squad: FakeBombPlayer[] = [human];
+      const aiCount = mode === 'solo' ? 3 : 2;
 
-    setPlayers(squad);
-    setMyPlayerId('player-1');
-  }, [user]);
+      for (let i = 0; i < aiCount; i++) {
+        const template = AI_BOT_TEMPLATES[i % AI_BOT_TEMPLATES.length];
+        squad.push({
+          id: `ai-${i + 1}`,
+          name: template.name,
+          avatar: template.avatar,
+          isHost: false,
+          isAi: true,
+          role: 'operator',
+          suspicionScore: 0,
+          ready: true,
+          votesReceived: 0,
+          tag: template.tag
+        });
+      }
+
+      if (gremlinActive && squad.length >= 3) {
+        const gremlinIndex = Math.floor(Math.random() * squad.length);
+        squad[gremlinIndex].role = 'gremlin';
+      }
+
+      setPlayers(squad);
+      setMyPlayerId('player-1');
+      return squad;
+    },
+    [user]
+  );
 
   // Distribute Clues for a Round
   const assignCluesForPuzzle = useCallback(
@@ -217,46 +284,46 @@ export function FakeBombCanvas({
 
   // Start a new Round
   const startRound = useCallback(
-    (roundNum: number) => {
-      const difficulty = roundNum === 1 ? 'easy' : roundNum === 2 ? 'normal' : 'hard';
-      const puzzle = getPuzzleForRound(roundNum, difficulty);
+    (roundNum: number, currentSquad?: FakeBombPlayer[]) => {
+      const activeSquad = currentSquad || players;
+      const diff = difficultyMode === 'easy' ? 'easy' : roundNum === 1 ? 'easy' : roundNum === 2 ? 'normal' : 'hard';
+      const puzzle = getPuzzleForRound(roundNum, diff);
       setCurrentPuzzle(puzzle);
       setRound(roundNum);
       setTimeLeft(35);
       setShields(2);
       setEnteredSequence([]);
       setPerfectRound(true);
-      setReactorEnergy(100);
       setSelectedVoteId(null);
 
-      // Assign clues
-      const updatedPlayers = assignCluesForPuzzle(puzzle, players);
+      // Distribute clues to active squad
+      const updatedPlayers = assignCluesForPuzzle(puzzle, activeSquad);
 
-      // System Message
+      // System announcement
       setChatMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           senderId: 'system',
           senderName: 'Chaos Core AI',
-          text: `🚨 ROUND ${roundNum} INITIALIZED! ${puzzle.sequence.length}-symbol sequence needed. Share your clues!`,
+          text: `🚨 ROUND ${roundNum} INITIALIZED! ${puzzle.sequence.length}-symbol sequence needed. Coordinate with squad!`,
           timestamp: 'Now',
           isSystem: true
         }
       ]);
 
       setPhase('playing');
-      soundFx.playLevelUp();
+      playSfx(() => soundFx.playLevelUp());
 
-      // Trigger AI Clue Sharing in chat
-      let delay = 2000;
+      // Bots share clues automatically
+      let delay = 1500;
       updatedPlayers.forEach((p) => {
         if (p.isAi && p.clue) {
           setTimeout(() => {
             const aiText =
               p.role === 'gremlin'
                 ? `Hey squad! ${p.clue?.text} 😈`
-                : `Found data: ${p.clue?.text} 💡`;
+                : `Squad info: ${p.clue?.text} 💡`;
             setChatMessages((prev) => [
               ...prev,
               {
@@ -269,16 +336,16 @@ export function FakeBombCanvas({
                 badge: p.avatar
               }
             ]);
-            soundFx.playFlip();
+            playSfx(() => soundFx.playFlip());
           }, delay);
-          delay += 3500;
+          delay += 2500;
         }
       });
     },
-    [assignCluesForPuzzle, players]
+    [assignCluesForPuzzle, difficultyMode, isMuted, players]
   );
 
-  // Main countdown timer
+  // Countdown timer
   useEffect(() => {
     if (phase !== 'playing') {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -293,7 +360,7 @@ export function FakeBombCanvas({
           return 0;
         }
         if (prev === 10) {
-          soundFx.playBuzzer();
+          playSfx(() => soundFx.playBuzzer());
         }
         return prev - 1;
       });
@@ -306,7 +373,7 @@ export function FakeBombCanvas({
 
   // Round Timeout Handler
   const handleRoundTimeout = () => {
-    soundFx.playWrong();
+    playSfx(() => soundFx.playWrong());
     triggerDuckPop('TIME UP! CHAOS ACTIVATED! 🦆💥');
     setPhase('round_fail');
   };
@@ -315,7 +382,7 @@ export function FakeBombCanvas({
   const handleButtonPress = (symbolId: string) => {
     if (phase !== 'playing') return;
 
-    soundFx.playClick();
+    playSfx(() => soundFx.playClick());
     setActiveButtonFlash(symbolId);
     setTimeout(() => setActiveButtonFlash(null), 300);
 
@@ -323,25 +390,24 @@ export function FakeBombCanvas({
     const expectedSymbol = currentPuzzle.sequence[nextIndex];
 
     if (symbolId === expectedSymbol) {
-      // Correct Symbol!
+      // Correct!
       const newSequence = [...enteredSequence, symbolId];
       setEnteredSequence(newSequence);
-      soundFx.playCorrect();
+      playSfx(() => soundFx.playCorrect());
 
-      // Check if sequence is fully solved!
       if (newSequence.length === currentPuzzle.sequence.length) {
         handleRoundSuccess();
       }
     } else {
-      // Wrong Symbol!
+      // Wrong!
       setPerfectRound(false);
       triggerDuckPop('WRONG SYMBOL! OOPS! 🦆');
       const nextShields = shields - 1;
       setShields(nextShields);
-      setEnteredSequence([]); // Reset attempt
+      setEnteredSequence([]);
 
       if (nextShields <= 0) {
-        soundFx.playWrong();
+        playSfx(() => soundFx.playWrong());
         setPhase('round_fail');
       }
     }
@@ -349,10 +415,10 @@ export function FakeBombCanvas({
 
   // Round Success Handler
   const handleRoundSuccess = () => {
-    soundFx.playLevelUp();
+    playSfx(() => soundFx.playLevelUp());
     confetti({
-      particleCount: 60,
-      spread: 70,
+      particleCount: 50,
+      spread: 60,
       origin: { y: 0.6 }
     });
 
@@ -379,20 +445,17 @@ export function FakeBombCanvas({
 
   // Handle Voting Submission
   const handleVotePlayer = (targetPlayerId: string) => {
-    if (selectedVoteId) return; // already voted
+    if (selectedVoteId) return;
     setSelectedVoteId(targetPlayerId);
-    soundFx.playClick();
+    playSfx(() => soundFx.playClick());
 
-    // AI Votes
     const votes: Record<string, number> = {};
     players.forEach((p) => {
       votes[p.id] = 0;
     });
 
-    // Human vote
     votes[targetPlayerId] = (votes[targetPlayerId] || 0) + 1;
 
-    // AI teammates vote semi-randomly, higher chance to vote for the real Gremlin or someone suspicious
     const realGremlin = players.find((p) => p.role === 'gremlin');
     players.forEach((p) => {
       if (p.isAi) {
@@ -408,7 +471,6 @@ export function FakeBombCanvas({
       }
     });
 
-    // Update players with votes and suspicion
     const updated = players.map((p) => {
       const received = votes[p.id] || 0;
       const newSuspicion = Math.min(100, p.suspicionScore + received * 18);
@@ -420,10 +482,8 @@ export function FakeBombCanvas({
     });
     setPlayers(updated);
 
-    // Score deduction or bonus
-    const isTargetGremlin = realGremlin && targetPlayerId === realGremlin.id;
-    if (isTargetGremlin) {
-      soundFx.playLevelUp();
+    if (realGremlin && targetPlayerId === realGremlin.id) {
+      playSfx(() => soundFx.playLevelUp());
       setScore((s) => s + 50);
     }
 
@@ -435,10 +495,9 @@ export function FakeBombCanvas({
     if (round < maxRounds) {
       startRound(round + 1);
     } else {
-      // Match Over!
       setPhase('match_over');
-      soundFx.playVictory();
-      confetti({ particleCount: 120, spread: 90 });
+      playSfx(() => soundFx.playVictory());
+      confetti({ particleCount: 100, spread: 80 });
       saveHighScore(score);
       submitGameScore('fake-bomb', score);
       recordGameWin('fake-bomb');
@@ -448,16 +507,16 @@ export function FakeBombCanvas({
     }
   };
 
-  // Send a Chat Message
+  // Send Chat Message
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
-    soundFx.playFlip();
+    playSfx(() => soundFx.playFlip());
     const newMsg: ChatMessage = {
       id: Date.now().toString(),
       senderId: myPlayerId,
-      senderName: user.displayName || user.username || 'You',
+      senderName: user?.displayName || user?.username || 'You',
       text: chatInput.trim(),
       timestamp: 'Just now',
       badge: '🚀'
@@ -466,21 +525,40 @@ export function FakeBombCanvas({
     setChatInput('');
   };
 
+  // Quick share my clue with 1 button
+  const handleQuickShareClue = () => {
+    const clueText = myPlayer?.clue?.text;
+    if (!clueText) return;
+    playSfx(() => soundFx.playFlip());
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        senderId: myPlayerId,
+        senderName: user?.displayName || user?.username || 'You',
+        text: `📢 MY CLUE: "${clueText}"`,
+        timestamp: 'Just now',
+        badge: '💡'
+      }
+    ]);
+  };
+
   // Start Solo Practice
-  const handleStartSolo = () => {
-    soundFx.playClick();
+  const handleStartSolo = (customDifficulty?: 'easy' | 'normal' | 'hard') => {
+    playSfx(() => soundFx.playClick());
+    if (customDifficulty) setDifficultyMode(customDifficulty);
     setGameMode('solo');
-    initPlayers('solo', enableGremlin);
+    const squad = initPlayers('solo', enableGremlin);
     setScore(0);
     setPhase('countdown');
     setTimeout(() => {
-      startRound(1);
-    }, 1200);
+      startRound(1, squad);
+    }, 1000);
   };
 
   // Start Private Room Lobby
   const handleCreateRoom = () => {
-    soundFx.playClick();
+    playSfx(() => soundFx.playClick());
     setGameMode('room');
     initPlayers('room', enableGremlin);
     setScore(0);
@@ -488,15 +566,35 @@ export function FakeBombCanvas({
   };
 
   const handleCopyRoomCode = () => {
-    soundFx.playCoin();
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(roomCode);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
+    playSfx(() => soundFx.playCoin());
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(roomCode).then(
+        () => {
+          setCopiedCode(true);
+          setTimeout(() => setCopiedCode(false), 2000);
+        },
+        () => {}
+      );
     }
   };
 
-  const myPlayer = players.find((p) => p.id === myPlayerId) || players[0];
+  // Guaranteed safe fallback for myPlayer
+  const myPlayer: FakeBombPlayer =
+    players.find((p) => p.id === myPlayerId) ||
+    players[0] ||
+    DEFAULT_HUMAN_PLAYER;
+
+  // Hydration fallback skeleton
+  if (!isMounted) {
+    return (
+      <div className="w-full min-h-[640px] md:min-h-[720px] rounded-3xl bg-[#0A0D14] border border-white/10 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 rounded-full border-4 border-pink-500/30 border-t-pink-500 animate-spin" />
+        <div className="text-xs font-mono text-cyan-300 uppercase tracking-widest">
+          INITIALIZING CHAOS CORE REACTOR...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -508,14 +606,14 @@ export function FakeBombCanvas({
           'radial-gradient(ellipse at 50% 20%, rgba(236,72,153,0.12) 0%, rgba(6,182,212,0.08) 40%, rgba(10,13,20,1) 85%)'
       }}
     >
-      {/* Funny Duck Pop Floating Overlays */}
+      {/* Duck Pop Overlays */}
       {duckPops.map((duck) => (
         <div
           key={duck.id}
-          className="absolute z-50 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 animate-[bounce_0.6s_infinite] transition-all"
+          className="absolute z-50 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 transition-all"
           style={{ left: `${duck.x}%`, top: `${duck.y}%` }}
         >
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center animate-bounce">
             <span className="text-6xl drop-shadow-[0_10px_20px_rgba(255,200,0,0.6)]">
               {duck.emoji}
             </span>
@@ -539,14 +637,35 @@ export function FakeBombCanvas({
           <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-amber-300 to-cyan-400 tracking-tight drop-shadow-[0_4px_30px_rgba(236,72,153,0.4)] mb-2">
             FAKE BOMB
           </h1>
-          <p className="text-base md:text-xl text-gray-300 font-medium italic max-w-xl mb-8">
+          <p className="text-base md:text-xl text-gray-300 font-medium italic max-w-xl mb-4">
             “Trust nobody. Press carefully.”
           </p>
 
-          {/* Harmless Disclaimer Pill */}
-          <div className="mb-8 px-4 py-2 rounded-xl bg-cyan-950/40 border border-cyan-500/20 text-cyan-300 text-xs flex items-center gap-2 max-w-md">
+          {/* Harmless Disclaimer */}
+          <div className="mb-6 px-4 py-2 rounded-xl bg-cyan-950/40 border border-cyan-500/20 text-cyan-300 text-xs flex items-center gap-2 max-w-md">
             <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>Fictional cartoon Chaos Core device. 100% harmless party puzzle!</span>
+          </div>
+
+          {/* Quick Difficulty Selector (Easy / Normal / Hard) */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/[0.04] border border-white/10 mb-8">
+            <span className="text-xs font-mono text-gray-400 px-3">DIFFICULTY:</span>
+            {(['easy', 'normal', 'hard'] as const).map((diff) => (
+              <button
+                key={diff}
+                onClick={() => {
+                  playSfx(() => soundFx.playClick());
+                  setDifficultyMode(diff);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all ${
+                  difficultyMode === diff
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {diff === 'easy' ? '⭐ Easy (3 Symbols)' : diff === 'normal' ? 'Normal (4)' : 'Hard (5)'}
+              </button>
+            ))}
           </div>
 
           {/* Mode Cards */}
@@ -558,14 +677,14 @@ export function FakeBombCanvas({
               </div>
               <h3 className="text-lg font-bold text-white mb-1">Solo Practice</h3>
               <p className="text-xs text-gray-400 mb-6 flex-1">
-                Play instantly with 3 hilarious AI teammates. Perfect to learn clue deduction!
+                Play instantly with 3 friendly AI teammates. Quick, easy, and super smooth!
               </p>
               <button
-                onClick={handleStartSolo}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all flex items-center justify-center gap-2"
+                onClick={() => handleStartSolo()}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-white" />
-                PLAY SOLO NOW
+                PLAY SOLO (INSTANT)
               </button>
             </div>
 
@@ -576,11 +695,11 @@ export function FakeBombCanvas({
               </div>
               <h3 className="text-lg font-bold text-white mb-1">Private Room</h3>
               <p className="text-xs text-gray-400 mb-6 flex-1">
-                Create a 6-digit room code for 3–6 friends or local play with secret roles.
+                Create a 6-digit room code for 3–6 friends or local squad pass & play.
               </p>
               <button
                 onClick={handleCreateRoom}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Users className="w-4 h-4" />
                 CREATE SQUAD ROOM
@@ -601,34 +720,34 @@ export function FakeBombCanvas({
               </p>
               <button
                 disabled
-                className="w-full py-3 rounded-xl bg-white/10 text-gray-400 font-bold text-sm tracking-wide cursor-not-allowed"
+                className="w-full py-3.5 rounded-xl bg-white/10 text-gray-400 font-bold text-sm tracking-wide cursor-not-allowed"
               >
                 COMING SOON
               </button>
             </div>
           </div>
 
-          {/* Social Deduction Gremlin Toggle */}
+          {/* Secret Gremlin Toggle */}
           <div className="mt-8 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/10">
             <span className="text-lg">😈</span>
             <div className="text-left">
               <p className="text-xs font-bold text-white">Secret Gremlin Role</p>
               <p className="text-[10px] text-gray-400">
-                1 secret player gets misleading clues to confuse the squad
+                1 secret player receives a misleading clue to deceive the squad
               </p>
             </div>
             <button
               onClick={() => {
-                soundFx.playClick();
+                playSfx(() => soundFx.playClick());
                 setEnableGremlin(!enableGremlin);
               }}
-              className={`ml-3 px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+              className={`ml-3 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
                 enableGremlin
                   ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]'
-                  : 'bg-white/10 text-gray-400'
+                  : 'bg-white/10 text-gray-400 hover:text-white'
               }`}
             >
-              {enableGremlin ? 'ACTIVE' : 'OFF'}
+              {enableGremlin ? 'ACTIVE' : 'OFF (CO-OP ONLY)'}
             </button>
           </div>
         </div>
@@ -658,19 +777,19 @@ export function FakeBombCanvas({
               </span>
               <button
                 onClick={handleCopyRoomCode}
-                className="p-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 transition-colors"
+                className="p-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 transition-colors cursor-pointer"
                 title="Copy Room Code"
               >
                 {copiedCode ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
               </button>
             </div>
 
-            {/* Players List */}
+            {/* Crew Members */}
             <div className="w-full space-y-2 mb-8">
               <div className="text-left text-xs font-mono text-gray-400 uppercase tracking-wider mb-2 flex justify-between">
                 <span>CREW MEMBERS ({players.length}/6)</span>
                 <span className="text-pink-400">
-                  {enableGremlin ? '😈 1 Secret Gremlin' : '😇 Pure Co-op'}
+                  {enableGremlin ? '😈 1 Secret Gremlin' : '😇 Pure Co-op Mode'}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -697,20 +816,20 @@ export function FakeBombCanvas({
               </div>
             </div>
 
-            {/* Launch Controls */}
+            {/* Actions */}
             <div className="flex gap-4 w-full">
               <button
                 onClick={() => setPhase('mode_select')}
-                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs font-mono tracking-wider transition-all"
+                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs font-mono tracking-wider transition-all cursor-pointer"
               >
                 LEAVE ROOM
               </button>
               <button
                 onClick={() => {
-                  soundFx.playLevelUp();
+                  playSfx(() => soundFx.playLevelUp());
                   startRound(1);
                 }}
-                className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wider shadow-[0_0_25px_rgba(244,63,94,0.5)] transition-all flex items-center justify-center gap-2"
+                className="flex-2 py-3 px-6 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wider shadow-[0_0_25px_rgba(244,63,94,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Zap className="w-4 h-4 fill-white" />
                 START MISSION (3 ROUNDS)
@@ -728,15 +847,15 @@ export function FakeBombCanvas({
         phase === 'round_fail' ||
         phase === 'countdown') && (
         <div className="flex-1 flex flex-col p-4 md:p-6 relative z-10">
-          {/* Top HUD: Round, Shields, Timer, Score */}
+          {/* Top HUD: Round, Shields, Timer, Score, Mute */}
           <div className="flex items-center justify-between pb-4 border-b border-white/10 gap-2 flex-wrap">
             {/* Round info */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="px-3 py-1 rounded-xl bg-white/10 border border-white/15 text-xs font-mono font-bold text-cyan-300">
                 ROUND {round} / {maxRounds}
               </div>
               <span className="text-xs text-gray-400 hidden sm:inline font-mono">
-                {currentPuzzle.difficulty.toUpperCase()} SEQUENCE ({currentPuzzle.sequence.length} STEPS)
+                {currentPuzzle.sequence.length}-SYMBOL SEQUENCE
               </span>
             </div>
 
@@ -767,14 +886,23 @@ export function FakeBombCanvas({
               <span>{timeLeft}s</span>
             </div>
 
-            {/* Score */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold">
-              <Trophy className="w-3.5 h-3.5" />
-              <span>{score} PTS</span>
+            {/* Score & Mute */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold">
+                <Trophy className="w-3.5 h-3.5" />
+                <span>{score} PTS</span>
+              </div>
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 transition-colors cursor-pointer"
+                title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+              >
+                {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-cyan-300" />}
+              </button>
             </div>
           </div>
 
-          {/* Main 3-Column Content: Left Squad, Center Chaos Core, Right Clue & Chat */}
+          {/* Main 3-Column Layout */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 items-stretch">
             {/* LEFT: Squad Roster (3 cols) */}
             <div className="lg:col-span-3 flex flex-col gap-3">
@@ -807,7 +935,6 @@ export function FakeBombCanvas({
                           </div>
                         </div>
 
-                        {/* Suspicion meter indicator */}
                         <div className="text-right">
                           <span className="text-[10px] font-mono text-amber-400">
                             {p.suspicionScore > 0 ? `${p.suspicionScore}% sus` : 'calm'}
@@ -818,44 +945,41 @@ export function FakeBombCanvas({
                   })}
                 </div>
 
-                {/* Secret Role Reminder for Me */}
+                {/* Secret Role Reminder */}
                 <div className="mt-4 p-3 rounded-xl bg-black/40 border border-white/10 text-left">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-mono text-gray-400 uppercase">MY SECRET ROLE</span>
                     <span className="text-xs">
-                      {myPlayer.role === 'gremlin' ? '😈' : '🛡️'}
+                      {myPlayer?.role === 'gremlin' ? '😈' : '🛡️'}
                     </span>
                   </div>
                   <p
                     className={`text-xs font-black tracking-wide ${
-                      myPlayer.role === 'gremlin' ? 'text-pink-400' : 'text-cyan-400'
+                      myPlayer?.role === 'gremlin' ? 'text-pink-400' : 'text-cyan-400'
                     }`}
                   >
-                    {myPlayer.role === 'gremlin' ? 'THE SECRET GREMLIN' : 'CORE DEFUSER'}
+                    {myPlayer?.role === 'gremlin' ? 'THE SECRET GREMLIN' : 'CORE DEFUSER'}
                   </p>
                   <p className="text-[10px] text-gray-400 mt-0.5">
-                    {myPlayer.role === 'gremlin'
-                      ? 'Mislead the squad subtly! Do not get voted out.'
-                      : 'Share your clue and solve the sequence with the crew.'}
+                    {myPlayer?.role === 'gremlin'
+                      ? 'Mislead the squad subtly without getting voted out!'
+                      : 'Coordinate your clues with the crew to defuse safely!'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* CENTER: Cartoon Chaos Core Device & Sequence Inputs (6 cols) */}
+            {/* CENTER: Cartoon Chaos Core Device & Buttons (6 cols) */}
             <div className="lg:col-span-6 flex flex-col items-center justify-center p-4 rounded-3xl bg-black/40 border border-white/10 relative overflow-hidden">
-              {/* Harmless Cartoon Core Sphere Graphics */}
-              <div className="relative w-52 h-52 sm:w-64 sm:h-64 flex items-center justify-center my-2">
-                {/* Outer Rotating Energy Ring */}
+              {/* Harmless Cartoon Core Sphere */}
+              <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center my-2">
                 <div
                   className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/40 animate-[spin_12s_linear_infinite]"
                   style={{ boxShadow: '0 0 30px rgba(6,182,212,0.3)' }}
                 />
-                {/* Secondary Reverse Ring */}
                 <div className="absolute inset-4 rounded-full border border-pink-400/30 animate-[spin_8s_linear_infinite_reverse]" />
 
-                {/* Cartoon Core Sphere */}
-                <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-pink-600 via-purple-700 to-cyan-500 shadow-[inset_0_0_40px_rgba(255,255,255,0.4),0_0_50px_rgba(236,72,153,0.5)] flex flex-col items-center justify-center p-4 text-center border-4 border-white/20">
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-tr from-pink-600 via-purple-700 to-cyan-500 shadow-[inset_0_0_40px_rgba(255,255,255,0.4),0_0_50px_rgba(236,72,153,0.5)] flex flex-col items-center justify-center p-4 text-center border-4 border-white/20">
                   <span className="text-3xl sm:text-4xl animate-pulse">⚛️</span>
                   <span className="text-[10px] font-mono font-bold text-white/90 uppercase tracking-widest mt-1">
                     CHAOS CORE
@@ -866,8 +990,8 @@ export function FakeBombCanvas({
                 </div>
               </div>
 
-              {/* Sequence Slot Progress Indicators */}
-              <div className="flex items-center gap-2 my-4">
+              {/* Sequence Slot Progress */}
+              <div className="flex items-center gap-2 my-3">
                 {currentPuzzle.sequence.map((_, idx) => {
                   const filledSymbolId = enteredSequence[idx];
                   const filledSymbol = filledSymbolId ? CHAOS_SYMBOLS[filledSymbolId] : null;
@@ -875,7 +999,7 @@ export function FakeBombCanvas({
                   return (
                     <div
                       key={idx}
-                      className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center text-xl transition-all border-2 ${
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xl transition-all border-2 ${
                         filledSymbol
                           ? 'bg-white/20 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.6)] scale-105'
                           : 'bg-black/50 border-white/20 text-gray-500'
@@ -890,7 +1014,7 @@ export function FakeBombCanvas({
               {/* Glowing Harmless Symbol Buttons */}
               <div className="text-center w-full max-w-md">
                 <p className="text-[11px] font-mono text-gray-400 uppercase tracking-wider mb-2">
-                  CLICK CORRECT SYMBOL IN ORDER:
+                  CLICK SYMBOLS IN SAFE SEQUENCE:
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   {currentPuzzle.availableButtons.map((symId) => {
@@ -903,7 +1027,7 @@ export function FakeBombCanvas({
                         key={symId}
                         onClick={() => handleButtonPress(symId)}
                         disabled={phase !== 'playing'}
-                        className={`group relative p-3 sm:p-4 rounded-2xl bg-white/[0.04] border border-white/15 hover:border-white/40 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[72px] sm:min-w-[80px] shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] ${
+                        className={`group relative p-3 sm:p-4 rounded-2xl bg-white/[0.04] border border-white/15 hover:border-white/40 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[72px] sm:min-w-[80px] shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer ${
                           isFlashing ? 'bg-cyan-400/40 border-cyan-300 scale-110' : ''
                         }`}
                         style={{
@@ -934,7 +1058,7 @@ export function FakeBombCanvas({
                   </div>
                   <button
                     onClick={() => setIsClueHidden(!isClueHidden)}
-                    className="text-gray-400 hover:text-white p-1"
+                    className="text-gray-400 hover:text-white p-1 cursor-pointer"
                     title={isClueHidden ? 'Show Clue' : 'Hide Clue'}
                   >
                     {isClueHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -947,23 +1071,28 @@ export function FakeBombCanvas({
                   </div>
                 ) : (
                   <div className="p-3 rounded-xl bg-black/50 border border-amber-500/20 text-xs text-amber-100 font-medium leading-relaxed">
-                    “{myPlayer.clue?.text || 'Observe the reactor carefully.'}”
+                    “{myPlayer?.clue?.text || 'Observe the reactor symbols carefully.'}”
                   </div>
                 )}
-                <p className="text-[10px] text-gray-400 mt-2 italic">
-                  💡 Share this clue with your squad in chat to coordinate!
-                </p>
+
+                {/* Quick 1-Click Share Clue Button */}
+                <button
+                  onClick={handleQuickShareClue}
+                  className="mt-3 w-full py-1.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>SHARE CLUE TO SQUAD CHAT</span>
+                </button>
               </div>
 
-              {/* Live Squad Chat */}
+              {/* Squad Chat */}
               <div className="flex-1 min-h-[220px] p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-col">
                 <div className="flex items-center justify-between text-xs font-mono text-gray-400 uppercase tracking-wider mb-2">
                   <span>SQUAD BANTER & CLUES</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
 
-                {/* Messages List */}
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[180px] text-left">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[170px] text-left">
                   {chatMessages.map((msg) => (
                     <div
                       key={msg.id}
@@ -986,18 +1115,18 @@ export function FakeBombCanvas({
                   ))}
                 </div>
 
-                {/* Chat Input */}
+                {/* Input */}
                 <form onSubmit={handleSendChat} className="mt-2 flex gap-2">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Type clue or roast..."
+                    placeholder="Type clue or hint..."
                     className="flex-1 px-3 py-1.5 rounded-xl bg-black/50 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400"
                   />
                   <button
                     type="submit"
-                    className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-colors"
+                    className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-colors cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>
@@ -1009,11 +1138,11 @@ export function FakeBombCanvas({
       )}
 
       {/* ============================================================== */}
-      {/* 4. ROUND SUCCESS MODAL OVERLAY                                */}
+      {/* 4. ROUND SUCCESS MODAL                                        */}
       {/* ============================================================== */}
       {phase === 'round_success' && (
         <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
-          <div className="w-full max-w-md p-6 rounded-3xl bg-gradient-to-b from-gray-900 via-gray-900 to-black border border-emerald-500/40 shadow-[0_0_50px_rgba(16,185,129,0.3)] text-center animate-in zoom-in-95">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-gray-900 border border-emerald-500/40 shadow-[0_0_50px_rgba(16,185,129,0.3)] text-center">
             <span className="text-5xl mb-2 inline-block">🎉</span>
             <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 tracking-wide mb-1">
               CORE STABILIZED!
@@ -1022,7 +1151,6 @@ export function FakeBombCanvas({
               Round {round} defused with pure squad synergy!
             </p>
 
-            {/* Score breakdown */}
             <div className="space-y-2 p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs font-mono text-left mb-6">
               <div className="flex justify-between text-gray-300">
                 <span>Sequence Solved:</span>
@@ -1052,7 +1180,7 @@ export function FakeBombCanvas({
                   handleContinueAfterRound();
                 }
               }}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-black font-bold text-sm tracking-wider shadow-lg transition-all"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-black font-bold text-sm tracking-wider shadow-lg transition-all cursor-pointer"
             >
               {enableGremlin ? 'PROCEED TO SQUAD VOTING 🗳️' : 'NEXT ROUND 🚀'}
             </button>
@@ -1061,23 +1189,22 @@ export function FakeBombCanvas({
       )}
 
       {/* ============================================================== */}
-      {/* 5. ROUND FAIL / CHAOS ACTIVATED MODAL                          */}
+      {/* 5. ROUND FAIL MODAL                                            */}
       {/* ============================================================== */}
       {phase === 'round_fail' && (
         <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
-          <div className="w-full max-w-md p-6 rounded-3xl bg-gradient-to-b from-gray-900 via-gray-900 to-black border border-pink-500/40 shadow-[0_0_50px_rgba(236,72,153,0.3)] text-center animate-in zoom-in-95">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-gray-900 border border-pink-500/40 shadow-[0_0_50px_rgba(236,72,153,0.3)] text-center">
             <span className="text-6xl mb-2 inline-block animate-bounce">🦆</span>
             <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-amber-300 to-rose-400 tracking-wide mb-1">
               CHAOS ACTIVATED!
             </h2>
             <p className="text-xs text-gray-300 mb-6">
-              Rubber ducks have overrun the core! The Gremlin must be laughing!
+              Rubber ducks have overrun the core! Ready to try again?
             </p>
 
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs font-mono text-left mb-6 space-y-1 text-gray-400">
               <p>• Shields depleted or time expired</p>
-              <p>• No points awarded this round</p>
-              <p>• You still get a chance to deduce the Gremlin!</p>
+              <p>• Clues change every round for endless fun</p>
             </div>
 
             <button
@@ -1088,7 +1215,7 @@ export function FakeBombCanvas({
                   handleContinueAfterRound();
                 }
               }}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wider shadow-lg transition-all"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-sm tracking-wider shadow-lg transition-all cursor-pointer"
             >
               {enableGremlin ? 'VOTE WHO CAUSED THIS 🗳️' : 'RETRY MISSION 🔄'}
             </button>
@@ -1120,7 +1247,7 @@ export function FakeBombCanvas({
                     key={p.id}
                     disabled={isMe}
                     onClick={() => handleVotePlayer(p.id)}
-                    className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3 ${
+                    className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
                       isMe
                         ? 'opacity-40 cursor-not-allowed bg-white/[0.02] border-white/5'
                         : 'bg-white/[0.04] border-white/10 hover:border-pink-500 hover:bg-pink-500/10 active:scale-95'
@@ -1170,7 +1297,6 @@ export function FakeBombCanvas({
                       <span className="font-mono text-pink-400">{p.votesReceived} Votes</span>
                     </div>
 
-                    {/* Animated Suspicion Bar */}
                     <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-amber-400 to-pink-500 rounded-full transition-all duration-700"
@@ -1184,7 +1310,7 @@ export function FakeBombCanvas({
 
             <button
               onClick={handleContinueAfterRound}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-400 hover:to-cyan-400 text-black font-black text-sm tracking-wider shadow-lg transition-all"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-cyan-500 hover:from-pink-400 hover:to-cyan-400 text-black font-black text-sm tracking-wider shadow-lg transition-all cursor-pointer"
             >
               {round < maxRounds ? `CONTINUE TO ROUND ${round + 1} 🚀` : 'VIEW FINAL MATCH REPORT 🏆'}
             </button>
@@ -1206,7 +1332,6 @@ export function FakeBombCanvas({
               FINAL SCORE: <span className="text-amber-400 font-bold text-base">{score} PTS</span>
             </p>
 
-            {/* Secret Roles Truth Unveiled */}
             <div className="w-full p-4 rounded-2xl bg-black/40 border border-white/10 text-left mb-6">
               <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-2">
                 SECRET ROLES REVEALED:
@@ -1233,17 +1358,16 @@ export function FakeBombCanvas({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-4 w-full">
               <button
                 onClick={() => setPhase('mode_select')}
-                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs font-mono tracking-wider transition-all"
+                className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 font-bold text-xs font-mono tracking-wider transition-all cursor-pointer"
               >
                 MODE SELECT
               </button>
               <button
-                onClick={handleStartSolo}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-xs font-mono tracking-wider shadow-lg transition-all flex items-center justify-center gap-1.5"
+                onClick={() => handleStartSolo()}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-xs font-mono tracking-wider shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 PLAY AGAIN
