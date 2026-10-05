@@ -2,13 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { GameItem } from '@/types';
+import { GameItem, CategoryKey } from '@/types';
 import { soundFx } from '@/lib/audio';
 import { Play, Star, Users, Flame, Zap, Crown, Clock } from 'lucide-react';
 
 interface GameCardProps {
   game: GameItem;
-  theme?: 'default' | 'school' | 'mind' | 'meme';
+  theme?: 'default' | 'school' | 'mind' | 'meme' | CategoryKey | string;
   onQuickPlay?: (game: GameItem) => void;
 }
 

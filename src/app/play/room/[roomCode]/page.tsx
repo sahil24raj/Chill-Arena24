@@ -192,15 +192,15 @@ export default function PlayRoomPage({
     return (
       <div className="space-y-6 pb-16">
         {/* Top Match HUD Bar */}
-        <div className="flex items-center justify-between p-4 rounded-2xl glass-panel border border-[#00F0FF]/25 bg-[#0a0e16]/95">
+        <div className="flex items-center justify-between p-4 rounded-2xl va-card bg-[#10131D]/95 border-white/[0.08]">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{game?.thumbnail}</span>
             <div>
-              <div className="text-xs font-mono text-[#00F0FF] uppercase tracking-wider">{game?.title}</div>
-              <div className="flex items-center gap-2 text-[11px] text-gray-400 font-mono">
-                <span>ROOM #{room.roomCode}</span>
+              <div className="text-xs font-mono text-[#06B6D4] uppercase tracking-wider font-bold">{game?.title}</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                <span className="text-[#F472B6] font-bold">ROOM #{room.roomCode}</span>
                 <span>•</span>
-                <span className={connectionStatus === 'CONNECTED' ? 'text-emerald-400' : 'text-amber-400 animate-pulse'}>
+                <span className={connectionStatus === 'CONNECTED' ? 'text-emerald-400 font-semibold' : 'text-amber-400 animate-pulse font-semibold'}>
                   ● {connectionStatus}
                 </span>
               </div>
@@ -213,9 +213,9 @@ export default function PlayRoomPage({
                 leaveRoom();
                 router.push('/multiplayer');
               }}
-              className="px-3.5 py-1.5 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 hover:text-white text-xs font-mono"
+              className="px-3.5 py-1.5 rounded-lg bg-red-600/15 border border-red-500/30 text-red-300 hover:bg-red-600/30 text-xs font-mono transition-colors"
             >
-              LEAVE ROOM
+              LEAVE ARENA
             </button>
           </div>
         </div>
@@ -234,16 +234,20 @@ export default function PlayRoomPage({
 
   // --- FINISHED STATE ---
   if (room.status === 'FINISHED') {
+    const isWinner = room.winnerPlayerId === (currentPlayer?.id || user.id);
     return (
-      <div className="max-w-lg mx-auto my-8 p-8 rounded-3xl glass-panel border-2 border-amber-500/40 bg-[#0c1017] text-center space-y-6">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 shadow-2xl">
+      <div className="max-w-lg mx-auto my-8 p-8 rounded-3xl va-card bg-[#10131D]/95 border-white/[0.08] text-center space-y-6 shadow-2xl">
+        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-[#D946EF] to-[#06B6D4] flex items-center justify-center text-white shadow-xl shadow-[#D946EF]/20">
           <Trophy className="w-8 h-8" />
         </div>
 
-        <div className="space-y-1">
-          <h2 className="text-2xl font-black text-white font-display">MATCH COMPLETED!</h2>
-          <p className="text-xs font-mono text-amber-400">
-            {room.winnerUsername ? `🏆 Winner: ${room.winnerUsername}` : '🤝 Match Ended in a Draw!'}
+        <div className="space-y-1.5">
+          <div className="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-[#D946EF]/15 border border-[#D946EF]/40 text-[#F472B6]">
+            {isWinner ? '👑 VIBE KING' : '💀 BRO... SKILL ISSUE'}
+          </div>
+          <h2 className="text-2xl font-black text-white font-display uppercase tracking-tight">MATCH CONCLUDED</h2>
+          <p className="text-xs font-mono text-slate-300">
+            {room.winnerUsername ? `Winner: ${room.winnerUsername} 🏆` : '🤝 Tied Match! Equal Vibes!'}
           </p>
         </div>
 
@@ -252,16 +256,16 @@ export default function PlayRoomPage({
           {room.players.map((p) => (
             <div
               key={p.id}
-              className={`flex items-center justify-between p-3 rounded-xl border ${
+              className={`flex items-center justify-between p-3.5 rounded-xl border ${
                 p.id === room.winnerPlayerId
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                  : 'bg-slate-950/60 border-gray-800 text-gray-300'
+                  ? 'bg-[#D946EF]/15 border-[#D946EF]/40 text-white'
+                  : 'bg-[#080A12]/80 border-white/[0.06] text-slate-300'
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <span className="text-xl">{p.avatar}</span>
                 <span className="text-xs font-bold font-display">{p.username}</span>
-                {p.isHost && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">HOST</span>}
+                {p.isHost && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">HOST</span>}
               </div>
               <div className="text-xs font-mono font-bold">
                 {p.id === room.winnerPlayerId ? '👑 CHAMPION' : 'PARTICIPANT'}
@@ -275,13 +279,13 @@ export default function PlayRoomPage({
           {isHost ? (
             <button
               onClick={startGame}
-              className="flex-1 py-3.5 rounded-xl cyber-button font-display text-xs font-black text-slate-950 flex items-center justify-center gap-2 shadow-lg"
+              className="flex-1 py-3.5 rounded-xl va-btn-primary font-display text-xs font-black text-white flex items-center justify-center gap-2 shadow-lg"
             >
-              <Play className="w-4 h-4 fill-slate-950" />
-              <span>PLAY AGAIN</span>
+              <Play className="w-4 h-4 fill-white" />
+              <span>LET THE CHAOS BEGIN</span>
             </button>
           ) : (
-            <div className="flex-1 py-3 text-xs font-mono text-gray-400">Waiting for host to restart...</div>
+            <div className="flex-1 py-3 text-xs font-mono text-slate-400">Waiting for host to replay...</div>
           )}
 
           <Link
@@ -302,48 +306,48 @@ export default function PlayRoomPage({
       <div className="flex items-center justify-between">
         <Link
           href="/multiplayer"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-400 hover:text-[#00F0FF] transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-[#06B6D4] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>BACK TO MULTIPLAYER HUB</span>
+          <span>BACK TO ARENA</span>
         </Link>
         <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>LIVE ROOM</span>
+          <span>SQUAD LOBBY ACTIVE</span>
         </div>
       </div>
 
       {/* Main Lobby Card */}
-      <div className="rounded-3xl glass-panel border-2 border-[#00F0FF]/30 bg-[#0c1017] p-6 sm:p-8 space-y-8 shadow-2xl">
+      <div className="rounded-3xl va-card bg-[#10131D]/95 border-white/[0.08] p-6 sm:p-8 space-y-8 shadow-2xl">
         {/* Game Title Bar */}
-        <div className="flex items-center justify-between border-b border-gray-800 pb-5">
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#00F0FF]/20 to-purple-500/20 border border-[#00F0FF]/30 flex items-center justify-center text-3xl">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#D946EF]/20 to-[#06B6D4]/20 border border-white/10 flex items-center justify-center text-3xl">
               {game?.thumbnail || '🎮'}
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#00F0FF]">
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-[#06B6D4]">
                 <Sparkles className="w-3 h-3" />
-                <span>{game?.category || '1v1 Arena'}</span>
+                <span>{game?.category || 'Arena'}</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white font-display">{room.gameTitle}</h1>
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-[10px] font-mono text-gray-400">CAPACITY</div>
+            <div className="text-[10px] font-mono text-slate-400">CAPACITY</div>
             <div className="text-sm font-black text-white font-display">
-              {room.players.length} / {room.maxPlayers} PLAYERS
+              {room.players.length} / {room.maxPlayers} SQUAD
             </div>
           </div>
         </div>
 
         {/* Room Code & Invitation Link Box */}
-        <div className="p-5 rounded-2xl bg-slate-950/80 border border-[#00F0FF]/25 space-y-4">
+        <div className="p-5 rounded-2xl bg-[#080A12]/90 border border-white/[0.08] space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">ROOM PASSCODE</div>
-              <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] to-[#ADFF2F] font-mono tracking-widest">
+              <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">ROOM PASSCODE</div>
+              <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#D946EF] to-[#06B6D4] font-mono tracking-widest">
                 {room.roomCode}
               </div>
             </div>
@@ -351,7 +355,7 @@ export default function PlayRoomPage({
             <div className="flex items-center gap-2">
               <button
                 onClick={copyRoomCode}
-                className="px-3.5 py-2 rounded-xl bg-slate-900 border border-gray-800 text-xs font-bold text-gray-200 hover:text-white flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-xs font-bold text-slate-200 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                 <span>{copiedCode ? 'COPIED' : 'COPY CODE'}</span>
@@ -359,18 +363,18 @@ export default function PlayRoomPage({
 
               <button
                 onClick={copyInviteLink}
-                className="px-3.5 py-2 rounded-xl bg-[#00F0FF]/15 border border-[#00F0FF]/40 text-xs font-bold text-[#00F0FF] hover:bg-[#00F0FF]/25 flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 rounded-xl va-btn-secondary text-xs font-bold text-[#06B6D4] flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-                <span>{copiedLink ? 'LINK COPIED' : 'COPY LINK'}</span>
+                <span>{copiedLink ? 'LINK COPIED' : 'CALL YOUR SQUAD'}</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 border-t border-gray-800/60">
+          <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
             <button
               onClick={shareWhatsApp}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Share on WhatsApp</span>
@@ -378,19 +382,23 @@ export default function PlayRoomPage({
 
             <button
               onClick={shareNative}
-              className="px-3 py-1.5 rounded-lg bg-purple-600/20 border border-purple-500/40 text-purple-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-purple-600/15 border border-purple-500/30 text-purple-300 hover:text-white text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>Native Share</span>
+              <span>Invite Friends</span>
             </button>
           </div>
         </div>
 
         {/* Connected Players List */}
         <div className="space-y-3">
-          <div className="text-xs font-mono text-gray-400 flex items-center justify-between">
-            <span>SQUAD IN LOBBY ({room.players.length}/{room.maxPlayers})</span>
-            <span>{room.players.length >= room.minPlayers ? '✅ MATCH READY' : '⏳ WAITING FOR PLAYERS'}</span>
+          <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span className="font-semibold text-slate-300">
+              {room.players.length >= room.minPlayers ? 'SQUAD ASSEMBLED' : 'Squad Loading... 👀'} ({room.players.length}/{room.maxPlayers})
+            </span>
+            <span className={room.players.length >= room.minPlayers ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+              {room.players.length >= room.minPlayers ? '✅ MATCH READY' : '⏳ WAITING FOR SQUAD'}
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -400,7 +408,7 @@ export default function PlayRoomPage({
                 className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
                   player.isBot
                     ? 'bg-purple-950/20 border-purple-500/30'
-                    : 'bg-[#0a0e16] border-gray-800'
+                    : 'bg-[#080A12]/90 border-white/[0.08]'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -416,7 +424,7 @@ export default function PlayRoomPage({
                     <div className="text-xs font-bold text-white font-display flex items-center gap-1.5">
                       <span>{player.username}</span>
                       {player.isHost && (
-                        <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-mono">
+                        <span className="px-1.5 py-0.5 rounded bg-[#D946EF]/20 text-[#F472B6] text-[9px] font-mono font-bold">
                           HOST
                         </span>
                       )}
@@ -427,13 +435,13 @@ export default function PlayRoomPage({
                       )}
                     </div>
                     <div className="text-[10px] font-mono text-emerald-400">
-                      {player.isBot ? '🤖 Smart Bot Ready' : '● Connected'}
+                      {player.isBot ? '🤖 Smart Bot Ready' : '● Ready in Squad'}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="text-[11px] font-mono px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <div className="text-[11px] font-mono px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold">
                     READY
                   </div>
 
@@ -454,9 +462,9 @@ export default function PlayRoomPage({
             {Array.from({ length: Math.max(0, room.maxPlayers - room.players.length) }).map((_, i) => (
               <div
                 key={`empty-${i}`}
-                className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border-2 border-dashed border-gray-800 bg-slate-950/40 gap-3"
+                className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border-2 border-dashed border-white/[0.08] bg-[#080A12]/40 gap-3"
               >
-                <div className="flex items-center gap-2 text-xs font-mono text-gray-500">
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
                   <span className="animate-pulse">⏳</span>
                   <span>Empty Seat #{room.players.length + i + 1}</span>
                 </div>
@@ -486,7 +494,7 @@ export default function PlayRoomPage({
                     </button>
                   </div>
                 ) : (
-                  <div className="text-[10px] font-mono text-gray-500">Waiting for player or host to fill...</div>
+                  <div className="text-[10px] font-mono text-slate-500">Waiting for friend to join...</div>
                 )}
               </div>
             ))}
@@ -494,30 +502,30 @@ export default function PlayRoomPage({
         </div>
 
         {/* Start Game Action */}
-        <div className="pt-4 border-t border-gray-800 flex flex-col gap-3">
+        <div className="pt-4 border-t border-white/[0.08] flex flex-col gap-3">
           {isHost ? (
             <div className="space-y-2">
               <button
                 onClick={startGame}
-                className="w-full py-4 rounded-2xl font-display text-sm font-black flex items-center justify-center gap-2 shadow-2xl transition-all cyber-button text-slate-950 cursor-pointer"
+                className="w-full py-4 rounded-2xl font-display text-sm font-black flex items-center justify-center gap-2 shadow-2xl transition-all va-btn-primary text-white cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-current" />
                 <span>
                   {room.players.length >= room.minPlayers
-                    ? 'START MATCH NOW 🚀'
-                    : `START MATCH (AUTO-FILL ${room.minPlayers - room.players.length} BOTS) 🤖`}
+                    ? 'LET THE CHAOS BEGIN 🚀'
+                    : `LET THE CHAOS BEGIN (AUTO-FILL ${room.minPlayers - room.players.length} BOTS) 🤖`}
                 </span>
               </button>
               {room.players.length < room.minPlayers && (
-                <p className="text-[11px] font-mono text-center text-cyan-400/80">
+                <p className="text-[11px] font-mono text-center text-slate-400">
                   💡 Empty seats will automatically be filled by Smart Bots!
                 </p>
               )}
             </div>
           ) : (
-            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-center space-y-1">
-              <div className="text-xs font-bold text-purple-300 font-display">YOU ARE IN THE LOBBY!</div>
-              <div className="text-[11px] font-mono text-gray-400">
+            <div className="p-4 rounded-2xl bg-[#D946EF]/10 border border-[#D946EF]/30 text-center space-y-1">
+              <div className="text-xs font-bold text-[#F472B6] font-display">YOU ARE IN THE SQUAD!</div>
+              <div className="text-[11px] font-mono text-slate-400">
                 Waiting for host ({room.hostUsername}) to launch the match...
               </div>
             </div>
@@ -528,7 +536,7 @@ export default function PlayRoomPage({
               leaveRoom();
               router.push('/multiplayer');
             }}
-            className="w-full py-2.5 rounded-xl text-xs font-mono text-gray-500 hover:text-red-400 transition-colors"
+            className="w-full py-2.5 rounded-xl text-xs font-mono text-slate-500 hover:text-red-400 transition-colors cursor-pointer"
           >
             Leave Game Room
           </button>

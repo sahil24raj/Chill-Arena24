@@ -10,7 +10,17 @@ export type GameCategory =
   | '🏏 Sports'
   | (string & {});
 
-export type CategoryKey = 'meme' | 'school' | 'mind' | 'duels' | 'all';
+export type CategoryKey =
+  | 'meme'
+  | 'school'
+  | 'mind'
+  | 'duels'
+  | 'all'
+  | 'squad'
+  | 'brain'
+  | 'duel'
+  | 'nostalgia'
+  | 'quick';
 
 export interface GameItem {
   id: string;
@@ -19,7 +29,7 @@ export interface GameItem {
   tagline: string;
   description: string;
   category: GameCategory;
-  categoryKey: 'meme' | 'school' | 'mind';
+  categoryKey: CategoryKey;
   thumbnail: string;
   bannerImage: string;
   playCount: number;
@@ -106,7 +116,7 @@ export interface DailyChallenge {
   rewardCoins: number;
   progress: number;
   target: number;
-  category: 'meme' | 'school' | 'mind' | 'general';
+  category: CategoryKey | 'general' | string;
   claimed: boolean;
 }
 

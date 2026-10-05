@@ -1,86 +1,109 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --background: 240 10% 5%;
-    --foreground: 210 40% 98%;
+    --bg-midnight: #080A12;
+    --bg-surface: #10131D;
+    --bg-elevated: #181C2A;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(217, 70, 239, 0.3);
+    --text-primary: #F8FAFC;
+    --text-muted: #94A3B8;
+    --brand-magenta: #D946EF;
+    --brand-purple: #8B5CF6;
+    --brand-cyan: #06B6D4;
+    --brand-pink: #EC4899;
   }
 
   body {
-    background-color: #0A0C10;
-    color: #e2e2e8;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #080A12;
+    color: #F8FAFC;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6, .font-display {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
   }
 }
 
-/* Custom Cyberpunk & Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(17, 19, 24, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+/* Vibe Arena Design System Classes */
+.va-surface {
+  background-color: #10131D;
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.glass-card {
-  background: rgba(30, 32, 36, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 240, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.va-surface-elevated {
+  background-color: #161A26;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.glass-card:hover {
-  border-color: rgba(0, 240, 255, 0.5);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), 0 0 10px rgba(173, 255, 47, 0.2);
+.va-card {
+  background: #10131D;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.va-card:hover {
+  border-color: rgba(217, 70, 239, 0.35);
+  box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.7), 0 0 24px -8px rgba(217, 70, 239, 0.18);
   transform: translateY(-3px);
 }
 
-.neon-text-purple {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.2);
+.va-btn-primary {
+  background: linear-gradient(135deg, #D946EF 0%, #8B5CF6 50%, #06B6D4 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -4px rgba(217, 70, 239, 0.45);
 }
 
-.neon-text-cyan {
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.3);
-}
-
-.neon-text-pink {
-  text-shadow: 0 0 10px rgba(173, 255, 47, 0.8), 0 0 20px rgba(173, 255, 47, 0.3);
-}
-
-.neon-border-glow {
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(173, 255, 47, 0.1);
-}
-
-.cyber-button {
-  position: relative;
-  background: linear-gradient(135deg, #00dbe9 0%, #00F0FF 50%, #ADFF2F 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 4s ease infinite;
-  transition: all 0.2s ease;
-  color: #0A0C10 !important;
-}
-
-.cyber-button:hover {
+.va-btn-primary:hover {
   filter: brightness(1.1);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
-  transform: scale(1.02);
+  box-shadow: 0 8px 28px -4px rgba(217, 70, 239, 0.6);
+  transform: translateY(-1px);
 }
 
-.cyber-button:active {
-  transform: scale(0.98);
+.va-btn-primary:active {
+  transform: translateY(0px) scale(0.99);
 }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+.va-btn-secondary {
+  background: #141824;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #F8FAFC;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.va-btn-secondary:hover {
+  background: #1A2030;
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #FFFFFF;
+}
+
+.va-badge-purple {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #C4B5FD;
+}
+
+.va-badge-cyan {
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #67E8F9;
+}
+
+.va-badge-pink {
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #F472B6;
 }
 
 /* Custom Scrollbar */
@@ -90,44 +113,27 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0C10;
+  background: #080A12;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e2024;
+  background: #1A2030;
   border-radius: 3px;
-  border: 1px solid rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff;
+  background: #D946EF;
 }
 
 /* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(1deg); }
+@keyframes vaPulseSlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+.animate-pulse-slow {
+  animation: vaPulseSlow 4s ease-in-out infinite;
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.7; filter: blur(20px); }
-  50% { opacity: 1; filter: blur(25px); }
-}
-
-.animate-glow {
-  animation: pulseGlow 3s ease-in-out infinite;
-}
-
-@keyframes fadeIn {
-  0% { opacity: 0; transform: scale(0.96) translateY(4px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.35s ease-out both;
-}
 

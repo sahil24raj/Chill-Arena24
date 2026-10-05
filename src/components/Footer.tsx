@@ -3,56 +3,62 @@
 import React from 'react';
 import Link from 'next/link';
 import { soundFx } from '@/lib/audio';
-import { ChillArenaLogo } from '@/components/ChillArenaLogo';
-import { Gamepad2, Heart, Sparkles, Trophy, Users, Shield, Code2 } from 'lucide-react';
+import { VibeArenaLogo } from '@/components/VibeArenaLogo';
+import { Swords, Trophy, Users, Shield, Code2, Sparkles, Heart } from 'lucide-react';
 
 export const Footer = () => {
   return (
-    <footer className="w-full border-t border-gray-800/80 bg-[#05070a] py-12 px-4 lg:px-8 mt-16 text-gray-400">
-      <div className="max-w-7xl mx-auto space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+    <footer className="w-full border-t border-white/[0.08] bg-[#080A12] py-14 px-4 lg:px-8 mt-20 text-slate-400">
+      <div className="max-w-7xl mx-auto space-y-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           
           {/* Col 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link
               href="/"
               onClick={() => soundFx.playClick()}
-              className="flex items-center"
+              className="inline-block"
             >
-              <ChillArenaLogo size="md" showTagline={false} />
+              <VibeArenaLogo size="md" showTagline={true} />
             </Link>
 
-            <p className="text-xs text-gray-400 font-sans leading-relaxed max-w-sm">
-              The ultimate Indian multiplayer gaming lounge. Built for midnight hostel banter, canteen pen flips, and chaotic squad roasts with friends. 0 downloads. 100% pure dopamine.
+            <p className="text-xs text-slate-400 font-sans leading-relaxed max-w-sm">
+              A social gaming playground where friends create instant rooms, play quick multiplayer games, compete, joke around, and spend time together. Zero downloads, pure unadulterated vibe.
             </p>
 
-            <div className="p-3 rounded-xl bg-slate-950/80 border border-cyan-500/20 text-[11px] font-mono text-[#ADFF2F]">
-              💬 "Built for midnight hostel banter, canteen pen flips, and chaotic squad roasts."
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#10131D] border border-white/[0.08] text-[11px] font-mono text-[#F472B6]">
+              <span>✨</span>
+              <span>Dost. Games. Full Vibe.</span>
             </div>
           </div>
 
           {/* Col 2: Games */}
           <div className="space-y-3 font-display">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">GAME MODES</h4>
-            <ul className="space-y-2 text-xs font-sans text-gray-400">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">PICK YOUR VIBE</h4>
+            <ul className="space-y-2 text-xs font-sans text-slate-400">
               <li>
-                <Link href="/categories?cat=meme" className="hover:text-[#00F0FF] transition-colors">
-                  🔥 Trending Meme Games
+                <Link href="/categories?cat=squad" className="hover:text-white transition-colors">
+                  🎭 Squad Games (Chor Sipahi)
                 </Link>
               </li>
               <li>
-                <Link href="/categories?cat=school" className="hover:text-amber-400 transition-colors">
-                  🏫 School Vibes Duels
+                <Link href="/categories?cat=nostalgia" className="hover:text-white transition-colors">
+                  🎒 School Nostalgia (Pen Flip)
                 </Link>
               </li>
               <li>
-                <Link href="/categories?cat=mind" className="hover:text-purple-400 transition-colors">
-                  🧠 Mind Games Arena
+                <Link href="/categories?cat=brain" className="hover:text-white transition-colors">
+                  🧠 Brain Games (Word Builder)
                 </Link>
               </li>
               <li>
-                <Link href="/multiplayer" className="hover:text-[#ADFF2F] transition-colors">
-                  👥 1v1 Pass & Play
+                <Link href="/categories?cat=duel" className="hover:text-white transition-colors">
+                  ⚔️ 1v1 Battles (Tic-Tac-Toe)
+                </Link>
+              </li>
+              <li>
+                <Link href="/categories?cat=meme" className="hover:text-white transition-colors">
+                  🔥 Desi Meme Games (CID Escape)
                 </Link>
               </li>
             </ul>
@@ -60,64 +66,59 @@ export const Footer = () => {
 
           {/* Col 3: Platform */}
           <div className="space-y-3 font-display">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">PLATFORM</h4>
-            <ul className="space-y-2 text-xs font-sans text-gray-400">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">PLATFORM</h4>
+            <ul className="space-y-2 text-xs font-sans text-slate-400">
               <li>
-                <Link href="/leaderboard" className="hover:text-[#00F0FF] transition-colors">
-                  🏆 Global Leaderboard
+                <Link href="/multiplayer" className="hover:text-white transition-colors">
+                  🎮 Play with Friends
                 </Link>
               </li>
               <li>
-                <Link href="/profile" className="hover:text-[#00F0FF] transition-colors">
-                  🚀 Player Profile & XP
+                <Link href="/leaderboard" className="hover:text-white transition-colors">
+                  🏆 Vibe Leaderboard
                 </Link>
               </li>
               <li>
-                <Link href="/shop" className="hover:text-[#00F0FF] transition-colors">
-                  🪙 Meme Coin Shop
+                <Link href="/profile" className="hover:text-white transition-colors">
+                  👤 Gamer Profile & Stats
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="hover:text-[#00F0FF] transition-colors">
-                  🛡️ System Diagnostics
+                <Link href="/shop" className="hover:text-white transition-colors">
+                  🪙 Vibe Rewards Store
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 4: Community & Legal */}
+          {/* Col 4: Squad Banter */}
           <div className="space-y-3 font-display">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">COMMUNITY</h4>
-            <ul className="space-y-2 text-xs font-sans text-gray-400">
-              <li>
-                <a href="https://github.com/sahil24raj/Chill-Arena24" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <Code2 className="w-3.5 h-3.5 text-[#00F0FF]" /> GitHub Repository
-                </a>
-              </li>
-              <li>
-                <span className="text-gray-500 text-[11px] block">Privacy Policy</span>
-              </li>
-              <li>
-                <span className="text-gray-500 text-[11px] block">Terms of Service</span>
-              </li>
-              <li>
-                <span className="text-gray-500 text-[11px] block">Support & Squad Chat</span>
-              </li>
-            </ul>
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">THE SQUAD CODE</h4>
+            <div className="p-3.5 rounded-2xl bg-[#10131D] border border-white/[0.08] space-y-2">
+              <div className="text-[11px] font-mono text-[#38BDF8]">"Bas ek aur game."</div>
+              <div className="text-[10px] text-slate-400 leading-relaxed">
+                Who in your squad always says "last game"? Drop the room link and let the chaos begin.
+              </div>
+            </div>
           </div>
-
         </div>
 
-        {/* Bottom Copyright */}
-        <div className="pt-6 border-t border-gray-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-mono text-gray-500">
-          <span>&copy; {new Date().getFullYear()} CHILL ARENA Gaming Platform. All rights reserved.</span>
-          <div className="flex items-center gap-2">
-            <span>Powered by Next.js 16 & Turbopack</span>
-            <span>•</span>
-            <span className="text-[#ADFF2F]">● 60 FPS WebAudio Synthesis</span>
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-white/[0.07] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-mono">
+          <div>
+            &copy; {new Date().getFullYear()} Vibe Arena. All rights reserved. Where Friends Come to Play.
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span>Made with</span>
+              <Heart className="w-3.5 h-3.5 text-[#EC4899] fill-[#EC4899]" />
+              <span>for friends who game together</span>
+            </span>
           </div>
         </div>
       </div>
     </footer>
   );
 };
+
+export default Footer;

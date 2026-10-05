@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch } from '@/types';
+import { UserProfile, GameItem, DailyChallenge, MultiplayerRoom, RecentMatch, CategoryKey } from '@/types';
 import { soundFx } from '@/lib/audio';
 import {
   signInWithGoogle,
@@ -119,13 +119,44 @@ export const INITIAL_RECENT_MATCHES: RecentMatch[] = [];
 
 export const GAMES_CATALOG: GameItem[] = [
   {
+    id: 'chor-sipahi',
+    title: 'Chor Sipahi (Raja Mantri) 👑🥷',
+    slug: 'chor-sipahi',
+    tagline: '4-Player Indian Party Game! Raja orders, Mantri hides, Sipahi investigates, Chor bluffs!',
+    description: 'The iconic 4-player childhood parlor game of chits, deduction and psychological bluffs! Roles: Raja (1000 pts), Mantri (800 pts), Sipahi (500 pts), and Chor (0 pts). The Sipahi must interrogate the suspects and catch the hidden Chor!',
+    category: '🎭 Squad Games',
+    categoryKey: 'squad',
+    thumbnail: '🥷',
+    bannerImage: '/games/chor-sipahi.jpg',
+    playCount: 245000,
+    rating: 4.98,
+    difficulty: 'Easy',
+    duration: '2-4 min',
+    multiplayer: true,
+    multiplayerModes: ['local', 'online', 'ai'],
+    isTrending: true,
+    isNew: true,
+    isPopular: true,
+    isFeatured: true,
+    controls: ['Click to Reveal Role', 'Real-Time Chat & Roasts', 'Select Suspect Card & Confirm Arrest'],
+    tags: ['4-Player', 'Social Deduction', 'School Vibes', 'Party Game', 'Raja Mantri'],
+    rules: [
+      '👑 Raja (1000 pts): Publicly known king who commands the court.',
+      '🧠 Mantri (800 pts): Secret minister who must act natural to avoid wrongful arrest.',
+      '👮 Sipahi (500 pts): The royal cop whose mission is to find and arrest the Chor.',
+      '🥷 Chor (0 pts): Master thief trying to deceive the Sipahi and escape!',
+      'Sipahi inspects the 3 suspect players and submits a final guess.',
+      'All 4 chits are revealed at the end of the round with cumulative leaderboard scores.'
+    ]
+  },
+  {
     id: 'word-builder',
     title: 'Word Builder Pro 🔠',
     slug: 'word-builder',
     tagline: 'Unscramble letters, find target words, and unlock complete anagram solutions!',
     description: 'Professional vocabulary puzzle game! Form valid English words from scrambled letter tiles, discover target words across crossword slots, and view complete solutions with definitions.',
-    category: '🧠 Mind Games',
-    categoryKey: 'mind',
+    category: '🧠 Brain Games',
+    categoryKey: 'brain',
     thumbnail: '🔤',
     bannerImage: '/games/word-builder.jpg',
     playCount: 189000,
@@ -150,12 +181,12 @@ export const GAMES_CATALOG: GameItem[] = [
   },
   {
     id: 'tic-tac-toe',
-    title: 'Neon & Notebook Tic-Tac-Toe ❌⭕',
+    title: 'Neon Tic-Tac-Toe ❌⭕',
     slug: 'tic-tac-toe',
     tagline: 'Best-of-3 strategic grid duels with neon animations and smart AI bot!',
     description: 'The eternal grid duel reimagined with smooth particle effects and dynamic sound fx. Play local Pass & Play with a friend, challenge room codes, or take on the Smart AI bot in Best-of-3 sets!',
-    category: '🧠 Mind Games',
-    categoryKey: 'mind',
+    category: '⚔️ 1v1 Battles',
+    categoryKey: 'duel',
     thumbnail: '❌',
     bannerImage: '/games/tic-tac-toe.jpg',
     playCount: 204000,
@@ -180,8 +211,8 @@ export const GAMES_CATALOG: GameItem[] = [
     slug: 'spin-cricket',
     tagline: 'Spin the pencil spinner wheel or flip notebook pages for 4s, 6s and Wickets!',
     description: 'The iconic Indian school notebook book-cricket turned into a thrilling multiplayer spinner! Spin the roulette wheel and hit stop to reveal 1, 2, 3, 4, 6 or OUT. 2 overs, 1v1 highest runs wins!',
-    category: '🏫 School Vibes',
-    categoryKey: 'school',
+    category: '🎒 Nostalgia',
+    categoryKey: 'nostalgia',
     thumbnail: '📖',
     bannerImage: '/games/spin-cricket.jpg',
     playCount: 172000,
@@ -208,8 +239,8 @@ export const GAMES_CATALOG: GameItem[] = [
     slug: 'pen-flip',
     tagline: 'Last bench classic! Flip your Reynolds pen and land on the tip for +1 point.',
     description: 'Relive the high-stakes classroom pen flipping duels! Charge your flip power, launch your virtual ballpen, and land on the TIP for points. First to 10 points takes the classroom crown!',
-    category: '🏫 School Vibes',
-    categoryKey: 'school',
+    category: '🎒 Nostalgia',
+    categoryKey: 'nostalgia',
     thumbnail: '🖊️',
     bannerImage: '/games/pen-flip.jpg',
     playCount: 189000,
@@ -237,8 +268,8 @@ export const GAMES_CATALOG: GameItem[] = [
     slug: 'brain-pot',
     tagline: 'Rapid 5-10 second micro challenges: sequences, odd emojis, shell games & patterns!',
     description: 'High-speed cognitive reflex testing! Solve lightning micro-puzzles: "Which shape comes next?", "Spot the odd meme emoji", "Which cup hides the coin?", and "Missing numbers". Fast answers yield massive speed multipliers!',
-    category: '🧠 Mind Games',
-    categoryKey: 'mind',
+    category: '🧠 Brain Games',
+    categoryKey: 'brain',
     thumbnail: '🧠',
     bannerImage: '/games/brain-pot.jpg',
     playCount: 168000,
@@ -256,37 +287,6 @@ export const GAMES_CATALOG: GameItem[] = [
       'Each question gives 5-8 seconds',
       'Correct answer = Base Points + Speed Bonus',
       'Wrong answer breaks combo streak!'
-    ]
-  },
-  {
-    id: 'chor-sipahi',
-    title: 'Chor Sipahi (Raja Mantri) 👑🥷',
-    slug: 'chor-sipahi',
-    tagline: '4-Player Indian Party Game! Raja orders, Mantri hides, Sipahi investigates, Chor bluffs!',
-    description: 'The iconic 4-player childhood parlor game of chits, deduction and psychological bluffs! Roles: Raja (1000 pts), Mantri (800 pts), Sipahi (500 pts), and Chor (0 pts). The Sipahi must interrogate the suspects and catch the hidden Chor!',
-    category: '🏫 School Vibes',
-    categoryKey: 'school',
-    thumbnail: '🥷',
-    bannerImage: '/games/chor-sipahi.jpg',
-    playCount: 245000,
-    rating: 4.98,
-    difficulty: 'Easy',
-    duration: '2-4 min',
-    multiplayer: true,
-    multiplayerModes: ['local', 'online', 'ai'],
-    isTrending: true,
-    isNew: true,
-    isPopular: true,
-    isFeatured: true,
-    controls: ['Click to Reveal Role', 'Real-Time Chat & Roasts', 'Select Suspect Card & Confirm Arrest'],
-    tags: ['4-Player', 'Social Deduction', 'School Vibes', 'Party Game', 'Raja Mantri'],
-    rules: [
-      '👑 Raja (1000 pts): Publicly known king who commands the court.',
-      '🧠 Mantri (800 pts): Secret minister who must act natural to avoid wrongful arrest.',
-      '👮 Sipahi (500 pts): The royal cop whose mission is to find and arrest the Chor.',
-      '🥷 Chor (0 pts): Master thief trying to deceive the Sipahi and escape!',
-      'Sipahi inspects the 3 suspect players and submits a final guess.',
-      'All 4 chits are revealed at the end of the round with cumulative leaderboard scores.'
     ]
   }
 ];
@@ -330,7 +330,7 @@ interface AppState {
   recordGameWin: (gameId: string) => void;
   addRecentlyPlayed: (gameId: string) => void;
   claimChallenge: (challengeId: string) => void;
-  updateChallengeProgress: (category: 'meme' | 'school' | 'mind' | 'general', amount: number) => void;
+  updateChallengeProgress: (category: CategoryKey | 'general' | string, amount: number) => void;
   createRoom: (gameId: string, mode?: 'local' | 'online' | 'ai') => MultiplayerRoom;
   joinRoom: (code: string) => boolean;
   leaveRoom: () => void;
