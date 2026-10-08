@@ -354,7 +354,21 @@ interface AppState {
   loginWithEmail: (emailOrUsername: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string; code?: string }>;
   registerWithEmail: (params: { email: string; password: string; username: string; displayName?: string; avatar?: string }) => Promise<{ success: boolean; error?: string; code?: string }>;
   sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
-  updateProfileData: (updates: { avatar?: string; displayName?: string; bio?: string }) => Promise<{ success: boolean; error?: string }>;
+  updateProfileData: (updates: {
+    avatar?: string;
+    avatarType?: 'google' | 'upload' | 'preset';
+    displayName?: string;
+    username?: string;
+    bio?: string;
+    photoURL?: string;
+    customAvatar?: string;
+    privacySettings?: {
+      isPublic: boolean;
+      showStats: boolean;
+      showGameHistory: boolean;
+      showAchievements: boolean;
+    };
+  }) => Promise<{ success: boolean; error?: string }>;
   submitGameScore: (gameId: string, score: number, isWin?: boolean) => Promise<{ success: boolean; xpEarned: number; newHighScore: boolean; coinsEarned?: number }>;
   loginAnonymously: (customDetails?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string; code?: string; isFallback?: boolean }>;
   initAuthListener: () => () => void;
@@ -456,9 +470,14 @@ export const useAppStore = create<AppState>()(
         
         // Optimistically update local store with safe editable fields
         const localUpdates: Partial<UserProfile> = {};
-        if (updates.avatar) localUpdates.avatar = updates.avatar;
-        if (updates.displayName) localUpdates.displayName = updates.displayName;
+        if (updates.avatar !== undefined) localUpdates.avatar = updates.avatar;
+        if (updates.avatarType !== undefined) localUpdates.avatarType = updates.avatarType;
+        if (updates.displayName !== undefined) localUpdates.displayName = updates.displayName;
+        if (updates.username !== undefined) localUpdates.username = updates.username;
         if (updates.bio !== undefined) localUpdates.bio = updates.bio;
+        if (updates.photoURL !== undefined) localUpdates.photoURL = updates.photoURL;
+        if (updates.customAvatar !== undefined) localUpdates.customAvatar = updates.customAvatar;
+        if (updates.privacySettings !== undefined) localUpdates.privacySettings = updates.privacySettings;
 
         set({ user: { ...currentUser, ...localUpdates } });
         soundFx.playClick();
@@ -628,15 +647,25 @@ export const useAppStore = create<AppState>()(
         const unsubscribe = subscribeToAuth((fbUser) => {
           if (fbUser) {
             const currentUser = get().user;
-            if (currentUser.uid !== fbUser.uid) {
+            const photo = fbUser.photoURL || currentUser.photoURL;
+            const isGoogle = fbUser.providerData.some((p) => p.providerId === 'google.com');
+            const shouldAdoptGooglePhoto = (currentUser.avatarType === 'google' || currentUser.avatar === '🚀' || !currentUser.avatar) && photo;
+
+            if (currentUser.uid !== fbUser.uid || (!currentUser.photoURL && photo)) {
               set({
                 user: {
                   ...currentUser,
                   id: fbUser.uid,
                   uid: fbUser.uid,
                   email: fbUser.email || currentUser.email,
-                  photoURL: fbUser.photoURL || currentUser.photoURL,
-                  username: currentUser.username.startsWith('Guest_') && fbUser.displayName ? fbUser.displayName : currentUser.username,
+                  photoURL: photo,
+                  avatar: shouldAdoptGooglePhoto ? photo : (currentUser.avatar || '🚀'),
+                  avatarType: shouldAdoptGooglePhoto ? 'google' : (currentUser.avatarType || 'preset'),
+                  username: currentUser.username.startsWith('Guest_') && fbUser.displayName 
+                    ? fbUser.displayName.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15) 
+                    : currentUser.username,
+                  displayName: currentUser.displayName || fbUser.displayName || currentUser.username,
+                  authType: isGoogle ? 'google' : currentUser.authType,
                   isCloudSynced: true
                 }
               });

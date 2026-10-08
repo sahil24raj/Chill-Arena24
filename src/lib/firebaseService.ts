@@ -123,20 +123,31 @@ export const buildProfileFromFirebaseUser = (
   currentProfile?: Partial<UserProfile>,
   authType: 'google' | 'guest' = 'google'
 ): UserProfile => {
+  const photo = fbUser.photoURL || undefined;
+  // If user signed in with Google, default their avatar to their real Google photoURL
+  const avatar = (authType === 'google' && photo)
+    ? photo
+    : (currentProfile?.avatar || '🚀');
+  const avatarType: 'google' | 'upload' | 'preset' = (authType === 'google' && photo)
+    ? 'google'
+    : (currentProfile?.avatarType || 'preset');
+
   return {
     id: fbUser.uid,
     uid: fbUser.uid,
     email: fbUser.email || undefined,
-    photoURL: fbUser.photoURL || undefined,
-    username: fbUser.displayName || currentProfile?.username || `Gamer_${fbUser.uid.slice(-4)}`,
-    avatar: currentProfile?.avatar || '🚀',
+    photoURL: photo,
+    username: fbUser.displayName ? fbUser.displayName.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15) : (currentProfile?.username || `Gamer_${fbUser.uid.slice(-4)}`),
+    displayName: fbUser.displayName || currentProfile?.displayName || undefined,
+    avatar,
+    avatarType,
     authType: authType,
     isCloudSynced: true,
     xp: currentProfile?.xp || 0,
     level: currentProfile?.level || 1,
     coins: currentProfile?.coins || 0,
     streak: currentProfile?.streak || 0,
-    rank: currentProfile?.rank || 'Unranked',
+    rank: currentProfile?.rank || 'Bronze II',
     lastLoginDate: new Date().toISOString(),
     badges: currentProfile?.badges || [],
     unlockedSkins: currentProfile?.unlockedSkins || ['default'],
@@ -189,22 +200,34 @@ export const signInWithGoogle = async (
 
         if (userSnap.exists()) {
           const data = userSnap.data() as Partial<UserProfile>;
+          const photo = fbUser.photoURL || data.photoURL;
+          // Determine avatar: if user explicitly saved an avatar in Firestore, keep it,
+          // otherwise default to Google photoURL
+          const resolvedAvatar = data.avatar || photo || currentProfile?.avatar || profile.avatar;
+          const resolvedAvatarType = data.avatarType || (photo ? 'google' : 'preset');
+
           profile = {
             ...profile,
             ...data,
             id: fbUser.uid,
             uid: fbUser.uid,
             email: fbUser.email || data.email,
-            photoURL: fbUser.photoURL || data.photoURL,
-            username: currentProfile?.username || data.username || fbUser.displayName || profile.username,
-            avatar: currentProfile?.avatar || data.avatar || profile.avatar,
+            photoURL: photo,
+            displayName: data.displayName || fbUser.displayName || currentProfile?.displayName || profile.displayName,
+            username: data.username || currentProfile?.username || profile.username,
+            avatar: resolvedAvatar,
+            avatarType: resolvedAvatarType,
             isCloudSynced: true,
             lastLoginDate: new Date().toISOString()
           };
-          await setDoc(userDocRef, { lastLoginDate: new Date().toISOString() }, { merge: true });
+          await setDoc(userDocRef, { 
+            photoURL: photo,
+            lastLoginDate: new Date().toISOString() 
+          }, { merge: true });
         } else {
           await setDoc(userDocRef, {
             ...profile,
+            usernameLower: profile.username.toLowerCase(),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           });
@@ -599,22 +622,75 @@ export const sendPasswordReset = async (email: string): Promise<{ success: boole
 };
 
 /**
- * Safely update user profile fields (Only Avatar, Display Name, Bio allowed!)
+ * Safely update user profile fields (Avatar, Display Name, Username, Bio, AvatarType, Privacy)
  * Strictly rejects modifications to stats, xp, coins, or score directly.
  */
 export const updateUserProfileData = async (
   uid: string,
-  updates: { avatar?: string; displayName?: string; bio?: string }
+  updates: {
+    avatar?: string;
+    avatarType?: 'google' | 'upload' | 'preset';
+    displayName?: string;
+    username?: string;
+    bio?: string;
+    photoURL?: string;
+    customAvatar?: string;
+    privacySettings?: {
+      isPublic: boolean;
+      showStats: boolean;
+      showGameHistory: boolean;
+      showAchievements: boolean;
+    };
+  }
 ): Promise<{ success: boolean; error?: string }> => {
   if (!uid) {
     return { success: false, error: 'User ID is required.' };
   }
 
   // Sanitize updates to ONLY allowed editable SaaS profile fields
-  const safeUpdates: { avatar?: string; displayName?: string; bio?: string; updatedAt?: any } = {};
-  if (typeof updates.avatar === 'string') safeUpdates.avatar = updates.avatar.slice(0, 32);
-  if (typeof updates.displayName === 'string') safeUpdates.displayName = updates.displayName.trim().slice(0, 40);
-  if (typeof updates.bio === 'string') safeUpdates.bio = updates.bio.trim().slice(0, 200);
+  const safeUpdates: Record<string, any> = {};
+
+  if (typeof updates.displayName === 'string') {
+    safeUpdates.displayName = updates.displayName.trim().slice(0, 40);
+  }
+
+  if (typeof updates.username === 'string') {
+    const cleanUsername = updates.username.trim();
+    if (cleanUsername.length >= 3 && cleanUsername.length <= 20 && /^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+      safeUpdates.username = cleanUsername;
+      safeUpdates.usernameLower = cleanUsername.toLowerCase();
+    }
+  }
+
+  if (typeof updates.bio === 'string') {
+    safeUpdates.bio = updates.bio.trim().slice(0, 200);
+  }
+
+  if (typeof updates.avatar === 'string') {
+    // Allows URLs (Google / Cloud / data URIs) or emojis (up to 1MB)
+    safeUpdates.avatar = updates.avatar.slice(0, 1000000);
+  }
+
+  if (updates.avatarType && ['google', 'upload', 'preset'].includes(updates.avatarType)) {
+    safeUpdates.avatarType = updates.avatarType;
+  }
+
+  if (typeof updates.photoURL === 'string') {
+    safeUpdates.photoURL = updates.photoURL.slice(0, 2048);
+  }
+
+  if (typeof updates.customAvatar === 'string') {
+    safeUpdates.customAvatar = updates.customAvatar.slice(0, 1000000);
+  }
+
+  if (updates.privacySettings && typeof updates.privacySettings === 'object') {
+    safeUpdates.privacySettings = {
+      isPublic: Boolean(updates.privacySettings.isPublic),
+      showStats: Boolean(updates.privacySettings.showStats),
+      showGameHistory: Boolean(updates.privacySettings.showGameHistory),
+      showAchievements: Boolean(updates.privacySettings.showAchievements)
+    };
+  }
 
   const db = getFirebaseDb();
   if (db && isFirebaseConfigured()) {
@@ -623,10 +699,21 @@ export const updateUserProfileData = async (
       safeUpdates.updatedAt = serverTimestamp();
       await updateDoc(userRef, safeUpdates);
 
-      // Also update auth displayName if changed
+      // Also update auth displayName or photoURL if changed
       const auth = getFirebaseAuth();
-      if (auth?.currentUser && safeUpdates.displayName) {
-        await updateFbProfile(auth.currentUser, { displayName: safeUpdates.displayName });
+      if (auth?.currentUser) {
+        const authUpdates: { displayName?: string; photoURL?: string } = {};
+        if (safeUpdates.displayName) authUpdates.displayName = safeUpdates.displayName;
+        if (safeUpdates.avatar && (safeUpdates.avatar.startsWith('http') || safeUpdates.avatar.startsWith('/'))) {
+          authUpdates.photoURL = safeUpdates.avatar;
+        }
+        if (Object.keys(authUpdates).length > 0) {
+          try {
+            await updateFbProfile(auth.currentUser, authUpdates);
+          } catch (e) {
+            console.warn('Firebase Auth update profile note:', e);
+          }
+        }
       }
     } catch (e: any) {
       console.warn('Firestore profile update warning:', e);
@@ -641,6 +728,67 @@ export const updateUserProfileData = async (
   }
 
   return { success: true };
+};
+
+/**
+ * Fetch public gamer profile by username (strictly sanitized, no sensitive auth/emails)
+ */
+export const getPublicProfileByUsername = async (username: string): Promise<Partial<UserProfile> | null> => {
+  const cleanUsername = username.replace(/^@/, '').trim().toLowerCase();
+  if (!cleanUsername) return null;
+
+  const db = getFirebaseDb();
+  if (db && isFirebaseConfigured()) {
+    try {
+      const q = query(
+        collection(db, 'users'),
+        where('usernameLower', '==', cleanUsername),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0].data() as UserProfile;
+        // Never expose sensitive authentication data or secrets
+        return {
+          id: snap.docs[0].id,
+          username: d.username,
+          displayName: d.displayName || d.username,
+          avatar: d.avatar || '🎮',
+          avatarType: d.avatarType,
+          photoURL: d.photoURL,
+          bio: d.bio,
+          level: d.level || 1,
+          xp: d.xp || 0,
+          rank: d.rank || 'Bronze II',
+          streak: d.streak || 0,
+          badges: d.badges || [],
+          createdAt: d.createdAt,
+          stats: d.stats || {
+            gamesPlayed: 0,
+            totalWins: 0,
+            winRate: 0,
+            totalScore: 0,
+            bestScore: 0,
+            highScores: {},
+            roastsWon: 0,
+            sixesHit: 0,
+            chaiServed: 0,
+            penFlipsLanded: 0,
+            eraserHits: 0
+          },
+          privacySettings: d.privacySettings || {
+            isPublic: true,
+            showStats: true,
+            showGameHistory: true,
+            showAchievements: true
+          }
+        };
+      }
+    } catch (err) {
+      console.warn('getPublicProfileByUsername query note:', err);
+    }
+  }
+  return null;
 };
 
 /**

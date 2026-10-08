@@ -19,19 +19,28 @@ import {
   VolumeX,
   Plus,
   KeyRound,
-  ArrowRight
+  ArrowRight,
+  LogOut,
+  Edit3,
+  Award,
+  Settings,
+  ShieldCheck,
+  ChevronDown
 } from 'lucide-react';
 import { normalizeRoomCode } from '@/lib/multiplayer/roomCodeGenerator';
+import { GamerAvatar } from '@/components/profile/GamerAvatar';
 
 export const TopHeaderBar: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isMuted, toggleMute, openMultiplayerModal } = useAppStore();
+  const { user, isMuted, toggleMute, openMultiplayerModal, logout } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [quickJoinOpen, setQuickJoinOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,6 +56,19 @@ export const TopHeaderBar: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,21 +227,152 @@ export const TopHeaderBar: React.FC = () => {
             <span>Create Room</span>
           </button>
 
-          {/* Quick Profile Display Pill */}
-          <Link
-            href="/profile"
-            onClick={() => soundFx.playClick()}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[#10131D] border border-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
-            title="View Profile & Stats"
-          >
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#D946EF] to-[#06B6D4] text-white flex items-center justify-center text-xs font-bold">
-              {user.avatar || '🎮'}
-            </div>
-            <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-amber-400 pr-1">
-              <span>🪙</span>
-              <span>{user.coins}</span>
-            </div>
-          </Link>
+          {/* Profile Dropdown Menu Trigger & Container */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                setUserMenuOpen(!userMenuOpen);
+              }}
+              className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full bg-[#10131D] border border-white/[0.08] hover:border-[#00F0FF]/40 hover:bg-white/[0.04] transition-all cursor-pointer group"
+              title="Gamer Profile & Menu"
+              aria-haspopup="true"
+              aria-expanded={userMenuOpen}
+            >
+              <GamerAvatar
+                avatar={user.avatar}
+                photoURL={user.photoURL}
+                avatarType={user.avatarType}
+                size="xs"
+                showOnline={true}
+                isOnline={true}
+                glowEffect={false}
+              />
+              <span className="hidden xl:inline text-xs font-bold text-white max-w-[80px] truncate">
+                {user.displayName || user.username}
+              </span>
+              <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-amber-400 pl-0.5">
+                <span>🪙</span>
+                <span>{user.coins}</span>
+              </div>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Gaming User Menu Dropdown */}
+            {userMenuOpen && (
+              <div className="absolute right-0 top-12 w-64 rounded-2xl bg-[#0D101C]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+                {/* User Identity Header */}
+                <Link
+                  href="/profile"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setUserMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 transition-all group"
+                >
+                  <GamerAvatar
+                    avatar={user.avatar}
+                    photoURL={user.photoURL}
+                    avatarType={user.avatarType}
+                    size="md"
+                    showOnline={true}
+                    isOnline={true}
+                    rank={user.rank as string}
+                  />
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-white truncate group-hover:text-[#00F0FF] transition-colors">
+                        {user.displayName || user.username}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-slate-400 block truncate">
+                      @{user.username}
+                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#00F0FF]/15 text-[#00F0FF] border border-[#00F0FF]/30">
+                        LVL {user.level}
+                      </span>
+                      <span className="text-[9px] font-mono font-bold text-[#ADFF2F]">
+                        {user.rank || 'Bronze II'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Quick Navigation Items */}
+                <div className="mt-2 pt-2 border-t border-white/[0.08] space-y-0.5">
+                  <Link
+                    href="/profile"
+                    onClick={() => {
+                      soundFx.playClick();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.05] transition-all"
+                  >
+                    <User className="w-3.5 h-3.5 text-[#00F0FF]" />
+                    <span>View Profile</span>
+                  </Link>
+
+                  <Link
+                    href="/profile?tab=edit"
+                    onClick={() => {
+                      soundFx.playClick();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.05] transition-all"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#ADFF2F]" />
+                    <span>Edit Profile</span>
+                  </Link>
+
+                  <Link
+                    href="/profile?tab=achievements"
+                    onClick={() => {
+                      soundFx.playClick();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.05] transition-all"
+                  >
+                    <Award className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Achievements</span>
+                  </Link>
+
+                  <Link
+                    href="/profile?tab=settings"
+                    onClick={() => {
+                      soundFx.playClick();
+                      setUserMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.05] transition-all"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Settings & Privacy</span>
+                  </Link>
+                </div>
+
+                {/* Account Type Status & Logout */}
+                <div className="mt-2 pt-2 border-t border-white/[0.08] flex items-center justify-between px-1">
+                  <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    {user.authType === 'google' ? 'Google' : user.authType === 'email' ? 'Email' : 'Guest'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      soundFx.playClick();
+                      setUserMenuOpen(false);
+                      await logout();
+                      router.push('/login');
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all cursor-pointer"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Audio Mute/Unmute */}
           <button
@@ -317,10 +470,30 @@ export const TopHeaderBar: React.FC = () => {
                 soundFx.playClick();
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-3 p-3 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.04]"
+              className="flex items-center justify-between p-3 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.04]"
             >
-              <User className="w-4 h-4 text-[#06B6D4]" />
-              <span>My Profile & Stats</span>
+              <div className="flex items-center gap-3">
+                <GamerAvatar
+                  avatar={user.avatar}
+                  photoURL={user.photoURL}
+                  avatarType={user.avatarType}
+                  size="xs"
+                  showOnline={true}
+                  isOnline={true}
+                  glowEffect={false}
+                />
+                <div className="text-left">
+                  <div className="font-bold text-white leading-tight">
+                    {user.displayName || user.username}
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-400">
+                    LVL {user.level} • @{user.username}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-amber-400">
+                🪙 {user.coins}
+              </span>
             </Link>
           </div>
         </div>

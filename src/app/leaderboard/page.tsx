@@ -25,6 +25,7 @@ import {
   subscribeToCloudLeaderboard
 } from '@/lib/firebaseService';
 import { LeaderboardEntry } from '@/types';
+import { GamerAvatar } from '@/components/profile/GamerAvatar';
 
 const PAGE_SIZE = 25;
 
@@ -203,9 +204,15 @@ export default function LeaderboardPage() {
       {/* User Current Standing Info Card */}
       <div className="max-w-4xl mx-auto p-4 sm:p-5 rounded-2xl border border-[#00F0FF]/30 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#00F0FF] to-blue-600 text-slate-950 flex items-center justify-center text-2xl font-bold shadow shrink-0">
-            {user.avatar}
-          </div>
+          <GamerAvatar
+            avatar={user.avatar}
+            photoURL={user.photoURL}
+            avatarType={user.avatarType}
+            size="lg"
+            showOnline={true}
+            isOnline={true}
+            rank={user.rank as string}
+          />
           <div>
             <div className="flex items-center justify-center sm:justify-start gap-2">
               <span className="text-sm font-black text-white">{user.displayName || user.username}</span>
@@ -243,7 +250,7 @@ export default function LeaderboardPage() {
           {/* Rank 2 */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-center flex flex-col items-center order-2 sm:order-1 shadow-xl">
             <span className="text-3xl mb-1">🥈</span>
-            <div className="text-3xl my-1">{top2.avatar}</div>
+            <GamerAvatar avatar={top2.avatar} size="xl" rank="Silver" className="my-2" />
             <div className="text-sm font-black text-white">{top2.username}</div>
             <div className="text-[10px] text-gray-400 font-mono">{top2.gameTitle || 'Top Arena Match'}</div>
             <div className="text-xl font-black text-gray-300 font-mono mt-2">{top2.score.toLocaleString()} pts</div>
@@ -253,7 +260,7 @@ export default function LeaderboardPage() {
           {/* Rank 1 (Champion) */}
           <div className="bg-gradient-to-b from-amber-500/20 to-slate-900 border-2 border-yellow-500/60 rounded-2xl p-6 text-center flex flex-col items-center order-1 sm:order-2 shadow-2xl shadow-yellow-500/10 scale-105">
             <span className="text-4xl mb-1 animate-bounce">👑</span>
-            <div className="text-4xl my-1">{top1.avatar}</div>
+            <GamerAvatar avatar={top1.avatar} size="2xl" rank="Grandmaster" className="my-2" />
             <div className="text-base font-black text-white">{top1.username}</div>
             <div className="text-xs text-yellow-400 font-mono font-bold">{top1.gameTitle || 'Top Arena Match'}</div>
             <div className="text-2xl font-black text-yellow-400 font-mono mt-2">{top1.score.toLocaleString()} pts</div>
@@ -266,7 +273,7 @@ export default function LeaderboardPage() {
           {/* Rank 3 */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-center flex flex-col items-center order-3 shadow-xl">
             <span className="text-3xl mb-1">🥉</span>
-            <div className="text-3xl my-1">{top3.avatar}</div>
+            <GamerAvatar avatar={top3.avatar} size="xl" rank="Bronze" className="my-2" />
             <div className="text-sm font-black text-white">{top3.username}</div>
             <div className="text-[10px] text-gray-400 font-mono">{top3.gameTitle || 'Top Arena Match'}</div>
             <div className="text-xl font-black text-amber-500 font-mono mt-2">{top3.score.toLocaleString()} pts</div>
@@ -337,7 +344,7 @@ export default function LeaderboardPage() {
                     >
                       #{entry.rank}
                     </span>
-                    <div className="text-2xl">{entry.avatar}</div>
+                    <GamerAvatar avatar={entry.avatar} size="sm" />
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs text-white">{entry.username}</span>

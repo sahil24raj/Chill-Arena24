@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { soundFx } from '@/lib/audio';
 import { MessageSquare, Send, Sparkles, ChevronRight, Bot } from 'lucide-react';
+import { GamerAvatar } from '@/components/profile/GamerAvatar';
 
 interface ChatSidebarProps {
   collapsed?: boolean;
@@ -100,7 +101,7 @@ export const RightChatSidebar: React.FC<ChatSidebarProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{m.avatar}</span>
+                  <GamerAvatar avatar={m.avatar} size="xs" glowEffect={false} />
                   <span className="text-[11px] font-bold text-[#00F0FF] font-display truncate max-w-[110px]">
                     {m.user}
                   </span>

@@ -11,6 +11,7 @@ import {
   Swords,
   Headphones
 } from 'lucide-react';
+import { GamerAvatar } from '@/components/profile/GamerAvatar';
 
 export const SquadPartyLounge: React.FC = () => {
   const { user, openMultiplayerModal } = useAppStore();
@@ -112,7 +113,7 @@ export const SquadPartyLounge: React.FC = () => {
                   className="p-2.5 rounded-xl bg-slate-900/60 border border-gray-850 flex items-start justify-between gap-3 hover:border-gray-700 transition-colors"
                 >
                   <div className="flex items-start gap-2.5">
-                    <span className="text-xl shrink-0 mt-0.5">{r.avatar}</span>
+                    <GamerAvatar avatar={r.avatar} name={r.user} size="sm" className="mt-0.5 shrink-0" />
                     <div>
                       <span className="font-bold text-[#00F0FF] text-[11px] block">{r.user}</span>
                       <p className="text-gray-300 font-sans text-xs mt-0.5">{r.msg}</p>
@@ -180,17 +181,22 @@ export const SquadPartyLounge: React.FC = () => {
               No downloads needed. Instant browser audio cues & turn-based multiplayer with your friends.
             </p>
 
-            <div className="space-y-2 pt-1 font-mono text-xs">
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-gray-800">
-                <div className="flex items-center gap-2">
-                  <span>{user.avatar}</span>
-                  <span className="text-white font-bold">{user.displayName || user.username} (You)</span>
+              <div className="space-y-2 pt-1 font-mono text-xs">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-gray-800">
+                  <div className="flex items-center gap-2.5">
+                    <GamerAvatar
+                      avatar={user.avatar}
+                      photoURL={user.photoURL}
+                      name={user.displayName || user.username}
+                      size="sm"
+                    />
+                    <span className="text-white font-bold">{user.displayName || user.username} (You)</span>
+                  </div>
+                  <span className="text-[10px] text-[#ADFF2F]">
+                    LVL {user.level}
+                  </span>
                 </div>
-                <span className="text-[10px] text-[#ADFF2F]">
-                  LVL {user.level}
-                </span>
               </div>
-            </div>
           </div>
 
           <button

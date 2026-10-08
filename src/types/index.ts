@@ -68,6 +68,14 @@ export interface UserProfile {
   badges: Badge[];
   unlockedSkins: string[];
   equippedSkin: string;
+  avatarType?: 'google' | 'upload' | 'preset';
+  customAvatar?: string;
+  privacySettings?: {
+    isPublic: boolean;
+    showStats: boolean;
+    showGameHistory: boolean;
+    showAchievements: boolean;
+  };
   stats: {
     gamesPlayed: number;
     totalWins: number;
