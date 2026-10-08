@@ -89,6 +89,9 @@ export interface UserProfile {
     chaiServed: number;
     penFlipsLanded: number;
     eraserHits: number;
+    doorsEscaped?: number;
+    bestDoorStreak?: number;
+    bestDoorLevel?: number;
   };
 }
 

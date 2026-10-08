@@ -20,6 +20,7 @@ import { GullyCricketCanvas } from '@/components/games/GullyCricketCanvas';
 import { ChaiTapriCanvas } from '@/components/games/ChaiTapriCanvas';
 import { MemeClickerCanvas } from '@/components/games/MemeClickerCanvas';
 import { FakeBombCanvas } from '@/components/games/fake-bomb/FakeBombCanvas';
+import { EscapeDoorGame } from '@/components/games/escape-door/EscapeDoorGame';
 
 import { SingleUnifiedMultiplayerModal } from '@/components/game-shell/SingleUnifiedMultiplayerModal';
 import {
@@ -142,6 +143,12 @@ export default function GamePage({ params }: { params: Promise<{ id: string }> }
 
   const renderGameCanvas = () => {
     switch (game.id) {
+      case 'escape-door':
+        return (
+          <React.Suspense fallback={<div className="p-8 text-center text-xs font-mono text-[#00F0FF]">Loading Escape From The Door...</div>}>
+            <EscapeDoorGame />
+          </React.Suspense>
+        );
       case 'fake-bomb':
         return (
           <React.Suspense fallback={<div className="p-8 text-center text-xs font-mono text-[#00F0FF]">Loading Fake Bomb Chaos Core...</div>}>

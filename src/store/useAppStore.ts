@@ -60,7 +60,10 @@ const INITIAL_USER: UserProfile = {
     sixesHit: 0,
     chaiServed: 0,
     penFlipsLanded: 0,
-    eraserHits: 0
+    eraserHits: 0,
+    doorsEscaped: 0,
+    bestDoorStreak: 0,
+    bestDoorLevel: 0
   }
 };
 
@@ -118,6 +121,40 @@ export const INITIAL_CHALLENGES: DailyChallenge[] = [
 export const INITIAL_RECENT_MATCHES: RecentMatch[] = [];
 
 export const GAMES_CATALOG: GameItem[] = [
+  {
+    id: 'escape-door',
+    title: 'Escape From The Door 🚪',
+    slug: 'escape-door',
+    tagline: 'Choose wisely. Only ONE door leads to safety.',
+    description: 'Casual luck, instinct and risk arena game! Every level contains multiple mysterious cyber doors, but exactly ONE door is safe. Can you navigate all 10 levels and conquer Endless Mode to become the ultimate Door Master?',
+    category: '🎯 Skill Games',
+    categoryKey: 'mind',
+    thumbnail: '🚪',
+    bannerImage: '/games/escape-door.jpg',
+    playCount: 142000,
+    rating: 4.98,
+    difficulty: 'Medium',
+    duration: '1-3 min',
+    multiplayer: false,
+    isTrending: true,
+    isNew: true,
+    isPopular: true,
+    isFeatured: true,
+    controls: [
+      'Click or Tap Any Mystery Door to Attempt Escape',
+      'Inspect Door Risk Multiplier & Level Progress',
+      'Chain Consecutive Safe Escapes for Streak Multipliers'
+    ],
+    tags: ['Casual', 'Risk', 'Luck', 'Fast-Paced', 'Levels', 'Mystery', 'Single Player', 'Endless Mode'],
+    rules: [
+      'Level 1 begins with 2 doors. Each level introduces higher door counts up to 6 doors.',
+      'Exactly ONE door is SAFE. All other doors are instant DANGER traps.',
+      'Picking the SAFE door awards Score, XP, and advances you to the next chamber.',
+      'Picking a DANGER door triggers Game Over and reveals the true safe door location.',
+      'Consecutive safe escapes unlock a Streak Multiplier up to 2.0x bonus score!',
+      'Clear Level 10 to unlock Endless Master Mode and dominate the global leaderboards!'
+    ]
+  },
   {
     id: 'fake-bomb',
     title: 'Fake Bomb (Chaos Core) 💣⚛️',

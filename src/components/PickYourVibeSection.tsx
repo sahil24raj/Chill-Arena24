@@ -35,6 +35,9 @@ export const PickYourVibeSection: React.FC = () => {
 
   const filteredGames = useMemo(() => {
     if (activeCategory === 'all') return GAMES_CATALOG;
+    if (activeCategory === 'brain') {
+      return GAMES_CATALOG.filter((g) => g.categoryKey === 'brain' || g.categoryKey === 'mind');
+    }
     return GAMES_CATALOG.filter((g) => g.categoryKey === activeCategory);
   }, [activeCategory]);
 

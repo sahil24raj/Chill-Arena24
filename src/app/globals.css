@@ -136,4 +136,19 @@
   animation: vaPulseSlow 4s ease-in-out infinite;
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px) rotate(-0.5deg); }
+  40%, 80% { transform: translateX(6px) rotate(0.5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 

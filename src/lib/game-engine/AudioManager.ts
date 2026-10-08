@@ -209,6 +209,42 @@ class SoundEngine {
     this.synthTone(150, 80, 0.25, 'sawtooth', 0.2);
   }
 
+  // --- Escape From The Door SFX ---
+  public playDoorHover() {
+    this.synthTone(800, 1000, 0.04, 'sine', 0.06);
+  }
+
+  public playDoorSelect() {
+    this.synthTone(320, 200, 0.08, 'triangle', 0.14);
+    setTimeout(() => {
+      this.synthTone(500, 750, 0.1, 'sine', 0.12);
+    }, 60);
+  }
+
+  public playSafeDoor() {
+    if (this.settings.muted) return;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        this.synthTone(freq, freq * 1.05, 0.12, 'triangle', 0.18);
+      }, idx * 60);
+    });
+  }
+
+  public playDangerDoor() {
+    if (this.settings.muted) return;
+    this.synthTone(140, 60, 0.35, 'sawtooth', 0.22);
+    setTimeout(() => {
+      this.synthTone(90, 45, 0.4, 'sawtooth', 0.2);
+    }, 80);
+  }
+
+  public playStreak(streakCount: number) {
+    if (this.settings.muted) return;
+    const base = 440 + Math.min(streakCount, 10) * 55;
+    this.synthTone(base, base * 1.35, 0.12, 'sine', 0.16);
+  }
+
   // --- Background Music (BGM) Management ---
   public playBGM(src: string | string[], loop = true) {
     if (typeof window === 'undefined') return;

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 const FEATURED_GAMES_IDS = [
+  'escape-door',
   'chor-sipahi',
   'word-builder',
   'spin-cricket',
@@ -29,6 +30,11 @@ const FEATURED_GAMES_IDS = [
 ];
 
 const RANK_BADGES = [
+  {
+    rankText: '🚪 MYSTERY ESCAPE ARENA',
+    icon: Sparkles,
+    colorClass: 'bg-[#00F0FF]/20 border-[#00F0FF]/50 text-[#00F0FF]'
+  },
   {
     rankText: '#1 SQUAD FAVORITE',
     icon: Flame,

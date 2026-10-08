@@ -810,7 +810,8 @@ export const submitGameScoreSecure = async (
     'meme-roast': 5000,
     'eraser-football': 100,
     'hand-cricket': 300,
-    'pappu-pakia': 25000
+    'pappu-pakia': 25000,
+    'escape-door': 50000
   };
 
   const maxAllowed = GAME_CEILINGS[gameId] || 100000;

@@ -124,6 +124,14 @@ export const GAME_FULLSCREEN_REGISTRY: Record<string, GameFullscreenConfig> = {
     scalingMode: 'responsive',
     showHUD: true,
   },
+  'escape-door': {
+    id: 'escape-door',
+    title: 'Escape From The Door 🚪',
+    preferredAspectRatio: 'auto',
+    preferredOrientation: 'any',
+    scalingMode: 'responsive',
+    showHUD: true,
+  },
 };
 
 const DEFAULT_CONFIG: GameFullscreenConfig = {
